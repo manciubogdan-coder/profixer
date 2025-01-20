@@ -20,18 +20,30 @@ export const Features = () => {
   ];
 
   return (
-    <div className="py-20 bg-background">
-      <div className="container mx-auto">
+    <div className="py-20 bg-background relative overflow-hidden">
+      {/* Gradient backgrounds */}
+      <div className="absolute inset-0 bg-gradient-to-b from-secondary via-background to-background" />
+      <div className="absolute -top-40 left-0 right-0 h-80 bg-gradient-to-b from-purple-900/20 to-transparent blur-3xl" />
+      
+      <div className="container mx-auto relative z-10">
         <h2 className="text-3xl font-bold text-center mb-12">
-          De ce să alegi <span className="text-primary">ProFixer</span>?
+          De ce să alegi{" "}
+          <span className="bg-gradient-to-r from-primary to-purple-400 text-transparent bg-clip-text">
+            ProFixer
+          </span>
+          ?
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="p-6 rounded-lg bg-secondary text-center hover:shadow-lg transition-shadow"
+              className="group p-6 rounded-xl backdrop-blur-md bg-white/5 border border-white/10 
+                        hover:bg-white/10 transition-all duration-300 hover:shadow-2xl 
+                        hover:shadow-purple-500/10"
             >
-              <feature.icon className="w-12 h-12 text-primary mx-auto mb-4" />
+              <div className="bg-gradient-to-br from-primary to-purple-600 p-3 rounded-lg w-fit mb-4 group-hover:scale-110 transition-transform duration-300">
+                <feature.icon className="w-6 h-6 text-white" />
+              </div>
               <h3 className="text-xl font-semibold mb-2 text-white">{feature.title}</h3>
               <p className="text-muted-foreground">{feature.description}</p>
             </div>
