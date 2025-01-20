@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Search, Tool } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 
 export const Hero = () => {
   return (
@@ -17,7 +17,7 @@ export const Hero = () => {
             <Search className="mr-2 h-5 w-5" /> Caută Meșteri
           </Button>
           <Button size="lg" variant="outline">
-            <Tool className="mr-2 h-5 w-5" /> Devino Meșter
+            <ArrowRight className="mr-2 h-5 w-5" /> Devino Meșter
           </Button>
         </div>
       </div>
