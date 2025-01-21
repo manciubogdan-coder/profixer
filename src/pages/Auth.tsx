@@ -23,7 +23,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Separate schemas for login and registration
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -76,23 +75,6 @@ const Auth = () => {
     console.log("Attempting login with:", values.email);
     setIsLoading(true);
     try {
-      // First check if the user exists
-      const { data: userExists } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', values.email)
-        .single();
-
-      if (!userExists) {
-        console.log("User not found:", values.email);
-        toast({
-          variant: "destructive",
-          title: "Account not found",
-          description: "No account exists with this email. Please sign up first.",
-        });
-        return;
-      }
-
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
