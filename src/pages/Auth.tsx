@@ -84,7 +84,6 @@ const Auth = () => {
       if (error) {
         console.error("Login error:", error);
         
-        // Handle specific error cases
         if (error.message.includes("Email not confirmed")) {
           toast({
             variant: "destructive",
@@ -99,7 +98,6 @@ const Auth = () => {
           });
         }
         
-        // Reset password field on error
         loginForm.setValue("password", "");
         throw error;
       }
@@ -149,7 +147,6 @@ const Auth = () => {
         description: "Please check your email to verify your account",
       });
       
-      // Switch to login view after successful registration
       setIsLogin(true);
       registrationForm.reset();
     } catch (error: any) {
@@ -190,7 +187,11 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="email@example.com" {...field} />
+                        <Input 
+                          type="email"
+                          placeholder="email@example.com" 
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -204,7 +205,11 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input 
+                          type="password"
+                          placeholder="Enter your password"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -226,7 +231,11 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input placeholder="email@example.com" {...field} />
+                        <Input 
+                          type="email"
+                          placeholder="email@example.com" 
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -240,7 +249,11 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input 
+                          type="password"
+                          placeholder="Choose a password"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -254,7 +267,7 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter your first name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -268,7 +281,7 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter your last name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -282,7 +295,7 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>Phone Number</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter your phone number" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -296,7 +309,7 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>Country</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter your country" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -310,7 +323,7 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>County</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter your county" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -324,7 +337,7 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>City</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter your city" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -338,7 +351,7 @@ const Auth = () => {
                     <FormItem>
                       <FormLabel>Address</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter your address" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
