@@ -73,6 +73,7 @@ const Auth = () => {
   });
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
+    console.log("Attempting login with:", values.email);
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -85,6 +86,7 @@ const Auth = () => {
         throw error;
       }
 
+      console.log("Login successful");
       toast({
         title: "Success",
         description: "Logged in successfully",
@@ -95,14 +97,19 @@ const Auth = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to sign in",
+        description: error.message === "Invalid login credentials" 
+          ? "Invalid email or password. Please try again."
+          : error.message || "Failed to sign in",
       });
+      // Reset password field on error
+      loginForm.setValue("password", "");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRegistration = async (values: z.infer<typeof registrationSchema>) => {
+    console.log("Attempting registration with:", values.email);
     setIsLoading(true);
     try {
       const { error: signUpError } = await supabase.auth.signUp({
@@ -122,12 +129,20 @@ const Auth = () => {
         },
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        console.error("Registration error:", signUpError);
+        throw signUpError;
+      }
 
+      console.log("Registration successful");
       toast({
         title: "Account created successfully",
         description: "Please check your email to verify your account",
       });
+      
+      // Switch to login view after successful registration
+      setIsLogin(true);
+      registrationForm.reset();
     } catch (error: any) {
       console.error("Registration error:", error);
       toast({
