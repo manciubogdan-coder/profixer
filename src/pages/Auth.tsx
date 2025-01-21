@@ -1,0 +1,315 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+
+const formSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  firstName: z.string().min(2, "First name is required"),
+  lastName: z.string().min(2, "Last name is required"),
+  phone: z.string().min(10, "Valid phone number is required"),
+  country: z.string().min(2, "Country is required"),
+  county: z.string().min(2, "County is required"),
+  city: z.string().min(2, "City is required"),
+  address: z.string().min(5, "Address is required"),
+  role: z.enum(["client", "professional"]),
+});
+
+const Auth = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      firstName: "",
+      lastName: "",
+      phone: "",
+      country: "",
+      county: "",
+      city: "",
+      address: "",
+      role: "client",
+    },
+  });
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
+    try {
+      if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
+        if (error) throw error;
+        navigate("/");
+      } else {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: values.email,
+          password: values.password,
+          options: {
+            data: {
+              first_name: values.firstName,
+              last_name: values.lastName,
+            },
+          },
+        });
+        if (signUpError) throw signUpError;
+
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({
+            first_name: values.firstName,
+            last_name: values.lastName,
+            phone: values.phone,
+            country: values.country,
+            county: values.county,
+            city: values.city,
+            address: values.address,
+            role: values.role,
+          })
+          .eq("id", (await supabase.auth.getUser()).data.user?.id);
+
+        if (profileError) throw profileError;
+
+        toast({
+          title: "Account created successfully",
+          description: "Please check your email to verify your account",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8 bg-secondary p-8 rounded-lg">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-primary">
+            {isLogin ? "Welcome Back" : "Create Account"}
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            {isLogin
+              ? "Sign in to your account"
+              : "Register as a client or professional"}
+          </p>
+        </div>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="email@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {!isLogin && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Country</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="county"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>County</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select your role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="client">Client</SelectItem>
+                          <SelectItem value="professional">Professional</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading
+                ? "Loading..."
+                : isLogin
+                ? "Sign In"
+                : "Create Account"}
+            </Button>
+          </form>
+        </Form>
+
+        <div className="text-center">
+          <Button
+            variant="link"
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-primary"
+          >
+            {isLogin
+              ? "Don't have an account? Sign up"
+              : "Already have an account? Sign in"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Auth;
