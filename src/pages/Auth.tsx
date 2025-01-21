@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // Separate schemas for login and registration
 const loginSchema = z.object({
@@ -76,6 +76,23 @@ const Auth = () => {
     console.log("Attempting login with:", values.email);
     setIsLoading(true);
     try {
+      // First check if the user exists
+      const { data: userExists } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', values.email)
+        .single();
+
+      if (!userExists) {
+        console.log("User not found:", values.email);
+        toast({
+          variant: "destructive",
+          title: "Account not found",
+          description: "No account exists with this email. Please sign up first.",
+        });
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
@@ -83,6 +100,24 @@ const Auth = () => {
 
       if (error) {
         console.error("Login error:", error);
+        
+        // Handle specific error cases
+        if (error.message.includes("Email not confirmed")) {
+          toast({
+            variant: "destructive",
+            title: "Email not verified",
+            description: "Please check your email and verify your account before logging in.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Invalid email or password. Please try again.",
+          });
+        }
+        
+        // Reset password field on error
+        loginForm.setValue("password", "");
         throw error;
       }
 
@@ -94,15 +129,6 @@ const Auth = () => {
       navigate("/");
     } catch (error: any) {
       console.error("Login error:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message === "Invalid login credentials" 
-          ? "Invalid email or password. Please try again."
-          : error.message || "Failed to sign in",
-      });
-      // Reset password field on error
-      loginForm.setValue("password", "");
     } finally {
       setIsLoading(false);
     }
