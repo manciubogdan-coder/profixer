@@ -25,20 +25,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Adresa de email invalidă"),
+  password: z.string().min(6, "Parola trebuie să aibă minim 6 caractere"),
 });
 
 const registrationSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  firstName: z.string().min(2, "First name is required"),
-  lastName: z.string().min(2, "Last name is required"),
-  phone: z.string().min(10, "Valid phone number is required"),
-  country: z.string().min(2, "Country is required"),
-  county: z.string().min(2, "County is required"),
-  city: z.string().min(2, "City is required"),
-  address: z.string().min(5, "Address is required"),
+  email: z.string().email("Adresa de email invalidă"),
+  password: z.string().min(6, "Parola trebuie să aibă minim 6 caractere"),
+  firstName: z.string().min(2, "Prenumele este obligatoriu"),
+  lastName: z.string().min(2, "Numele este obligatoriu"),
+  phone: z.string().min(10, "Număr de telefon invalid"),
+  country: z.string().min(2, "Țara este obligatorie"),
+  county: z.string().min(2, "Județul este obligatoriu"),
+  city: z.string().min(2, "Orașul este obligatoriu"),
+  address: z.string().min(5, "Adresa este obligatorie"),
   role: z.enum(["client", "professional"]),
 });
 
@@ -73,7 +73,7 @@ const Auth = () => {
   });
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
-    console.log("Attempting login with:", values.email);
+    console.log("Încercare de autentificare cu:", values.email);
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -82,19 +82,19 @@ const Auth = () => {
       });
 
       if (error) {
-        console.error("Login error:", error);
+        console.error("Eroare la autentificare:", error);
         
         if (error.message.includes("Email not confirmed")) {
           toast({
             variant: "destructive",
-            title: "Email not verified",
-            description: "Please check your email and verify your account before logging in.",
+            title: "Email neverificat",
+            description: "Vă rugăm să vă verificați emailul înainte de autentificare.",
           });
         } else {
           toast({
             variant: "destructive",
-            title: "Error",
-            description: "Invalid email or password. Please try again.",
+            title: "Eroare",
+            description: "Email sau parolă invalidă. Vă rugăm să încercați din nou.",
           });
         }
         
@@ -102,21 +102,21 @@ const Auth = () => {
         throw error;
       }
 
-      console.log("Login successful");
+      console.log("Autentificare reușită");
       toast({
-        title: "Success",
-        description: "Logged in successfully",
+        title: "Succes",
+        description: "Autentificare reușită",
       });
       navigate("/");
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("Eroare la autentificare:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRegistration = async (values: z.infer<typeof registrationSchema>) => {
-    console.log("Attempting registration with:", values.email);
+    console.log("Încercare de înregistrare cu:", values.email);
     setIsLoading(true);
     try {
       const { error: signUpError } = await supabase.auth.signUp({
@@ -137,24 +137,24 @@ const Auth = () => {
       });
 
       if (signUpError) {
-        console.error("Registration error:", signUpError);
+        console.error("Eroare la înregistrare:", signUpError);
         throw signUpError;
       }
 
-      console.log("Registration successful");
+      console.log("Înregistrare reușită");
       toast({
-        title: "Account created successfully",
-        description: "Please check your email to verify your account",
+        title: "Cont creat cu succes",
+        description: "Vă rugăm să vă verificați emailul pentru a confirma contul",
       });
       
       setIsLogin(true);
       registrationForm.reset();
     } catch (error: any) {
-      console.error("Registration error:", error);
+      console.error("Eroare la înregistrare:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to create account",
+        title: "Eroare",
+        description: error.message || "Eroare la crearea contului",
       });
     } finally {
       setIsLoading(false);
@@ -168,12 +168,12 @@ const Auth = () => {
         <div className="w-full max-w-md space-y-8 bg-secondary p-8 rounded-lg">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-primary">
-              {isLogin ? "Welcome Back" : "Create Account"}
+              {isLogin ? "Bine ați revenit" : "Creați un cont nou"}
             </h2>
             <p className="text-muted-foreground mt-2">
               {isLogin
-                ? "Sign in to your account"
-                : "Register as a client or professional"}
+                ? "Autentificați-vă în contul dumneavoastră"
+                : "Înregistrați-vă ca client sau profesionist"}
             </p>
           </div>
 
@@ -189,7 +189,7 @@ const Auth = () => {
                       <FormControl>
                         <Input 
                           type="email"
-                          placeholder="email@example.com" 
+                          placeholder="email@exemplu.com" 
                           {...field} 
                         />
                       </FormControl>
@@ -203,11 +203,11 @@ const Auth = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>Parolă</FormLabel>
                       <FormControl>
                         <Input 
                           type="password"
-                          placeholder="Enter your password"
+                          placeholder="Introduceți parola"
                           {...field} 
                         />
                       </FormControl>
@@ -217,7 +217,7 @@ const Auth = () => {
                 />
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Loading..." : "Sign In"}
+                  {isLoading ? "Se încarcă..." : "Autentificare"}
                 </Button>
               </form>
             </Form>
@@ -233,7 +233,7 @@ const Auth = () => {
                       <FormControl>
                         <Input 
                           type="email"
-                          placeholder="email@example.com" 
+                          placeholder="email@exemplu.com" 
                           {...field} 
                         />
                       </FormControl>
@@ -247,11 +247,11 @@ const Auth = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>Parolă</FormLabel>
                       <FormControl>
                         <Input 
                           type="password"
-                          placeholder="Choose a password"
+                          placeholder="Alegeți o parolă"
                           {...field} 
                         />
                       </FormControl>
@@ -265,9 +265,9 @@ const Auth = () => {
                   name="firstName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel>Prenume</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your first name" {...field} />
+                        <Input placeholder="Introduceți prenumele" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -279,9 +279,9 @@ const Auth = () => {
                   name="lastName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Last Name</FormLabel>
+                      <FormLabel>Nume</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your last name" {...field} />
+                        <Input placeholder="Introduceți numele" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -293,9 +293,9 @@ const Auth = () => {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
+                      <FormLabel>Număr de telefon</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your phone number" {...field} />
+                        <Input placeholder="Introduceți numărul de telefon" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -307,9 +307,9 @@ const Auth = () => {
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Country</FormLabel>
+                      <FormLabel>Țară</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your country" {...field} />
+                        <Input placeholder="Introduceți țara" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -321,9 +321,9 @@ const Auth = () => {
                   name="county"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>County</FormLabel>
+                      <FormLabel>Județ</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your county" {...field} />
+                        <Input placeholder="Introduceți județul" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -335,9 +335,9 @@ const Auth = () => {
                   name="city"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>City</FormLabel>
+                      <FormLabel>Oraș</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your city" {...field} />
+                        <Input placeholder="Introduceți orașul" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -349,9 +349,9 @@ const Auth = () => {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address</FormLabel>
+                      <FormLabel>Adresă</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your address" {...field} />
+                        <Input placeholder="Introduceți adresa" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -363,19 +363,19 @@ const Auth = () => {
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
+                      <FormLabel>Rol</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select your role" />
+                            <SelectValue placeholder="Selectați rolul" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="client">Client</SelectItem>
-                          <SelectItem value="professional">Professional</SelectItem>
+                          <SelectItem value="professional">Profesionist</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -384,7 +384,7 @@ const Auth = () => {
                 />
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Loading..." : "Create Account"}
+                  {isLoading ? "Se încarcă..." : "Creare cont"}
                 </Button>
               </form>
             </Form>
@@ -401,8 +401,8 @@ const Auth = () => {
               className="text-primary"
             >
               {isLogin
-                ? "Don't have an account? Sign up"
-                : "Already have an account? Sign in"}
+                ? "Nu aveți cont? Înregistrați-vă"
+                : "Aveți deja cont? Autentificați-vă"}
             </Button>
           </div>
         </div>

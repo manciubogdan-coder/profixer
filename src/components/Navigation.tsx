@@ -43,7 +43,7 @@ export const Navigation = () => {
             </>
           ) : (
             <Button variant="default" onClick={() => navigate("/auth")}>
-              Sign In
+              Autentificare
             </Button>
           )}
         </div>
