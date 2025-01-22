@@ -191,7 +191,7 @@ const Auth = () => {
                           type="email"
                           placeholder="email@exemplu.com" 
                           {...field}
-                          className="bg-background text-foreground"
+                          className="bg-white text-black"
                         />
                       </FormControl>
                       <FormMessage />
@@ -210,7 +210,7 @@ const Auth = () => {
                           type="password"
                           placeholder="Introduceți parola"
                           {...field}
-                          className="bg-background text-foreground"
+                          className="bg-white text-black"
                         />
                       </FormControl>
                       <FormMessage />
