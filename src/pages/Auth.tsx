@@ -44,7 +44,7 @@ const registrationSchema = z.object({
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -190,7 +190,8 @@ const Auth = () => {
                         <Input 
                           type="email"
                           placeholder="email@exemplu.com" 
-                          {...field} 
+                          {...field}
+                          className="bg-background text-foreground"
                         />
                       </FormControl>
                       <FormMessage />
@@ -208,7 +209,8 @@ const Auth = () => {
                         <Input 
                           type="password"
                           placeholder="Introduceți parola"
-                          {...field} 
+                          {...field}
+                          className="bg-background text-foreground"
                         />
                       </FormControl>
                       <FormMessage />
@@ -234,7 +236,8 @@ const Auth = () => {
                         <Input 
                           type="email"
                           placeholder="email@exemplu.com" 
-                          {...field} 
+                          {...field}
+                          className="bg-background text-foreground"
                         />
                       </FormControl>
                       <FormMessage />
@@ -252,7 +255,8 @@ const Auth = () => {
                         <Input 
                           type="password"
                           placeholder="Alegeți o parolă"
-                          {...field} 
+                          {...field}
+                          className="bg-background text-foreground"
                         />
                       </FormControl>
                       <FormMessage />
