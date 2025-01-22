@@ -89,8 +89,8 @@ const Auth = () => {
         if (error.message.includes("Invalid login credentials")) {
           toast({
             variant: "destructive",
-            title: "Eroare de autentificare",
-            description: "Email sau parolă incorectă. Vă rugăm să verificați datele introduse.",
+            title: "Cont inexistent sau date incorecte",
+            description: "Vă rugăm să vă înregistrați mai întâi sau verificați datele introduse.",
           });
         } else if (error.message.includes("Email not confirmed")) {
           toast({
