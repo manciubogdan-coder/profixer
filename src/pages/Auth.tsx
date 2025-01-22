@@ -44,7 +44,7 @@ const registrationSchema = z.object({
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isLogin, setIsLogin] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -237,7 +237,7 @@ const Auth = () => {
                           type="email"
                           placeholder="email@exemplu.com" 
                           {...field}
-                          className="bg-background text-foreground"
+                          className="bg-white text-black"
                         />
                       </FormControl>
                       <FormMessage />
@@ -256,7 +256,7 @@ const Auth = () => {
                           type="password"
                           placeholder="Alegeți o parolă"
                           {...field}
-                          className="bg-background text-foreground"
+                          className="bg-white text-black"
                         />
                       </FormControl>
                       <FormMessage />
