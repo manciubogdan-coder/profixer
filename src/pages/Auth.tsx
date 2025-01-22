@@ -76,25 +76,33 @@ const Auth = () => {
     console.log("Încercare de autentificare cu:", values.email);
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
 
+      console.log("Răspuns autentificare:", { data, error });
+
       if (error) {
         console.error("Eroare la autentificare:", error);
         
-        if (error.message.includes("Email not confirmed")) {
+        if (error.message.includes("Invalid login credentials")) {
+          toast({
+            variant: "destructive",
+            title: "Eroare de autentificare",
+            description: "Email sau parolă incorectă. Vă rugăm să verificați datele introduse.",
+          });
+        } else if (error.message.includes("Email not confirmed")) {
           toast({
             variant: "destructive",
             title: "Email neverificat",
-            description: "Vă rugăm să vă verificați emailul înainte de autentificare.",
+            description: "Vă rugăm să vă verificați emailul pentru a confirma contul.",
           });
         } else {
           toast({
             variant: "destructive",
             title: "Eroare",
-            description: "Email sau parolă invalidă. Vă rugăm să încercați din nou.",
+            description: "A apărut o eroare la autentificare. Vă rugăm să încercați din nou.",
           });
         }
         
