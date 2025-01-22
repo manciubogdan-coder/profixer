@@ -173,12 +173,12 @@ const Auth = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-8 bg-secondary p-8 rounded-lg">
+        <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-lg shadow-lg">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-primary">
               {isLogin ? "Bine ați revenit" : "Creați un cont nou"}
             </h2>
-            <p className="text-secondary-foreground mt-2">
+            <p className="text-gray-600 mt-2">
               {isLogin
                 ? "Autentificați-vă în contul dumneavoastră"
                 : "Înregistrați-vă ca client sau profesionist"}
@@ -198,7 +198,7 @@ const Auth = () => {
                         <Input 
                           type="email"
                           placeholder="email@exemplu.com" 
-                          className="bg-white text-secondary border-input"
+                          className="bg-white text-black border-gray-300 focus:border-primary"
                           {...field}
                         />
                       </FormControl>
@@ -217,7 +217,7 @@ const Auth = () => {
                         <Input 
                           type="password"
                           placeholder="Introduceți parola"
-                          className="bg-white text-secondary border-input"
+                          className="bg-white text-black border-gray-300 focus:border-primary"
                           {...field}
                         />
                       </FormControl>
@@ -244,7 +244,7 @@ const Auth = () => {
                         <Input 
                           type="email"
                           placeholder="email@exemplu.com" 
-                          className="bg-white text-secondary border-input"
+                          className="bg-white text-black border-gray-300 focus:border-primary"
                           {...field}
                         />
                       </FormControl>
@@ -263,7 +263,7 @@ const Auth = () => {
                         <Input 
                           type="password"
                           placeholder="Alegeți o parolă"
-                          className="bg-white text-secondary border-input"
+                          className="bg-white text-black border-gray-300 focus:border-primary"
                           {...field}
                         />
                       </FormControl>
