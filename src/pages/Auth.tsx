@@ -178,7 +178,7 @@ const Auth = () => {
             <h2 className="text-2xl font-bold text-primary">
               {isLogin ? "Bine ați revenit" : "Creați un cont nou"}
             </h2>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-secondary-foreground mt-2">
               {isLogin
                 ? "Autentificați-vă în contul dumneavoastră"
                 : "Înregistrați-vă ca client sau profesionist"}
@@ -193,13 +193,13 @@ const Auth = () => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="text-secondary-foreground">Email</FormLabel>
                       <FormControl>
                         <Input 
                           type="email"
                           placeholder="email@exemplu.com" 
+                          className="bg-white text-secondary border-input"
                           {...field}
-                          className="bg-white text-black"
                         />
                       </FormControl>
                       <FormMessage />
@@ -212,13 +212,13 @@ const Auth = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Parolă</FormLabel>
+                      <FormLabel className="text-secondary-foreground">Parolă</FormLabel>
                       <FormControl>
                         <Input 
                           type="password"
                           placeholder="Introduceți parola"
+                          className="bg-white text-secondary border-input"
                           {...field}
-                          className="bg-white text-black"
                         />
                       </FormControl>
                       <FormMessage />
@@ -239,13 +239,13 @@ const Auth = () => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="text-secondary-foreground">Email</FormLabel>
                       <FormControl>
                         <Input 
                           type="email"
                           placeholder="email@exemplu.com" 
+                          className="bg-white text-secondary border-input"
                           {...field}
-                          className="bg-white text-black"
                         />
                       </FormControl>
                       <FormMessage />
@@ -258,13 +258,13 @@ const Auth = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Parolă</FormLabel>
+                      <FormLabel className="text-secondary-foreground">Parolă</FormLabel>
                       <FormControl>
                         <Input 
                           type="password"
                           placeholder="Alegeți o parolă"
+                          className="bg-white text-secondary border-input"
                           {...field}
-                          className="bg-white text-black"
                         />
                       </FormControl>
                       <FormMessage />
