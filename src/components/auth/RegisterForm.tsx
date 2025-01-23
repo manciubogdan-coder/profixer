@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const registrationSchema = z.object({
   email: z.string().email("Adresa de email invalidă"),
@@ -40,6 +41,8 @@ interface RegisterFormProps {
 
 export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  
   const form = useForm<z.infer<typeof registrationSchema>>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
@@ -58,7 +61,9 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
 
   const onSubmit = async (values: z.infer<typeof registrationSchema>) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log("Starting registration process with values:", values);
+      
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -75,20 +80,28 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
         },
       });
 
-      if (error) throw error;
+      if (signUpError) {
+        console.error("Registration error:", signUpError);
+        throw signUpError;
+      }
+
+      console.log("Registration successful:", signUpData);
 
       toast({
         title: "Cont creat cu succes",
         description: "Vă rugăm să vă verificați emailul pentru a confirma contul",
       });
       
-      onToggleForm();
+      // Reset form and redirect
       form.reset();
+      navigate("/");
+      
     } catch (error: any) {
+      console.error("Error in registration process:", error);
       toast({
         variant: "destructive",
-        title: "Eroare",
-        description: error.message,
+        title: "Eroare la înregistrare",
+        description: error.message || "A apărut o eroare la crearea contului",
       });
     }
   };
