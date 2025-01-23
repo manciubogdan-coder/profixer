@@ -82,38 +82,38 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
 
       if (signUpError) {
         console.error("Registration error:", signUpError);
-        throw signUpError;
+        
+        let errorMessage = "A apărut o eroare la crearea contului. Vă rugăm să încercați din nou.";
+        
+        if (signUpError.message.includes("User already registered")) {
+          errorMessage = "Există deja un cont cu această adresă de email.";
+        }
+        
+        toast({
+          variant: "destructive",
+          title: "Eroare la înregistrare",
+          description: errorMessage,
+        });
+        return;
       }
 
-      if (!signUpData.user) {
-        throw new Error("No user data returned from signup");
+      if (signUpData.user) {
+        toast({
+          title: "Cont creat cu succes",
+          description: "Vă rugăm să vă verificați emailul pentru a confirma contul",
+        });
+        
+        form.reset();
+        navigate("/");
       }
-
-      console.log("Registration successful:", signUpData);
-
-      toast({
-        title: "Cont creat cu succes",
-        description: "Vă rugăm să vă verificați emailul pentru a confirma contul",
-      });
-      
-      form.reset();
-      navigate("/");
       
     } catch (error: any) {
       console.error("Error in registration process:", error);
       
-      let errorMessage = "A apărut o eroare la crearea contului";
-      
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.error_description) {
-        errorMessage = error.error_description;
-      }
-      
       toast({
         variant: "destructive",
-        title: "Eroare la înregistrare",
-        description: errorMessage,
+        title: "Eroare",
+        description: "A apărut o eroare neașteptată. Vă rugăm să încercați din nou.",
       });
     }
   };
