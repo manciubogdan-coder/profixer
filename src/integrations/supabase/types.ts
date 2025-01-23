@@ -12,6 +12,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string
+          avatar_url: string | null
           city: string
           country: string
           county: string
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          avatar_url?: string | null
           city: string
           country: string
           county: string
@@ -38,6 +40,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          avatar_url?: string | null
           city?: string
           country?: string
           county?: string
