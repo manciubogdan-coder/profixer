@@ -63,7 +63,6 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
     try {
       console.log("Starting registration process with values:", values);
       
-      // First, try to sign up the user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -78,7 +77,6 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
             address: values.address,
             role: values.role,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -98,7 +96,6 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
         description: "Vă rugăm să vă verificați emailul pentru a confirma contul",
       });
       
-      // Reset form and redirect
       form.reset();
       navigate("/");
       
