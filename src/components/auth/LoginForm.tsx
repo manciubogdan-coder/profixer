@@ -47,7 +47,8 @@ export const LoginForm = ({ onToggleForm }: LoginFormProps) => {
       console.log("Login response:", { data, error });
 
       if (error) {
-        let errorMessage = "Credențiale invalide";
+        let errorMessage = "Credențiale invalide. Vă rugăm să verificați email-ul și parola sau să vă înregistrați dacă nu aveți cont.";
+        
         if (error.message.includes("Email not confirmed")) {
           errorMessage = "Vă rugăm să confirmați adresa de email înainte de autentificare";
         }
@@ -62,13 +63,15 @@ export const LoginForm = ({ onToggleForm }: LoginFormProps) => {
         return;
       }
 
-      toast({
-        title: "Succes",
-        description: "Autentificare reușită",
-      });
-      
-      console.log("Login successful, navigating to home");
-      navigate("/");
+      if (data.user) {
+        toast({
+          title: "Succes",
+          description: "Autentificare reușită",
+        });
+        
+        console.log("Login successful, navigating to home");
+        navigate("/");
+      }
       
     } catch (error: any) {
       console.error("Unexpected error during login:", error);
