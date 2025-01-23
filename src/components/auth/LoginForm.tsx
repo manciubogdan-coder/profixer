@@ -37,25 +37,47 @@ export const LoginForm = ({ onToggleForm }: LoginFormProps) => {
 
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Attempting login with email:", values.email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
 
-      if (error) throw error;
+      console.log("Login response:", { data, error });
+
+      if (error) {
+        let errorMessage = "Credențiale invalide";
+        if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Vă rugăm să confirmați adresa de email înainte de autentificare";
+        }
+        
+        toast({
+          variant: "destructive",
+          title: "Eroare la autentificare",
+          description: errorMessage,
+        });
+        
+        console.error("Login error:", error);
+        return;
+      }
 
       toast({
         title: "Succes",
         description: "Autentificare reușită",
       });
+      
+      console.log("Login successful, navigating to home");
       navigate("/");
+      
     } catch (error: any) {
+      console.error("Unexpected error during login:", error);
+      
       toast({
         variant: "destructive",
         title: "Eroare",
-        description: error.message,
+        description: "A apărut o eroare neașteptată. Vă rugăm să încercați din nou.",
       });
-      form.reset();
     }
   };
 
