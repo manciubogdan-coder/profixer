@@ -63,6 +63,7 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
     try {
       console.log("Starting registration process with values:", values);
       
+      // First, try to sign up the user
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -77,12 +78,17 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
             address: values.address,
             role: values.role,
           },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (signUpError) {
         console.error("Registration error:", signUpError);
         throw signUpError;
+      }
+
+      if (!signUpData.user) {
+        throw new Error("No user data returned from signup");
       }
 
       console.log("Registration successful:", signUpData);
@@ -98,10 +104,19 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
       
     } catch (error: any) {
       console.error("Error in registration process:", error);
+      
+      let errorMessage = "A apărut o eroare la crearea contului";
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.error_description) {
+        errorMessage = error.error_description;
+      }
+      
       toast({
         variant: "destructive",
         title: "Eroare la înregistrare",
-        description: error.message || "A apărut o eroare la crearea contului",
+        description: errorMessage,
       });
     }
   };
