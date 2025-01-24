@@ -9,6 +9,70 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      portfolio_images: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          portfolio_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          portfolio_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          portfolio_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_images_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      portfolios: {
+        Row: {
+          craftsman_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          craftsman_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          craftsman_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolios_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string
@@ -16,6 +80,7 @@ export type Database = {
           city: string
           country: string
           county: string
+          craftsman_type: Database["public"]["Enums"]["craftsman_type"] | null
           created_at: string
           first_name: string
           id: string
@@ -30,6 +95,7 @@ export type Database = {
           city: string
           country: string
           county: string
+          craftsman_type?: Database["public"]["Enums"]["craftsman_type"] | null
           created_at?: string
           first_name: string
           id: string
@@ -44,6 +110,7 @@ export type Database = {
           city?: string
           country?: string
           county?: string
+          craftsman_type?: Database["public"]["Enums"]["craftsman_type"] | null
           created_at?: string
           first_name?: string
           id?: string
@@ -54,6 +121,121 @@ export type Database = {
         }
         Relationships: []
       }
+      qualifications: {
+        Row: {
+          craftsman_id: string | null
+          created_at: string
+          document_url: string
+          id: string
+          issue_date: string | null
+          title: string
+        }
+        Insert: {
+          craftsman_id?: string | null
+          created_at?: string
+          document_url: string
+          id?: string
+          issue_date?: string | null
+          title: string
+        }
+        Update: {
+          craftsman_id?: string | null
+          created_at?: string
+          document_url?: string
+          id?: string
+          issue_date?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qualifications_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          client_id: string | null
+          comment: string
+          craftsman_id: string | null
+          craftsman_response: string | null
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          comment: string
+          craftsman_id?: string | null
+          craftsman_response?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          comment?: string
+          craftsman_id?: string | null
+          craftsman_response?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      specializations: {
+        Row: {
+          craftsman_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          craftsman_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          craftsman_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "specializations_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -62,6 +244,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      craftsman_type:
+        | "carpenter"
+        | "plumber"
+        | "electrician"
+        | "painter"
+        | "mason"
+        | "welder"
+        | "locksmith"
+        | "roofer"
+        | "hvac_technician"
+        | "general_contractor"
       user_role: "client" | "professional"
     }
     CompositeTypes: {

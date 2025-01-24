@@ -9,6 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Profile {
   id: string;
@@ -22,7 +29,21 @@ interface Profile {
   address: string;
   role: "client" | "professional";
   avatar_url?: string | null;
+  craftsman_type?: "carpenter" | "plumber" | "electrician" | "painter" | "mason" | "welder" | "locksmith" | "roofer" | "hvac_technician" | "general_contractor" | null;
 }
+
+const CRAFTSMAN_TYPES = {
+  carpenter: "Tâmplar",
+  plumber: "Instalator",
+  electrician: "Electrician",
+  painter: "Zugrav",
+  mason: "Zidar",
+  welder: "Sudor",
+  locksmith: "Lăcătuș",
+  roofer: "Acoperișar",
+  hvac_technician: "Tehnician HVAC",
+  general_contractor: "Constructor General"
+};
 
 const ClientProfile = () => {
   const { user } = useAuth();
@@ -145,6 +166,7 @@ const ClientProfile = () => {
           county: editedProfile.county,
           city: editedProfile.city,
           address: editedProfile.address,
+          craftsman_type: editedProfile.craftsman_type,
         })
         .eq("id", user?.id);
 
@@ -252,6 +274,30 @@ const ClientProfile = () => {
                           }
                         />
                       </div>
+                      {profile?.role === "professional" && (
+                        <div className="space-y-2">
+                          <Label>Tip de Meșter</Label>
+                          <Select
+                            value={editedProfile?.craftsman_type || undefined}
+                            onValueChange={(value: Profile["craftsman_type"]) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, craftsman_type: value } : null
+                              )
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selectează tipul de meșter" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(CRAFTSMAN_TYPES).map(([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
@@ -261,6 +307,14 @@ const ClientProfile = () => {
                           {profile?.first_name} {profile?.last_name}
                         </p>
                       </div>
+                      {profile?.role === "professional" && profile?.craftsman_type && (
+                        <div>
+                          <Label className="text-muted-foreground">Tip de Meșter</Label>
+                          <p className="text-lg font-medium mt-1">
+                            {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                          </p>
+                        </div>
+                      )}
                     </>
                   )}
                   <div>
