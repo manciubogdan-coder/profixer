@@ -129,7 +129,7 @@ export function AddQualificationDialog({ onQualificationAdded }: { onQualificati
             <Input
               id="document"
               type="file"
-              accept=".pdf,.doc,.docx"
+              accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
               onChange={(e) => setDocument(e.target.files?.[0] || null)}
               required
             />

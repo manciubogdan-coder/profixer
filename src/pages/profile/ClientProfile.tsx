@@ -167,6 +167,7 @@ const ClientProfile = () => {
   };
 
   const fetchPortfolio = async (userId: string) => {
+    console.log("Fetching portfolio for user:", userId);
     const { data: portfolioData, error: portfolioError } = await supabase
       .from("portfolios")
       .select(`
@@ -179,17 +180,20 @@ const ClientProfile = () => {
         )
       `)
       .eq("craftsman_id", userId)
-      .maybeSingle();
+      .order('created_at', { ascending: false });
 
     if (portfolioError) {
       console.error("Error fetching portfolio:", portfolioError);
       return;
     }
 
-    if (portfolioData) {
+    console.log("Portfolio data:", portfolioData);
+    
+    if (portfolioData && portfolioData.length > 0) {
+      // Luăm cel mai recent portofoliu
       setPortfolio({
-        ...portfolioData,
-        images: portfolioData.portfolio_images || []
+        ...portfolioData[0],
+        images: portfolioData[0].portfolio_images || []
       });
     }
   };
