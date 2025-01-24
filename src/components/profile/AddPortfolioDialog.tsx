@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -12,8 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AddPortfolioDialog({ onPortfolioAdded }: { onPortfolioAdded: () => void }) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -27,6 +30,11 @@ export function AddPortfolioDialog({ onPortfolioAdded }: { onPortfolioAdded: () 
       return;
     }
 
+    if (!user) {
+      toast.error("Trebuie să fiți autentificat pentru a adăuga un portofoliu");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -37,6 +45,7 @@ export function AddPortfolioDialog({ onPortfolioAdded }: { onPortfolioAdded: () 
           {
             title,
             description,
+            craftsman_id: user.id
           },
         ])
         .select()
@@ -93,6 +102,9 @@ export function AddPortfolioDialog({ onPortfolioAdded }: { onPortfolioAdded: () 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Adaugă un nou portofoliu</DialogTitle>
+          <DialogDescription>
+            Adăugați detaliile portofoliului și încărcați imaginile relevante.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
