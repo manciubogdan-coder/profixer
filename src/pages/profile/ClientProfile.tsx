@@ -328,8 +328,8 @@ const ClientProfile = () => {
               </div>
             </CardHeader>
 
-            {profile?.role === "professional" ? (
-              <CardContent>
+            <CardContent>
+              {profile?.role === "professional" ? (
                 <Tabs defaultValue="profile" className="w-full">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="profile">Profil</TabsTrigger>
@@ -340,171 +340,170 @@ const ClientProfile = () => {
 
                   <TabsContent value="profile">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-primary">Informații Personale</h3>
-                  <div className="space-y-4">
-                    {isEditing ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label>Prenume</Label>
-                          <Input
-                            value={editedProfile?.first_name || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, first_name: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Nume</Label>
-                          <Input
-                            value={editedProfile?.last_name || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, last_name: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                        {profile?.role === "professional" && (
-                          <div className="space-y-2">
-                            <Label>Tip de Meșter</Label>
-                            <Select
-                              value={editedProfile?.craftsman_type || undefined}
-                              onValueChange={(value: Profile["craftsman_type"]) =>
-                                setEditedProfile(prev =>
-                                  prev ? { ...prev, craftsman_type: value } : null
-                                )
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selectează tipul de meșter" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.entries(CRAFTSMAN_TYPES).map(([value, label]) => (
-                                  <SelectItem key={value} value={value}>
-                                    {label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          <Label className="text-muted-foreground">Nume complet</Label>
-                          <p className="text-lg font-medium mt-1">
-                            {profile?.first_name} {profile?.last_name}
-                          </p>
-                        </div>
-                        {profile?.role === "professional" && profile?.craftsman_type && (
+                      <div className="space-y-6">
+                        <h3 className="text-xl font-semibold text-primary">Informații Personale</h3>
+                        <div className="space-y-4">
+                          {isEditing ? (
+                            <>
+                              <div className="space-y-2">
+                                <Label>Prenume</Label>
+                                <Input
+                                  value={editedProfile?.first_name || ""}
+                                  onChange={(e) =>
+                                    setEditedProfile(prev =>
+                                      prev ? { ...prev, first_name: e.target.value } : null
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Nume</Label>
+                                <Input
+                                  value={editedProfile?.last_name || ""}
+                                  onChange={(e) =>
+                                    setEditedProfile(prev =>
+                                      prev ? { ...prev, last_name: e.target.value } : null
+                                    )
+                                  }
+                                />
+                              </div>
+                              {profile?.role === "professional" && (
+                                <div className="space-y-2">
+                                  <Label>Tip de Meșter</Label>
+                                  <Select
+                                    value={editedProfile?.craftsman_type || undefined}
+                                    onValueChange={(value: Profile["craftsman_type"]) =>
+                                      setEditedProfile(prev =>
+                                        prev ? { ...prev, craftsman_type: value } : null
+                                      )
+                                    }
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selectează tipul de meșter" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(CRAFTSMAN_TYPES).map(([value, label]) => (
+                                        <SelectItem key={value} value={value}>
+                                          {label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <div>
+                                <Label className="text-muted-foreground">Nume complet</Label>
+                                <p className="text-lg font-medium mt-1">
+                                  {profile?.first_name} {profile?.last_name}
+                                </p>
+                              </div>
+                              {profile?.role === "professional" && profile?.craftsman_type && (
+                                <div>
+                                  <Label className="text-muted-foreground">Tip de Meșter</Label>
+                                  <p className="text-lg font-medium mt-1">
+                                    {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
                           <div>
-                            <Label className="text-muted-foreground">Tip de Meșter</Label>
-                            <p className="text-lg font-medium mt-1">
-                              {CRAFTSMAN_TYPES[profile.craftsman_type]}
-                            </p>
+                            <Label className="text-muted-foreground">Email</Label>
+                            <p className="text-lg font-medium mt-1">{profile?.email}</p>
                           </div>
-                        )}
-                      </>
-                    )}
-                    <div>
-                      <Label className="text-muted-foreground">Email</Label>
-                      <p className="text-lg font-medium mt-1">{profile?.email}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Telefon</Label>
-                      {isEditing ? (
-                        <Input
-                          value={editedProfile?.phone || ""}
-                          onChange={(e) =>
-                            setEditedProfile(prev =>
-                              prev ? { ...prev, phone: e.target.value } : null
-                            )
-                          }
-                        />
-                      ) : (
-                        <p className="text-lg font-medium mt-1">{profile?.phone}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                          <div className="space-y-2">
+                            <Label>Telefon</Label>
+                            {isEditing ? (
+                              <Input
+                                value={editedProfile?.phone || ""}
+                                onChange={(e) =>
+                                  setEditedProfile(prev =>
+                                    prev ? { ...prev, phone: e.target.value } : null
+                                  )
+                                }
+                              />
+                            ) : (
+                              <p className="text-lg font-medium mt-1">{profile?.phone}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-primary">Adresă</h3>
-                  <div className="space-y-4">
-                    {isEditing ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label>Țară</Label>
-                          <Input
-                            value={editedProfile?.country || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, country: e.target.value } : null
-                              )
-                            }
-                          />
+                      <div className="space-y-6">
+                        <h3 className="text-xl font-semibold text-primary">Adresă</h3>
+                        <div className="space-y-4">
+                          {isEditing ? (
+                            <>
+                              <div className="space-y-2">
+                                <Label>Țară</Label>
+                                <Input
+                                  value={editedProfile?.country || ""}
+                                  onChange={(e) =>
+                                    setEditedProfile(prev =>
+                                      prev ? { ...prev, country: e.target.value } : null
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Județ</Label>
+                                <Input
+                                  value={editedProfile?.county || ""}
+                                  onChange={(e) =>
+                                    setEditedProfile(prev =>
+                                      prev ? { ...prev, county: e.target.value } : null
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Oraș</Label>
+                                <Input
+                                  value={editedProfile?.city || ""}
+                                  onChange={(e) =>
+                                    setEditedProfile(prev =>
+                                      prev ? { ...prev, city: e.target.value } : null
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Adresă</Label>
+                                <Input
+                                  value={editedProfile?.address || ""}
+                                  onChange={(e) =>
+                                    setEditedProfile(prev =>
+                                      prev ? { ...prev, address: e.target.value } : null
+                                    )
+                                  }
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div>
+                                <Label className="text-muted-foreground">Țară</Label>
+                                <p className="text-lg font-medium mt-1">{profile?.country}</p>
+                              </div>
+                              <div>
+                                <Label className="text-muted-foreground">Județ</Label>
+                                <p className="text-lg font-medium mt-1">{profile?.county}</p>
+                              </div>
+                              <div>
+                                <Label className="text-muted-foreground">Oraș</Label>
+                                <p className="text-lg font-medium mt-1">{profile?.city}</p>
+                              </div>
+                              <div>
+                                <Label className="text-muted-foreground">Adresă</Label>
+                                <p className="text-lg font-medium mt-1">{profile?.address}</p>
+                              </div>
+                            </>
+                          )}
                         </div>
-                        <div className="space-y-2">
-                          <Label>Județ</Label>
-                          <Input
-                            value={editedProfile?.county || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, county: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Oraș</Label>
-                          <Input
-                            value={editedProfile?.city || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, city: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Adresă</Label>
-                          <Input
-                            value={editedProfile?.address || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, address: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          <Label className="text-muted-foreground">Țară</Label>
-                          <p className="text-lg font-medium mt-1">{profile?.country}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground">Județ</Label>
-                          <p className="text-lg font-medium mt-1">{profile?.county}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground">Oraș</Label>
-                          <p className="text-lg font-medium mt-1">{profile?.city}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground">Adresă</Label>
-                          <p className="text-lg font-medium mt-1">{profile?.address}</p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
+                      </div>
                     </div>
                   </TabsContent>
 
@@ -595,211 +594,192 @@ const ClientProfile = () => {
                     </div>
                   </TabsContent>
                 </Tabs>
-
-                <div className="flex justify-end space-x-4 pt-6">
-                  {isEditing ? (
-                    <>
-                      <Button variant="outline" onClick={() => setIsEditing(false)}>
-                        Anulează
-                      </Button>
-                      <Button onClick={handleSave}>
-                        Salvează
-                      </Button>
-                    </>
-                  ) : (
-                    <Button onClick={() => setIsEditing(true)}>
-                      Editează profilul
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            ) : (
-              <CardContent>
+              ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-primary">Informații Personale</h3>
-                  <div className="space-y-4">
-                    {isEditing ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label>Prenume</Label>
-                          <Input
-                            value={editedProfile?.first_name || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, first_name: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Nume</Label>
-                          <Input
-                            value={editedProfile?.last_name || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, last_name: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                        {profile?.role === "professional" && (
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-primary">Informații Personale</h3>
+                    <div className="space-y-4">
+                      {isEditing ? (
+                        <>
                           <div className="space-y-2">
-                            <Label>Tip de Meșter</Label>
-                            <Select
-                              value={editedProfile?.craftsman_type || undefined}
-                              onValueChange={(value: Profile["craftsman_type"]) =>
+                            <Label>Prenume</Label>
+                            <Input
+                              value={editedProfile?.first_name || ""}
+                              onChange={(e) =>
                                 setEditedProfile(prev =>
-                                  prev ? { ...prev, craftsman_type: value } : null
+                                  prev ? { ...prev, first_name: e.target.value } : null
                                 )
                               }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selectează tipul de meșter" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.entries(CRAFTSMAN_TYPES).map(([value, label]) => (
-                                  <SelectItem key={value} value={value}>
-                                    {label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            />
                           </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          <Label className="text-muted-foreground">Nume complet</Label>
-                          <p className="text-lg font-medium mt-1">
-                            {profile?.first_name} {profile?.last_name}
-                          </p>
-                        </div>
-                        {profile?.role === "professional" && profile?.craftsman_type && (
+                          <div className="space-y-2">
+                            <Label>Nume</Label>
+                            <Input
+                              value={editedProfile?.last_name || ""}
+                              onChange={(e) =>
+                                setEditedProfile(prev =>
+                                  prev ? { ...prev, last_name: e.target.value } : null
+                                )
+                              }
+                            />
+                          </div>
+                          {profile?.role === "professional" && (
+                            <div className="space-y-2">
+                              <Label>Tip de Meșter</Label>
+                              <Select
+                                value={editedProfile?.craftsman_type || undefined}
+                                onValueChange={(value: Profile["craftsman_type"]) =>
+                                  setEditedProfile(prev =>
+                                    prev ? { ...prev, craftsman_type: value } : null
+                                  )
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selectează tipul de meșter" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(CRAFTSMAN_TYPES).map(([value, label]) => (
+                                    <SelectItem key={value} value={value}>
+                                      {label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
                           <div>
-                            <Label className="text-muted-foreground">Tip de Meșter</Label>
+                            <Label className="text-muted-foreground">Nume complet</Label>
                             <p className="text-lg font-medium mt-1">
-                              {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                              {profile?.first_name} {profile?.last_name}
                             </p>
                           </div>
+                          {profile?.role === "professional" && profile?.craftsman_type && (
+                            <div>
+                              <Label className="text-muted-foreground">Tip de Meșter</Label>
+                              <p className="text-lg font-medium mt-1">
+                                {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <div>
+                        <Label className="text-muted-foreground">Email</Label>
+                        <p className="text-lg font-medium mt-1">{profile?.email}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Telefon</Label>
+                        {isEditing ? (
+                          <Input
+                            value={editedProfile?.phone || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, phone: e.target.value } : null
+                              )
+                            }
+                          />
+                        ) : (
+                          <p className="text-lg font-medium mt-1">{profile?.phone}</p>
                         )}
-                      </>
-                    )}
-                    <div>
-                      <Label className="text-muted-foreground">Email</Label>
-                      <p className="text-lg font-medium mt-1">{profile?.email}</p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Telefon</Label>
+                  </div>
+
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-semibold text-primary">Adresă</h3>
+                    <div className="space-y-4">
                       {isEditing ? (
-                        <Input
-                          value={editedProfile?.phone || ""}
-                          onChange={(e) =>
-                            setEditedProfile(prev =>
-                              prev ? { ...prev, phone: e.target.value } : null
-                            )
-                          }
-                        />
+                        <>
+                          <div className="space-y-2">
+                            <Label>Țară</Label>
+                            <Input
+                              value={editedProfile?.country || ""}
+                              onChange={(e) =>
+                                setEditedProfile(prev =>
+                                  prev ? { ...prev, country: e.target.value } : null
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Județ</Label>
+                            <Input
+                              value={editedProfile?.county || ""}
+                              onChange={(e) =>
+                                setEditedProfile(prev =>
+                                  prev ? { ...prev, county: e.target.value } : null
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Oraș</Label>
+                            <Input
+                              value={editedProfile?.city || ""}
+                              onChange={(e) =>
+                                setEditedProfile(prev =>
+                                  prev ? { ...prev, city: e.target.value } : null
+                                )
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Adresă</Label>
+                            <Input
+                              value={editedProfile?.address || ""}
+                              onChange={(e) =>
+                                setEditedProfile(prev =>
+                                  prev ? { ...prev, address: e.target.value } : null
+                                )
+                              }
+                            />
+                          </div>
+                        </>
                       ) : (
-                        <p className="text-lg font-medium mt-1">{profile?.phone}</p>
+                        <>
+                          <div>
+                            <Label className="text-muted-foreground">Țară</Label>
+                            <p className="text-lg font-medium mt-1">{profile?.country}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Județ</Label>
+                            <p className="text-lg font-medium mt-1">{profile?.county}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Oraș</Label>
+                            <p className="text-lg font-medium mt-1">{profile?.city}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground">Adresă</Label>
+                            <p className="text-lg font-medium mt-1">{profile?.address}</p>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
                 </div>
+              )}
 
-                <div className="space-y-6">
-                  <h3 className="text-xl font-semibold text-primary">Adresă</h3>
-                  <div className="space-y-4">
-                    {isEditing ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label>Țară</Label>
-                          <Input
-                            value={editedProfile?.country || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, country: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Județ</Label>
-                          <Input
-                            value={editedProfile?.county || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, county: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Oraș</Label>
-                          <Input
-                            value={editedProfile?.city || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, city: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Adresă</Label>
-                          <Input
-                            value={editedProfile?.address || ""}
-                            onChange={(e) =>
-                              setEditedProfile(prev =>
-                                prev ? { ...prev, address: e.target.value } : null
-                              )
-                            }
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          <Label className="text-muted-foreground">Țară</Label>
-                          <p className="text-lg font-medium mt-1">{profile?.country}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground">Județ</Label>
-                          <p className="text-lg font-medium mt-1">{profile?.county}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground">Oraș</Label>
-                          <p className="text-lg font-medium mt-1">{profile?.city}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground">Adresă</Label>
-                          <p className="text-lg font-medium mt-1">{profile?.address}</p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-                </div>
-                <div className="flex justify-end space-x-4 pt-6">
-                  {isEditing ? (
-                    <>
-                      <Button variant="outline" onClick={() => setIsEditing(false)}>
-                        Anulează
-                      </Button>
-                      <Button onClick={handleSave}>
-                        Salvează
-                      </Button>
-                    </>
-                  ) : (
-                    <Button onClick={() => setIsEditing(true)}>
-                      Editează profilul
+              <div className="flex justify-end space-x-4 pt-6">
+                {isEditing ? (
+                  <>
+                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      Anulează
                     </Button>
-                  )}
-                </div>
-              </CardContent>
-            )}
+                    <Button onClick={handleSave}>
+                      Salvează
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={() => setIsEditing(true)}>
+                    Editează profilul
+                  </Button>
+                )}
+              </div>
+            </CardContent>
           </Card>
         </div>
       </main>
