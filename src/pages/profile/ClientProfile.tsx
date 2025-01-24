@@ -73,7 +73,7 @@ const CRAFTSMAN_TYPES = {
   roofer: "Acoperișar",
   hvac_technician: "Tehnician HVAC",
   general_contractor: "Constructor General"
-};
+} as const;
 
 const ClientProfile = () => {
   const { user } = useAuth();
@@ -227,16 +227,9 @@ const ClientProfile = () => {
         setEditedProfile({ ...profile, avatar_url: publicUrl });
       }
 
-      toast({
-        title: "Succes",
-        description: "Poza de profil a fost actualizată cu succes",
-      });
+      toast.success("Poza de profil a fost actualizată cu succes");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Eroare",
-        description: "Nu am putut încărca poza de profil",
-      });
+      toast.error("Nu am putut încărca poza de profil");
     } finally {
       setIsUploading(false);
     }
