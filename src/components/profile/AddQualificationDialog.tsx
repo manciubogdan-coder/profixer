@@ -24,32 +24,43 @@ export function AddQualificationDialog({ onQualificationAdded }: { onQualificati
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!document) {
-      toast.error("Vă rugăm să selectați un document");
+    
+    if (!user) {
+      toast.error("Trebuie să fiți autentificat pentru a adăuga o calificare");
       return;
     }
 
-    if (!user) {
-      toast.error("Trebuie să fiți autentificat pentru a adăuga o calificare");
+    if (!document) {
+      toast.error("Vă rugăm să selectați un document");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
+      console.log("Starting qualification upload for user:", user.id);
+      
+      // Upload document to storage
       const fileExt = document.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
-
+      
       const { error: uploadError, data } = await supabase.storage
         .from('qualification-docs')
         .upload(fileName, document);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Document upload error:", uploadError);
+        throw uploadError;
+      }
 
+      console.log("Document uploaded successfully");
+
+      // Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('qualification-docs')
         .getPublicUrl(fileName);
 
+      // Insert qualification record
       const { error: dbError } = await supabase
         .from("qualifications")
         .insert([
@@ -61,8 +72,12 @@ export function AddQualificationDialog({ onQualificationAdded }: { onQualificati
           },
         ]);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error("Database insertion error:", dbError);
+        throw dbError;
+      }
 
+      console.log("Qualification record created successfully");
       toast.success("Calificare adăugată cu succes");
       setOpen(false);
       onQualificationAdded();

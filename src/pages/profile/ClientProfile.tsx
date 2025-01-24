@@ -41,9 +41,9 @@ interface Profile {
   county: string;
   city: string;
   address: string;
-  role: UserRole;
+  role: Database["public"]["Enums"]["user_role"];
   avatar_url?: string | null;
-  craftsman_type?: CraftsmanType | null;
+  craftsman_type?: Database["public"]["Enums"]["craftsman_type"] | null;
 }
 
 interface Specialization {
@@ -119,7 +119,6 @@ const ClientProfile = () => {
           setProfile(profileData);
           setEditedProfile(profileData);
 
-          // Dacă utilizatorul este meșter, încărcăm și datele specifice
           if (data.role === "professional") {
             await Promise.all([
               fetchSpecializations(user.id),
@@ -354,7 +353,7 @@ const ClientProfile = () => {
             </CardHeader>
 
             <CardContent>
-              {profile?.role === "professional" ? (
+              {profile?.role === ("professional" as const) ? (
                 <Tabs defaultValue="profile" className="w-full">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="profile">Profil</TabsTrigger>
