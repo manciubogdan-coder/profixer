@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -11,8 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AddQualificationDialog({ onQualificationAdded }: { onQualificationAdded: () => void }) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [issueDate, setIssueDate] = useState("");
@@ -23,6 +26,11 @@ export function AddQualificationDialog({ onQualificationAdded }: { onQualificati
     e.preventDefault();
     if (!document) {
       toast.error("Vă rugăm să selectați un document");
+      return;
+    }
+
+    if (!user) {
+      toast.error("Trebuie să fiți autentificat pentru a adăuga o calificare");
       return;
     }
 
@@ -49,6 +57,7 @@ export function AddQualificationDialog({ onQualificationAdded }: { onQualificati
             title,
             issue_date: issueDate,
             document_url: publicUrl,
+            craftsman_id: user.id
           },
         ]);
 
@@ -76,6 +85,9 @@ export function AddQualificationDialog({ onQualificationAdded }: { onQualificati
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Adaugă o nouă calificare</DialogTitle>
+          <DialogDescription>
+            Adăugați detaliile calificării și încărcați documentul aferent.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
