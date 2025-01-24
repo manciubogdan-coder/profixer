@@ -1,7 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { User, Bell, Search } from "lucide-react";
+import { User, Bell, Search, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -12,6 +14,18 @@ import {
 
 export const Navigation = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Te-ai deconectat cu succes");
+      navigate("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast.error("A apărut o eroare la deconectare");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -42,7 +56,14 @@ export const Navigation = () => {
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
-              <Button variant="ghost">Deconectare</Button>
+              <Button 
+                variant="ghost" 
+                onClick={handleLogout}
+                className="gap-2"
+              >
+                <LogOut className="h-5 w-5" />
+                Deconectare
+              </Button>
             </>
           ) : (
             <Link to="/auth">

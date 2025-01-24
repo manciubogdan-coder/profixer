@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
+import { Navigation } from "@/components/Navigation";
 import {
   Select,
   SelectContent,
@@ -48,12 +48,12 @@ const CRAFTSMAN_TYPES = {
 const ClientProfile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<Profile | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -211,8 +211,10 @@ const ClientProfile = () => {
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <main className="container py-6">
+        <div className="mx-auto max-w-2xl space-y-8">
         <Card className="bg-white/5 backdrop-blur-lg border-0">
           <CardHeader className="text-center pb-8">
             <div className="flex flex-col items-center space-y-4">
@@ -432,6 +434,8 @@ const ClientProfile = () => {
           </CardContent>
         </Card>
       </div>
+        </div>
+      </main>
     </div>
   );
 };
