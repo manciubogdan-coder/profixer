@@ -23,6 +23,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AddSpecializationDialog } from "@/components/profile/AddSpecializationDialog";
+import { AddQualificationDialog } from "@/components/profile/AddQualificationDialog";
+import { AddPortfolioDialog } from "@/components/profile/AddPortfolioDialog";
 
 interface Profile {
   id: string;
@@ -267,6 +270,24 @@ const ClientProfile = () => {
     }
   };
 
+  const refreshSpecializations = async () => {
+    if (user) {
+      await fetchSpecializations(user.id);
+    }
+  };
+
+  const refreshQualifications = async () => {
+    if (user) {
+      await fetchQualifications(user.id);
+    }
+  };
+
+  const refreshPortfolio = async () => {
+    if (user) {
+      await fetchPortfolio(user.id);
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -325,6 +346,11 @@ const ClientProfile = () => {
                 <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
                   {isEditing ? "Editare Profil" : "Profilul Meu"}
                 </CardTitle>
+                {profile?.role === "professional" && (
+                  <div className="text-lg text-muted-foreground">
+                    {profile.craftsman_type ? CRAFTSMAN_TYPES[profile.craftsman_type] : "Tip de meșter nespecificat"}
+                  </div>
+                )}
               </div>
             </CardHeader>
 
@@ -509,7 +535,10 @@ const ClientProfile = () => {
 
                   <TabsContent value="specializations">
                     <div className="space-y-6">
-                      <h3 className="text-xl font-semibold">Specializările Mele</h3>
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xl font-semibold">Specializările Mele</h3>
+                        <AddSpecializationDialog onSpecializationAdded={refreshSpecializations} />
+                      </div>
                       {specializations.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {specializations.map((spec) => (
@@ -528,13 +557,15 @@ const ClientProfile = () => {
                       ) : (
                         <p className="text-muted-foreground">Nu aveți specializări adăugate încă.</p>
                       )}
-                      <Button className="mt-4">Adaugă Specializare</Button>
                     </div>
                   </TabsContent>
 
                   <TabsContent value="qualifications">
                     <div className="space-y-6">
-                      <h3 className="text-xl font-semibold">Calificările Mele</h3>
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xl font-semibold">Calificările Mele</h3>
+                        <AddQualificationDialog onQualificationAdded={refreshQualifications} />
+                      </div>
                       {qualifications.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {qualifications.map((qual) => (
@@ -563,13 +594,15 @@ const ClientProfile = () => {
                       ) : (
                         <p className="text-muted-foreground">Nu aveți calificări adăugate încă.</p>
                       )}
-                      <Button className="mt-4">Adaugă Calificare</Button>
                     </div>
                   </TabsContent>
 
                   <TabsContent value="portfolio">
                     <div className="space-y-6">
-                      <h3 className="text-xl font-semibold">Portofoliul Meu</h3>
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xl font-semibold">Portofoliul Meu</h3>
+                        <AddPortfolioDialog onPortfolioAdded={refreshPortfolio} />
+                      </div>
                       {portfolio ? (
                         <div>
                           <h4 className="text-lg font-medium">{portfolio.title}</h4>
@@ -590,7 +623,6 @@ const ClientProfile = () => {
                       ) : (
                         <p className="text-muted-foreground">Nu aveți un portofoliu adăugat încă.</p>
                       )}
-                      <Button className="mt-4">Adaugă Portofoliu</Button>
                     </div>
                   </TabsContent>
                 </Tabs>
