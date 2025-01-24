@@ -353,7 +353,7 @@ const ClientProfile = () => {
             </CardHeader>
 
             <CardContent>
-              {profile?.role === ("professional" as const) ? (
+              {profile?.role === ("professional" as UserRole) ? (
                 <Tabs defaultValue="profile" className="w-full">
                   <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="profile">Profil</TabsTrigger>
