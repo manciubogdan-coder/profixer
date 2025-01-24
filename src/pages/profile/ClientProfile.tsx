@@ -26,6 +26,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddSpecializationDialog } from "@/components/profile/AddSpecializationDialog";
 import { AddQualificationDialog } from "@/components/profile/AddQualificationDialog";
 import { AddPortfolioDialog } from "@/components/profile/AddPortfolioDialog";
+import { Database } from "@/integrations/supabase/types";
+
+type UserRole = Database["public"]["Enums"]["user_role"];
+type CraftsmanType = Database["public"]["Enums"]["craftsman_type"];
 
 interface Profile {
   id: string;
@@ -37,9 +41,9 @@ interface Profile {
   county: string;
   city: string;
   address: string;
-  role: "client" | "professional";
+  role: UserRole;
   avatar_url?: string | null;
-  craftsman_type?: "carpenter" | "plumber" | "electrician" | "painter" | "mason" | "welder" | "locksmith" | "roofer" | "hvac_technician" | "general_contractor" | null;
+  craftsman_type?: CraftsmanType | null;
 }
 
 interface Specialization {
