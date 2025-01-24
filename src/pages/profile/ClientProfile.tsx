@@ -16,6 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 interface Profile {
   id: string;
@@ -94,7 +100,7 @@ const ClientProfile = () => {
           description: "A apărut o eroare neașteptată. Vă rugăm să încercați din nou.",
         });
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -109,7 +115,7 @@ const ClientProfile = () => {
       const fileExt = file.name.split('.').pop();
       const filePath = `${user?.id}/${Math.random()}.${fileExt}`;
 
-      setUploading(true);
+      setIsUploading(true);
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -148,7 +154,7 @@ const ClientProfile = () => {
         description: "Nu am putut încărca poza de profil",
       });
     } finally {
-      setUploading(false);
+      setIsUploading(false);
     }
   };
 
@@ -191,7 +197,7 @@ const ClientProfile = () => {
     return null;
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto p-6">
         <Card>
@@ -215,225 +221,224 @@ const ClientProfile = () => {
       <Navigation />
       <main className="container py-6">
         <div className="mx-auto max-w-2xl space-y-8">
-        <Card className="bg-white/5 backdrop-blur-lg border-0">
-          <CardHeader className="text-center pb-8">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="relative">
-                <Avatar className="w-32 h-32">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback>
-                    {profile?.first_name?.[0]}{profile?.last_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="absolute bottom-0 right-0">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    id="avatar-upload"
-                    onChange={handleAvatarUpload}
-                    disabled={uploading}
-                  />
-                  <Label
-                    htmlFor="avatar-upload"
-                    className="bg-primary hover:bg-primary/90 text-white rounded-full p-2 cursor-pointer"
-                  >
-                    {uploading ? "..." : "📷"}
-                  </Label>
+          <Card className="bg-white/5 backdrop-blur-lg border-0">
+            <CardHeader className="text-center pb-8">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="relative">
+                  <Avatar className="w-32 h-32">
+                    <AvatarImage src={profile?.avatar_url || undefined} />
+                    <AvatarFallback>
+                      {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute bottom-0 right-0">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id="avatar-upload"
+                      onChange={handleAvatarUpload}
+                      disabled={isUploading}
+                    />
+                    <Label
+                      htmlFor="avatar-upload"
+                      className="bg-primary hover:bg-primary/90 text-white rounded-full p-2 cursor-pointer"
+                    >
+                      {isUploading ? "..." : "📷"}
+                    </Label>
+                  </div>
                 </div>
+                <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                  {isEditing ? "Editare Profil" : "Profilul Meu"}
+                </CardTitle>
               </div>
-              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-                {isEditing ? "Editare Profil" : "Profilul Meu"}
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-6">
-                <h3 className="text-xl font-semibold text-primary">Informații Personale</h3>
-                <div className="space-y-4">
-                  {isEditing ? (
-                    <>
-                      <div className="space-y-2">
-                        <Label>Prenume</Label>
-                        <Input
-                          value={editedProfile?.first_name || ""}
-                          onChange={(e) =>
-                            setEditedProfile(prev =>
-                              prev ? { ...prev, first_name: e.target.value } : null
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Nume</Label>
-                        <Input
-                          value={editedProfile?.last_name || ""}
-                          onChange={(e) =>
-                            setEditedProfile(prev =>
-                              prev ? { ...prev, last_name: e.target.value } : null
-                            )
-                          }
-                        />
-                      </div>
-                      {profile?.role === "professional" && (
+            </CardHeader>
+            <CardContent className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-primary">Informații Personale</h3>
+                  <div className="space-y-4">
+                    {isEditing ? (
+                      <>
                         <div className="space-y-2">
-                          <Label>Tip de Meșter</Label>
-                          <Select
-                            value={editedProfile?.craftsman_type || undefined}
-                            onValueChange={(value: Profile["craftsman_type"]) =>
+                          <Label>Prenume</Label>
+                          <Input
+                            value={editedProfile?.first_name || ""}
+                            onChange={(e) =>
                               setEditedProfile(prev =>
-                                prev ? { ...prev, craftsman_type: value } : null
+                                prev ? { ...prev, first_name: e.target.value } : null
                               )
                             }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selectează tipul de meșter" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(CRAFTSMAN_TYPES).map(([value, label]) => (
-                                <SelectItem key={value} value={value}>
-                                  {label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          />
                         </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <Label className="text-muted-foreground">Nume complet</Label>
-                        <p className="text-lg font-medium mt-1">
-                          {profile?.first_name} {profile?.last_name}
-                        </p>
-                      </div>
-                      {profile?.role === "professional" && profile?.craftsman_type && (
+                        <div className="space-y-2">
+                          <Label>Nume</Label>
+                          <Input
+                            value={editedProfile?.last_name || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, last_name: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                        {profile?.role === "professional" && (
+                          <div className="space-y-2">
+                            <Label>Tip de Meșter</Label>
+                            <Select
+                              value={editedProfile?.craftsman_type || undefined}
+                              onValueChange={(value: Profile["craftsman_type"]) =>
+                                setEditedProfile(prev =>
+                                  prev ? { ...prev, craftsman_type: value } : null
+                                )
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selectează tipul de meșter" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(CRAFTSMAN_TYPES).map(([value, label]) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
                         <div>
-                          <Label className="text-muted-foreground">Tip de Meșter</Label>
+                          <Label className="text-muted-foreground">Nume complet</Label>
                           <p className="text-lg font-medium mt-1">
-                            {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                            {profile?.first_name} {profile?.last_name}
                           </p>
                         </div>
+                        {profile?.role === "professional" && profile?.craftsman_type && (
+                          <div>
+                            <Label className="text-muted-foreground">Tip de Meșter</Label>
+                            <p className="text-lg font-medium mt-1">
+                              {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div>
+                      <Label className="text-muted-foreground">Email</Label>
+                      <p className="text-lg font-medium mt-1">{profile?.email}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Telefon</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedProfile?.phone || ""}
+                          onChange={(e) =>
+                            setEditedProfile(prev =>
+                              prev ? { ...prev, phone: e.target.value } : null
+                            )
+                          }
+                        />
+                      ) : (
+                        <p className="text-lg font-medium mt-1">{profile?.phone}</p>
                       )}
-                    </>
-                  )}
-                  <div>
-                    <Label className="text-muted-foreground">Email</Label>
-                    <p className="text-lg font-medium mt-1">{profile?.email}</p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Telefon</Label>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-primary">Adresă</h3>
+                  <div className="space-y-4">
                     {isEditing ? (
-                      <Input
-                        value={editedProfile?.phone || ""}
-                        onChange={(e) =>
-                          setEditedProfile(prev =>
-                            prev ? { ...prev, phone: e.target.value } : null
-                          )
-                        }
-                      />
+                      <>
+                        <div className="space-y-2">
+                          <Label>Țară</Label>
+                          <Input
+                            value={editedProfile?.country || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, country: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Județ</Label>
+                          <Input
+                            value={editedProfile?.county || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, county: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Oraș</Label>
+                          <Input
+                            value={editedProfile?.city || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, city: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Adresă</Label>
+                          <Input
+                            value={editedProfile?.address || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, address: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                      </>
                     ) : (
-                      <p className="text-lg font-medium mt-1">{profile?.phone}</p>
+                      <>
+                        <div>
+                          <Label className="text-muted-foreground">Țară</Label>
+                          <p className="text-lg font-medium mt-1">{profile?.country}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Județ</Label>
+                          <p className="text-lg font-medium mt-1">{profile?.county}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Oraș</Label>
+                          <p className="text-lg font-medium mt-1">{profile?.city}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Adresă</Label>
+                          <p className="text-lg font-medium mt-1">{profile?.address}</p>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <h3 className="text-xl font-semibold text-primary">Adresă</h3>
-                <div className="space-y-4">
-                  {isEditing ? (
-                    <>
-                      <div className="space-y-2">
-                        <Label>Țară</Label>
-                        <Input
-                          value={editedProfile?.country || ""}
-                          onChange={(e) =>
-                            setEditedProfile(prev =>
-                              prev ? { ...prev, country: e.target.value } : null
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Județ</Label>
-                        <Input
-                          value={editedProfile?.county || ""}
-                          onChange={(e) =>
-                            setEditedProfile(prev =>
-                              prev ? { ...prev, county: e.target.value } : null
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Oraș</Label>
-                        <Input
-                          value={editedProfile?.city || ""}
-                          onChange={(e) =>
-                            setEditedProfile(prev =>
-                              prev ? { ...prev, city: e.target.value } : null
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Adresă</Label>
-                        <Input
-                          value={editedProfile?.address || ""}
-                          onChange={(e) =>
-                            setEditedProfile(prev =>
-                              prev ? { ...prev, address: e.target.value } : null
-                            )
-                          }
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <Label className="text-muted-foreground">Țară</Label>
-                        <p className="text-lg font-medium mt-1">{profile?.country}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Județ</Label>
-                        <p className="text-lg font-medium mt-1">{profile?.county}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Oraș</Label>
-                        <p className="text-lg font-medium mt-1">{profile?.city}</p>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Adresă</Label>
-                        <p className="text-lg font-medium mt-1">{profile?.address}</p>
-                      </div>
-                    </>
-                  )}
-                </div>
+              <div className="flex justify-end space-x-4 pt-6">
+                {isEditing ? (
+                  <>
+                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      Anulează
+                    </Button>
+                    <Button onClick={handleSave}>
+                      Salvează
+                    </Button>
+                  </>
+                ) : (
+                  <Button onClick={() => setIsEditing(true)}>
+                    Editează profilul
+                  </Button>
+                )}
               </div>
-            </div>
-
-            <div className="flex justify-end space-x-4 pt-6">
-              {isEditing ? (
-                <>
-                  <Button variant="outline" onClick={() => setIsEditing(false)}>
-                    Anulează
-                  </Button>
-                  <Button onClick={handleSave}>
-                    Salvează
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={() => setIsEditing(true)}>
-                  Editează profilul
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
