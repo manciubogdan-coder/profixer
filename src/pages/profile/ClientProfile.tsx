@@ -343,14 +343,16 @@ const ClientProfile = () => {
                     </Label>
                   </div>
                 </div>
-                <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-                  {isEditing ? "Editare Profil" : "Profilul Meu"}
-                </CardTitle>
-                {profile?.role === "professional" && (
-                  <div className="text-lg text-muted-foreground">
-                    {profile.craftsman_type ? CRAFTSMAN_TYPES[profile.craftsman_type] : "Tip de meșter nespecificat"}
-                  </div>
-                )}
+                <div>
+                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                    {isEditing ? "Editare Profil" : "Profilul Meu"}
+                  </CardTitle>
+                  {profile?.role === "professional" && profile.craftsman_type && (
+                    <div className="text-lg text-muted-foreground mt-2">
+                      {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                    </div>
+                  )}
+                </div>
               </div>
             </CardHeader>
 

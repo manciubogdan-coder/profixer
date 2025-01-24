@@ -38,13 +38,17 @@ export function AddQualificationDialog({ onQualificationAdded }: { onQualificati
 
       if (uploadError) throw uploadError;
 
+      const { data: { publicUrl } } = supabase.storage
+        .from('qualification-docs')
+        .getPublicUrl(fileName);
+
       const { error: dbError } = await supabase
         .from("qualifications")
         .insert([
           {
             title,
             issue_date: issueDate,
-            document_url: `${supabase.storageUrl}/object/public/qualification-docs/${fileName}`,
+            document_url: publicUrl,
           },
         ]);
 

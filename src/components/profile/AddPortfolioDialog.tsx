@@ -55,12 +55,16 @@ export function AddPortfolioDialog({ onPortfolioAdded }: { onPortfolioAdded: () 
 
         if (uploadError) throw uploadError;
 
+        const { data: { publicUrl } } = supabase.storage
+          .from('portfolio-images')
+          .getPublicUrl(fileName);
+
         return supabase
           .from("portfolio_images")
           .insert([
             {
               portfolio_id: portfolioData.id,
-              image_url: `${supabase.storageUrl}/object/public/portfolio-images/${fileName}`,
+              image_url: publicUrl,
             },
           ]);
       });
