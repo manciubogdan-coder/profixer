@@ -22,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Profile {
   id: string;
@@ -36,6 +37,26 @@ interface Profile {
   role: "client" | "professional";
   avatar_url?: string | null;
   craftsman_type?: "carpenter" | "plumber" | "electrician" | "painter" | "mason" | "welder" | "locksmith" | "roofer" | "hvac_technician" | "general_contractor" | null;
+}
+
+interface Specialization {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+interface Qualification {
+  id: string;
+  title: string;
+  document_url: string;
+  issue_date: string | null;
+}
+
+interface Portfolio {
+  id: string;
+  title: string;
+  description: string | null;
+  images: { id: string; image_url: string }[];
 }
 
 const CRAFTSMAN_TYPES = {
@@ -60,6 +81,9 @@ const ClientProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [specializations, setSpecializations] = useState<Specialization[]>([]);
+  const [qualifications, setQualifications] = useState<Qualification[]>([]);
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -78,11 +102,7 @@ const ClientProfile = () => {
 
         if (error) {
           console.error("Error fetching profile:", error);
-          toast({
-            variant: "destructive",
-            title: "Eroare",
-            description: "Nu am putut încărca profilul. Vă rugăm să încercați din nou.",
-          });
+          toast.error("Nu am putut încărca profilul. Vă rugăm să încercați din nou.");
           return;
         }
 
@@ -91,21 +111,82 @@ const ClientProfile = () => {
           const profileData = { ...data, email: user.email };
           setProfile(profileData);
           setEditedProfile(profileData);
+
+          // Dacă utilizatorul este meșter, încărcăm și datele specifice
+          if (data.role === "professional") {
+            await Promise.all([
+              fetchSpecializations(user.id),
+              fetchQualifications(user.id),
+              fetchPortfolio(user.id)
+            ]);
+          }
         }
       } catch (error) {
         console.error("Error in profile fetch:", error);
-        toast({
-          variant: "destructive",
-          title: "Eroare",
-          description: "A apărut o eroare neașteptată. Vă rugăm să încercați din nou.",
-        });
+        toast.error("A apărut o eroare neașteptată. Vă rugăm să încercați din nou.");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProfile();
-  }, [user, navigate, toast]);
+  }, [user, navigate]);
+
+  const fetchSpecializations = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("specializations")
+      .select("*")
+      .eq("craftsman_id", userId);
+
+    if (error) {
+      console.error("Error fetching specializations:", error);
+      return;
+    }
+
+    setSpecializations(data || []);
+  };
+
+  const fetchQualifications = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("qualifications")
+      .select("*")
+      .eq("craftsman_id", userId);
+
+    if (error) {
+      console.error("Error fetching qualifications:", error);
+      return;
+    }
+
+    setQualifications(data || []);
+  };
+
+  const fetchPortfolio = async (userId: string) => {
+    const { data: portfolioData, error: portfolioError } = await supabase
+      .from("portfolios")
+      .select(`
+        id,
+        title,
+        description,
+        portfolio_images (
+          id,
+          image_url
+        )
+      `)
+      .eq("craftsman_id", userId)
+      .maybeSingle();
+
+    if (portfolioError) {
+      console.error("Error fetching portfolio:", portfolioError);
+      return;
+    }
+
+    if (portfolioData) {
+      setPortfolio({
+        ...portfolioData,
+        images: portfolioData.portfolio_images || []
+      });
+    }
+  };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -180,16 +261,9 @@ const ClientProfile = () => {
 
       setProfile(editedProfile);
       setIsEditing(false);
-      toast({
-        title: "Succes",
-        description: "Profilul a fost actualizat cu succes",
-      });
+      toast.success("Profilul a fost actualizat cu succes");
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Eroare",
-        description: "Nu am putut actualiza profilul",
-      });
+      toast.error("Nu am putut actualiza profilul");
     }
   };
 
@@ -220,7 +294,7 @@ const ClientProfile = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <main className="container py-6">
-        <div className="mx-auto max-w-2xl space-y-8">
+        <div className="mx-auto max-w-4xl space-y-8">
           <Card className="bg-white/5 backdrop-blur-lg border-0">
             <CardHeader className="text-center pb-8">
               <div className="flex flex-col items-center space-y-4">
@@ -253,8 +327,19 @@ const ClientProfile = () => {
                 </CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            {profile?.role === "professional" ? (
+              <CardContent>
+                <Tabs defaultValue="profile" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="profile">Profil</TabsTrigger>
+                    <TabsTrigger value="specializations">Specializări</TabsTrigger>
+                    <TabsTrigger value="qualifications">Calificări</TabsTrigger>
+                    <TabsTrigger value="portfolio">Portofoliu</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="profile">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <h3 className="text-xl font-semibold text-primary">Informații Personale</h3>
                   <div className="space-y-4">
@@ -420,24 +505,301 @@ const ClientProfile = () => {
                   </div>
                 </div>
               </div>
+                    </div>
+                  </TabsContent>
 
-              <div className="flex justify-end space-x-4 pt-6">
-                {isEditing ? (
-                  <>
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
-                      Anulează
+                  <TabsContent value="specializations">
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold">Specializările Mele</h3>
+                      {specializations.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {specializations.map((spec) => (
+                            <Card key={spec.id}>
+                              <CardHeader>
+                                <CardTitle>{spec.name}</CardTitle>
+                              </CardHeader>
+                              {spec.description && (
+                                <CardContent>
+                                  <p>{spec.description}</p>
+                                </CardContent>
+                              )}
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">Nu aveți specializări adăugate încă.</p>
+                      )}
+                      <Button className="mt-4">Adaugă Specializare</Button>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="qualifications">
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold">Calificările Mele</h3>
+                      {qualifications.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {qualifications.map((qual) => (
+                            <Card key={qual.id}>
+                              <CardHeader>
+                                <CardTitle>{qual.title}</CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                {qual.issue_date && (
+                                  <p className="text-sm text-muted-foreground">
+                                    Data emiterii: {new Date(qual.issue_date).toLocaleDateString()}
+                                  </p>
+                                )}
+                                <a
+                                  href={qual.document_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:underline"
+                                >
+                                  Vezi documentul
+                                </a>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">Nu aveți calificări adăugate încă.</p>
+                      )}
+                      <Button className="mt-4">Adaugă Calificare</Button>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="portfolio">
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold">Portofoliul Meu</h3>
+                      {portfolio ? (
+                        <div>
+                          <h4 className="text-lg font-medium">{portfolio.title}</h4>
+                          {portfolio.description && (
+                            <p className="text-muted-foreground mt-2">{portfolio.description}</p>
+                          )}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                            {portfolio.images.map((img) => (
+                              <img
+                                key={img.id}
+                                src={img.image_url}
+                                alt="Lucrare din portofoliu"
+                                className="rounded-lg object-cover w-full h-48"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">Nu aveți un portofoliu adăugat încă.</p>
+                      )}
+                      <Button className="mt-4">Adaugă Portofoliu</Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                <div className="flex justify-end space-x-4 pt-6">
+                  {isEditing ? (
+                    <>
+                      <Button variant="outline" onClick={() => setIsEditing(false)}>
+                        Anulează
+                      </Button>
+                      <Button onClick={handleSave}>
+                        Salvează
+                      </Button>
+                    </>
+                  ) : (
+                    <Button onClick={() => setIsEditing(true)}>
+                      Editează profilul
                     </Button>
-                    <Button onClick={handleSave}>
-                      Salvează
-                    </Button>
-                  </>
-                ) : (
-                  <Button onClick={() => setIsEditing(true)}>
-                    Editează profilul
-                  </Button>
-                )}
+                  )}
+                </div>
+              </CardContent>
+            ) : (
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-primary">Informații Personale</h3>
+                  <div className="space-y-4">
+                    {isEditing ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Prenume</Label>
+                          <Input
+                            value={editedProfile?.first_name || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, first_name: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Nume</Label>
+                          <Input
+                            value={editedProfile?.last_name || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, last_name: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                        {profile?.role === "professional" && (
+                          <div className="space-y-2">
+                            <Label>Tip de Meșter</Label>
+                            <Select
+                              value={editedProfile?.craftsman_type || undefined}
+                              onValueChange={(value: Profile["craftsman_type"]) =>
+                                setEditedProfile(prev =>
+                                  prev ? { ...prev, craftsman_type: value } : null
+                                )
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selectează tipul de meșter" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(CRAFTSMAN_TYPES).map(([value, label]) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <Label className="text-muted-foreground">Nume complet</Label>
+                          <p className="text-lg font-medium mt-1">
+                            {profile?.first_name} {profile?.last_name}
+                          </p>
+                        </div>
+                        {profile?.role === "professional" && profile?.craftsman_type && (
+                          <div>
+                            <Label className="text-muted-foreground">Tip de Meșter</Label>
+                            <p className="text-lg font-medium mt-1">
+                              {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div>
+                      <Label className="text-muted-foreground">Email</Label>
+                      <p className="text-lg font-medium mt-1">{profile?.email}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Telefon</Label>
+                      {isEditing ? (
+                        <Input
+                          value={editedProfile?.phone || ""}
+                          onChange={(e) =>
+                            setEditedProfile(prev =>
+                              prev ? { ...prev, phone: e.target.value } : null
+                            )
+                          }
+                        />
+                      ) : (
+                        <p className="text-lg font-medium mt-1">{profile?.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-primary">Adresă</h3>
+                  <div className="space-y-4">
+                    {isEditing ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Țară</Label>
+                          <Input
+                            value={editedProfile?.country || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, country: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Județ</Label>
+                          <Input
+                            value={editedProfile?.county || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, county: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Oraș</Label>
+                          <Input
+                            value={editedProfile?.city || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, city: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Adresă</Label>
+                          <Input
+                            value={editedProfile?.address || ""}
+                            onChange={(e) =>
+                              setEditedProfile(prev =>
+                                prev ? { ...prev, address: e.target.value } : null
+                              )
+                            }
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <Label className="text-muted-foreground">Țară</Label>
+                          <p className="text-lg font-medium mt-1">{profile?.country}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Județ</Label>
+                          <p className="text-lg font-medium mt-1">{profile?.county}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Oraș</Label>
+                          <p className="text-lg font-medium mt-1">{profile?.city}</p>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground">Adresă</Label>
+                          <p className="text-lg font-medium mt-1">{profile?.address}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
-            </CardContent>
+                </div>
+                <div className="flex justify-end space-x-4 pt-6">
+                  {isEditing ? (
+                    <>
+                      <Button variant="outline" onClick={() => setIsEditing(false)}>
+                        Anulează
+                      </Button>
+                      <Button onClick={handleSave}>
+                        Salvează
+                      </Button>
+                    </>
+                  ) : (
+                    <Button onClick={() => setIsEditing(true)}>
+                      Editează profilul
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            )}
           </Card>
         </div>
       </main>
