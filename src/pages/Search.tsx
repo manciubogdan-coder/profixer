@@ -11,9 +11,11 @@ export type Craftsman = Tables<"profiles"> & {
   longitude?: number;
 };
 
+type CraftsmanType = Enums<"craftsman_type"> | "all";
+
 const Search = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState<Enums<"craftsman_type"> | null>(null);
+  const [selectedType, setSelectedType] = useState<CraftsmanType | null>(null);
 
   const { data: craftsmen = [], isLoading } = useQuery({
     queryKey: ["craftsmen", searchTerm, selectedType],

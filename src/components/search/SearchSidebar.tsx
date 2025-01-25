@@ -12,11 +12,13 @@ import { Star } from "lucide-react";
 import type { Craftsman } from "@/pages/Search";
 import { Enums } from "@/integrations/supabase/types";
 
+type CraftsmanType = Enums<"craftsman_type"> | "all";
+
 interface SearchSidebarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  selectedType: Enums<"craftsman_type"> | null;
-  setSelectedType: (type: Enums<"craftsman_type"> | null) => void;
+  selectedType: CraftsmanType | null;
+  setSelectedType: (type: CraftsmanType | null) => void;
   craftsmen: Craftsman[];
   isLoading: boolean;
 }
@@ -46,7 +48,7 @@ export const SearchSidebar = ({
           <Label>Meserie</Label>
           <Select
             value={selectedType || undefined}
-            onValueChange={(value) => setSelectedType(value as Enums<"craftsman_type"> || null)}
+            onValueChange={(value) => setSelectedType(value as CraftsmanType || null)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Alege meseria" />
