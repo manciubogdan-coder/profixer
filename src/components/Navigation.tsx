@@ -39,6 +39,13 @@ export const Navigation = () => {
                 </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link to="/search">
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  Caută Meșteri
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
 
