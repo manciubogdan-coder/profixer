@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { Star } from "lucide-react"; // Added this import
 
 export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
