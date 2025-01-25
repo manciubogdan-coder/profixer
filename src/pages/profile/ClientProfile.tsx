@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddSpecializationDialog } from "@/components/profile/AddSpecializationDialog";
 import { AddQualificationDialog } from "@/components/profile/AddQualificationDialog";
 import { AddPortfolioDialog } from "@/components/profile/AddPortfolioDialog";
+import { EditPortfolioDialog } from "@/components/profile/EditPortfolioDialog";
 import { Database } from "@/integrations/supabase/types";
 import { Star } from "lucide-react";
 import { Pencil, Trash } from "lucide-react";
@@ -117,6 +118,8 @@ const ClientProfile = () => {
   const [qualifications, setQualifications] = useState<Qualification[]>([]);
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
+  const [isEditPortfolioOpen, setIsEditPortfolioOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -729,7 +732,8 @@ const ClientProfile = () => {
                                     variant="outline"
                                     size="icon"
                                     onClick={() => {
-                                      toast.info("Funcționalitatea de editare va fi adăugată în curând");
+                                      setSelectedPortfolio(portfolio);
+                                      setIsEditPortfolioOpen(true);
                                     }}
                                   >
                                     <Pencil className="h-4 w-4" />
@@ -779,6 +783,14 @@ const ClientProfile = () => {
                         <p className="text-muted-foreground">Nu aveți un portofoliu adăugat încă.</p>
                       )}
                     </div>
+                    {selectedPortfolio && (
+                      <EditPortfolioDialog
+                        portfolio={selectedPortfolio}
+                        open={isEditPortfolioOpen}
+                        onOpenChange={setIsEditPortfolioOpen}
+                        onPortfolioUpdated={refreshPortfolios}
+                      />
+                    )}
                   </TabsContent>
 
                   <TabsContent value="reviews">
