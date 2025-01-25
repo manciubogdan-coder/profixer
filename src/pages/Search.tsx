@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Star } from "lucide-react"; // Added this import
+import { Star } from "lucide-react";
 
 export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
@@ -101,7 +101,7 @@ const Search = () => {
         .from("profiles")
         .select(`
           *,
-          reviews(rating)
+          reviews!reviews_craftsman_id_fkey(rating)
         `)
         .eq("role", "professional");
 
