@@ -28,6 +28,18 @@ import { AddQualificationDialog } from "@/components/profile/AddQualificationDia
 import { AddPortfolioDialog } from "@/components/profile/AddPortfolioDialog";
 import { Database } from "@/integrations/supabase/types";
 import { Star } from "lucide-react";
+import { Pencil, Trash } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type UserRole = Database["public"]["Enums"]["user_role"];
 type CraftsmanType = Database["public"]["Enums"]["craftsman_type"];
@@ -204,7 +216,6 @@ const ClientProfile = () => {
 
     console.log("Portfolios data:", portfoliosData);
     
-    // Map the data to match our Portfolio interface
     const mappedPortfolios: Portfolio[] = portfoliosData.map(portfolio => ({
       id: portfolio.id,
       title: portfolio.title,
@@ -243,7 +254,6 @@ const ClientProfile = () => {
 
     console.log("Reviews data:", reviewsData);
 
-    // Map the data to match our Review interface
     const mappedReviews: Review[] = reviewsData.map(review => ({
       id: review.id,
       rating: review.rating,
@@ -352,6 +362,41 @@ const ClientProfile = () => {
   const refreshReviews = async () => {
     if (user) {
       await fetchReviews(user.id);
+    }
+  };
+
+  const handleDeletePortfolio = async (portfolioId: string) => {
+    try {
+      console.log("Deleting portfolio:", portfolioId);
+      
+      const portfolio = portfolios.find(p => p.id === portfolioId);
+      if (portfolio) {
+        for (const image of portfolio.images) {
+          const fileName = image.image_url.split('/').pop();
+          if (fileName) {
+            const { error: storageError } = await supabase.storage
+              .from('portfolio-images')
+              .remove([fileName]);
+            
+            if (storageError) {
+              console.error("Error deleting image from storage:", storageError);
+            }
+          }
+        }
+      }
+
+      const { error } = await supabase
+        .from('portfolios')
+        .delete()
+        .eq('id', portfolioId);
+
+      if (error) throw error;
+
+      toast.success("Portofoliul a fost șters cu succes");
+      refreshPortfolios();
+    } catch (error) {
+      console.error("Error deleting portfolio:", error);
+      toast.error("Nu am putut șterge portofoliul");
     }
   };
 
@@ -677,7 +722,43 @@ const ClientProfile = () => {
                         <div className="space-y-8">
                           {portfolios.map((portfolio) => (
                             <div key={portfolio.id} className="space-y-4">
-                              <h4 className="text-lg font-medium">{portfolio.title}</h4>
+                              <div className="flex justify-between items-center">
+                                <h4 className="text-lg font-medium">{portfolio.title}</h4>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                      toast.info("Funcționalitatea de editare va fi adăugată în curând");
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="outline" size="icon">
+                                        <Trash className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Ștergeți portofoliul?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Această acțiune nu poate fi anulată. Portofoliul și toate imaginile asociate vor fi șterse permanent.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Anulează</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleDeletePortfolio(portfolio.id)}
+                                        >
+                                          Șterge
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </div>
                               {portfolio.description && (
                                 <p className="text-muted-foreground">{portfolio.description}</p>
                               )}
