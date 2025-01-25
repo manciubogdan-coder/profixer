@@ -203,7 +203,19 @@ const ClientProfile = () => {
     }
 
     console.log("Portfolios data:", portfoliosData);
-    setPortfolios(portfoliosData || []);
+    
+    // Map the data to match our Portfolio interface
+    const mappedPortfolios: Portfolio[] = portfoliosData.map(portfolio => ({
+      id: portfolio.id,
+      title: portfolio.title,
+      description: portfolio.description,
+      images: portfolio.portfolio_images.map(img => ({
+        id: img.id,
+        image_url: img.image_url
+      }))
+    }));
+
+    setPortfolios(mappedPortfolios);
   };
 
   const fetchReviews = async (userId: string) => {
@@ -228,7 +240,20 @@ const ClientProfile = () => {
       return;
     }
 
-    setReviews(reviewsData || []);
+    // Map the data to match our Review interface
+    const mappedReviews: Review[] = reviewsData.map(review => ({
+      id: review.id,
+      rating: review.rating,
+      comment: review.comment,
+      craftsman_response: review.craftsman_response,
+      created_at: review.created_at,
+      client: review.client ? {
+        first_name: review.client.first_name,
+        last_name: review.client.last_name
+      } : null
+    }));
+
+    setReviews(mappedReviews);
   };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -904,3 +929,4 @@ const ClientProfile = () => {
 };
 
 export default ClientProfile;
+
