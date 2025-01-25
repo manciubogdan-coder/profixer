@@ -84,7 +84,10 @@ export type Database = {
           created_at: string
           first_name: string
           id: string
+          last_location_update: string | null
           last_name: string
+          latitude: number | null
+          longitude: number | null
           phone: string
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
@@ -99,7 +102,10 @@ export type Database = {
           created_at?: string
           first_name: string
           id: string
+          last_location_update?: string | null
           last_name: string
+          latitude?: number | null
+          longitude?: number | null
           phone: string
           role: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -114,7 +120,10 @@ export type Database = {
           created_at?: string
           first_name?: string
           id?: string
+          last_location_update?: string | null
           last_name?: string
+          latitude?: number | null
+          longitude?: number | null
           phone?: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -241,7 +250,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_distance: {
+        Args: {
+          lat1: number
+          lon1: number
+          lat2: number
+          lon2: number
+        }
+        Returns: number
+      }
     }
     Enums: {
       craftsman_type:

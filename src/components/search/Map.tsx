@@ -16,6 +16,7 @@ const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXV
 
 interface MapProps {
   craftsmen: Craftsman[];
+  userLocation: { lat: number; lng: number } | null;
 }
 
 const getCraftsmanIcon = (type: string | null) => {
@@ -36,7 +37,7 @@ const getCraftsmanIcon = (type: string | null) => {
   }
 };
 
-export const Map = ({ craftsmen }: MapProps) => {
+export const Map = ({ craftsmen, userLocation }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -49,16 +50,34 @@ export const Map = ({ craftsmen }: MapProps) => {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [23.6236, 46.7712], // Cluj-Napoca coordinates
+      center: userLocation 
+        ? [userLocation.lng, userLocation.lat]
+        : [23.6236, 46.7712], // Cluj-Napoca coordinates as fallback
       zoom: 12,
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
+    // Add user location marker if available
+    if (userLocation) {
+      const el = document.createElement("div");
+      el.className = "marker";
+      el.style.width = "20px";
+      el.style.height = "20px";
+      el.style.borderRadius = "50%";
+      el.style.backgroundColor = "#3B82F6";
+      el.style.border = "2px solid white";
+      el.style.boxShadow = "0 0 0 2px rgba(59, 130, 246, 0.5)";
+
+      new mapboxgl.Marker(el)
+        .setLngLat([userLocation.lng, userLocation.lat])
+        .addTo(map.current);
+    }
+
     return () => {
       map.current?.remove();
     };
-  }, []);
+  }, [userLocation]);
 
   useEffect(() => {
     if (!map.current) return;
