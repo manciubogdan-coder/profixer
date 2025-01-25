@@ -9,6 +9,8 @@ import {
   Plug,
   User,
 } from "lucide-react";
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 
 const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXVpdnVidCJ9.l1qMsSzaQBOq8sopVis4BQ";
 
@@ -81,15 +83,16 @@ export const Map = ({ craftsmen }: MapProps) => {
       el.style.color = "white";
       el.style.cursor = "pointer";
 
-      // Create the icon element
+      // Create the icon element using renderToString
       const IconComponent = getCraftsmanIcon(craftsman.craftsman_type);
-      const icon = document.createElement("div");
-      icon.innerHTML = IconComponent({
-        size: 20,
-        color: "white",
-        absoluteStrokeWidth: true,
-      }).outerHTML;
-      el.appendChild(icon);
+      const iconHtml = renderToString(
+        createElement(IconComponent, {
+          size: 20,
+          color: "white",
+          absoluteStrokeWidth: true,
+        })
+      );
+      el.innerHTML = iconHtml;
 
       // Create and add the marker
       const marker = new mapboxgl.Marker(el)

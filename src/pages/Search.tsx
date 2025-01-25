@@ -4,7 +4,7 @@ import { SearchSidebar } from "@/components/search/SearchSidebar";
 import { Map } from "@/components/search/Map";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables, Enums } from "@/integrations/supabase/types";
 
 export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
@@ -13,7 +13,7 @@ export type Craftsman = Tables<"profiles"> & {
 
 const Search = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<Enums<"craftsman_type"> | null>(null);
 
   const { data: craftsmen = [], isLoading } = useQuery({
     queryKey: ["craftsmen", searchTerm, selectedType],
