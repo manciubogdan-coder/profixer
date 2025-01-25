@@ -27,6 +27,7 @@ import { AddSpecializationDialog } from "@/components/profile/AddSpecializationD
 import { AddQualificationDialog } from "@/components/profile/AddQualificationDialog";
 import { AddPortfolioDialog } from "@/components/profile/AddPortfolioDialog";
 import { Database } from "@/integrations/supabase/types";
+import { Star } from "lucide-react";
 
 type UserRole = Database["public"]["Enums"]["user_role"];
 type CraftsmanType = Database["public"]["Enums"]["craftsman_type"];
@@ -66,6 +67,18 @@ interface Portfolio {
   images: { id: string; image_url: string }[];
 }
 
+interface Review {
+  id: string;
+  rating: number;
+  comment: string;
+  craftsman_response: string | null;
+  created_at: string;
+  client: {
+    first_name: string;
+    last_name: string;
+  } | null;
+}
+
 const CRAFTSMAN_TYPES = {
   carpenter: "Tâmplar",
   plumber: "Instalator",
@@ -90,7 +103,8 @@ const ClientProfile = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [specializations, setSpecializations] = useState<Specialization[]>([]);
   const [qualifications, setQualifications] = useState<Qualification[]>([]);
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -123,7 +137,8 @@ const ClientProfile = () => {
             await Promise.all([
               fetchSpecializations(user.id),
               fetchQualifications(user.id),
-              fetchPortfolio(user.id)
+              fetchPortfolios(user.id),
+              fetchReviews(user.id)
             ]);
           }
         }
@@ -166,9 +181,9 @@ const ClientProfile = () => {
     setQualifications(data || []);
   };
 
-  const fetchPortfolio = async (userId: string) => {
-    console.log("Fetching portfolio for user:", userId);
-    const { data: portfolioData, error: portfolioError } = await supabase
+  const fetchPortfolios = async (userId: string) => {
+    console.log("Fetching portfolios for user:", userId);
+    const { data: portfoliosData, error: portfoliosError } = await supabase
       .from("portfolios")
       .select(`
         id,
@@ -182,20 +197,38 @@ const ClientProfile = () => {
       .eq("craftsman_id", userId)
       .order('created_at', { ascending: false });
 
-    if (portfolioError) {
-      console.error("Error fetching portfolio:", portfolioError);
+    if (portfoliosError) {
+      console.error("Error fetching portfolios:", portfoliosError);
       return;
     }
 
-    console.log("Portfolio data:", portfolioData);
-    
-    if (portfolioData && portfolioData.length > 0) {
-      // Luăm cel mai recent portofoliu
-      setPortfolio({
-        ...portfolioData[0],
-        images: portfolioData[0].portfolio_images || []
-      });
+    console.log("Portfolios data:", portfoliosData);
+    setPortfolios(portfoliosData || []);
+  };
+
+  const fetchReviews = async (userId: string) => {
+    const { data: reviewsData, error: reviewsError } = await supabase
+      .from("reviews")
+      .select(`
+        id,
+        rating,
+        comment,
+        craftsman_response,
+        created_at,
+        client:client_id (
+          first_name,
+          last_name
+        )
+      `)
+      .eq("craftsman_id", userId)
+      .order('created_at', { ascending: false });
+
+    if (reviewsError) {
+      console.error("Error fetching reviews:", reviewsError);
+      return;
     }
+
+    setReviews(reviewsData || []);
   };
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -282,9 +315,15 @@ const ClientProfile = () => {
     }
   };
 
-  const refreshPortfolio = async () => {
+  const refreshPortfolios = async () => {
     if (user) {
-      await fetchPortfolio(user.id);
+      await fetchPortfolios(user.id);
+    }
+  };
+
+  const refreshReviews = async () => {
+    if (user) {
+      await fetchReviews(user.id);
     }
   };
 
@@ -359,11 +398,12 @@ const ClientProfile = () => {
             <CardContent>
               {profile?.role === ("professional" as UserRole) ? (
                 <Tabs defaultValue="profile" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="profile">Profil</TabsTrigger>
                     <TabsTrigger value="specializations">Specializări</TabsTrigger>
                     <TabsTrigger value="qualifications">Calificări</TabsTrigger>
                     <TabsTrigger value="portfolio">Portofoliu</TabsTrigger>
+                    <TabsTrigger value="reviews">Recenzii</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="profile">
@@ -603,27 +643,69 @@ const ClientProfile = () => {
                     <div className="space-y-6">
                       <div className="flex justify-between items-center">
                         <h3 className="text-xl font-semibold">Portofoliul Meu</h3>
-                        <AddPortfolioDialog onPortfolioAdded={refreshPortfolio} />
+                        <AddPortfolioDialog onPortfolioAdded={refreshPortfolios} />
                       </div>
-                      {portfolio ? (
-                        <div>
-                          <h4 className="text-lg font-medium">{portfolio.title}</h4>
-                          {portfolio.description && (
-                            <p className="text-muted-foreground mt-2">{portfolio.description}</p>
-                          )}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                            {portfolio.images.map((img) => (
-                              <img
-                                key={img.id}
-                                src={img.image_url}
-                                alt="Lucrare din portofoliu"
-                                className="rounded-lg object-cover w-full h-48"
-                              />
-                            ))}
-                          </div>
+                      {portfolios.length > 0 ? (
+                        <div className="space-y-8">
+                          {portfolios.map((portfolio) => (
+                            <div key={portfolio.id} className="space-y-4">
+                              <h4 className="text-lg font-medium">{portfolio.title}</h4>
+                              {portfolio.description && (
+                                <p className="text-muted-foreground">{portfolio.description}</p>
+                              )}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {portfolio.images.map((img) => (
+                                  <img
+                                    key={img.id}
+                                    src={img.image_url}
+                                    alt="Lucrare din portofoliu"
+                                    className="rounded-lg object-cover w-full h-48"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <p className="text-muted-foreground">Nu aveți un portofoliu adăugat încă.</p>
+                      )}
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="reviews">
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold">Recenziile Clienților</h3>
+                      {reviews.length > 0 ? (
+                        <div className="grid gap-4">
+                          {reviews.map((review) => (
+                            <Card key={review.id}>
+                              <CardContent className="pt-6">
+                                <div className="flex items-center gap-2 mb-2">
+                                  {[...Array(review.rating)].map((_, i) => (
+                                    <Star key={i} className="w-5 h-5 fill-primary text-primary" />
+                                  ))}
+                                </div>
+                                <p className="text-lg mb-2">{review.comment}</p>
+                                {review.craftsman_response && (
+                                  <div className="mt-4 pl-4 border-l-2 border-primary">
+                                    <p className="text-sm text-muted-foreground">Răspuns:</p>
+                                    <p>{review.craftsman_response}</p>
+                                  </div>
+                                )}
+                                <div className="mt-4 text-sm text-muted-foreground">
+                                  <p>
+                                    {review.client
+                                      ? `${review.client.first_name} ${review.client.last_name}`
+                                      : "Client anonim"}
+                                  </p>
+                                  <p>{new Date(review.created_at).toLocaleDateString()}</p>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">Nu aveți recenzii încă.</p>
                       )}
                     </div>
                   </TabsContent>
