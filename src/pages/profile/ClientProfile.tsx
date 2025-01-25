@@ -219,6 +219,7 @@ const ClientProfile = () => {
   };
 
   const fetchReviews = async (userId: string) => {
+    console.log("Fetching reviews for user:", userId);
     const { data: reviewsData, error: reviewsError } = await supabase
       .from("reviews")
       .select(`
@@ -239,6 +240,8 @@ const ClientProfile = () => {
       console.error("Error fetching reviews:", reviewsError);
       return;
     }
+
+    console.log("Reviews data:", reviewsData);
 
     // Map the data to match our Review interface
     const mappedReviews: Review[] = reviewsData.map(review => ({
@@ -929,4 +932,3 @@ const ClientProfile = () => {
 };
 
 export default ClientProfile;
-
