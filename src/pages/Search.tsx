@@ -29,7 +29,7 @@ const Search = () => {
         );
       }
 
-      if (selectedType) {
+      if (selectedType && selectedType !== "all") {
         query = query.eq("craftsman_type", selectedType);
       }
 

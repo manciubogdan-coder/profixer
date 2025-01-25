@@ -45,14 +45,14 @@ export const SearchSidebar = ({
         <div className="space-y-2">
           <Label>Meserie</Label>
           <Select
-            value={selectedType || ""}
+            value={selectedType || undefined}
             onValueChange={(value) => setSelectedType(value as Enums<"craftsman_type"> || null)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Alege meseria" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Toate</SelectItem>
+              <SelectItem value="all">Toate</SelectItem>
               <SelectItem value="carpenter">Tâmplar</SelectItem>
               <SelectItem value="plumber">Instalator</SelectItem>
               <SelectItem value="electrician">Electrician</SelectItem>
