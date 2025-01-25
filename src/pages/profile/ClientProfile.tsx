@@ -228,7 +228,7 @@ const ClientProfile = () => {
         comment,
         craftsman_response,
         created_at,
-        client:client_id (
+        profiles!reviews_client_id_fkey (
           first_name,
           last_name
         )
@@ -250,9 +250,9 @@ const ClientProfile = () => {
       comment: review.comment,
       craftsman_response: review.craftsman_response,
       created_at: review.created_at,
-      client: review.client ? {
-        first_name: review.client.first_name,
-        last_name: review.client.last_name
+      client: review.profiles ? {
+        first_name: review.profiles.first_name,
+        last_name: review.profiles.last_name
       } : null
     }));
 
