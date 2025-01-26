@@ -127,15 +127,8 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       );
       el.innerHTML = iconHtml;
 
-      // Create a serializable version of craftsman data for the popup
-      const craftsmanData = {
-        id: craftsman.id,
-        firstName: craftsman.first_name,
-        lastName: craftsman.last_name,
-        city: craftsman.city,
-        county: craftsman.county,
-        craftsmanType: craftsman.craftsman_type
-      };
+      // Create a unique ID for the button
+      const buttonId = `craftsman-${craftsman.id}`;
 
       // Create and add the marker
       const marker = new mapboxgl.Marker(el)
@@ -143,12 +136,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         .setPopup(
           new mapboxgl.Popup({ offset: 25 }).setHTML(`
             <div class="p-4">
-              <h3 class="text-lg font-semibold">${craftsmanData.firstName} ${craftsmanData.lastName}</h3>
-              <p class="text-sm text-gray-600 mt-1">${craftsmanData.city}, ${craftsmanData.county}</p>
-              <p class="text-sm text-gray-600">${craftsmanData.craftsmanType ? craftsmanData.craftsmanType.replace('_', ' ').charAt(0).toUpperCase() + craftsmanData.craftsmanType.slice(1) : 'General'}</p>
+              <h3 class="text-lg font-semibold">${craftsman.first_name} ${craftsman.last_name}</h3>
+              <p class="text-sm text-gray-600 mt-1">${craftsman.city}, ${craftsman.county}</p>
+              <p class="text-sm text-gray-600">${craftsman.craftsman_type ? craftsman.craftsman_type.replace('_', ' ').charAt(0).toUpperCase() + craftsman.craftsman_type.slice(1) : 'General'}</p>
               <button
+                id="${buttonId}"
                 class="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
-                onclick="window.dispatchEvent(new CustomEvent('craftsmanClick', { detail: '${craftsmanData.id}' }))"
               >
                 Vezi profilul
               </button>
@@ -157,30 +150,20 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         )
         .addTo(map.current);
 
+      // Add click handler for the button after popup is opened
+      marker.getPopup().on('open', () => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+          button.onclick = () => onCraftsmanClick(craftsman);
+        }
+      });
+
       markersRef.current.push(marker);
     });
 
-    // Cleanup function to remove markers
     return () => {
       markersRef.current.forEach((marker) => marker.remove());
       markersRef.current = [];
-    };
-  }, [craftsmen]);
-
-  // Add event listener for craftsman click
-  useEffect(() => {
-    const handleCraftsmanClick = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const craftsman = craftsmen.find(c => c.id === customEvent.detail);
-      if (craftsman) {
-        onCraftsmanClick(craftsman);
-      }
-    };
-
-    window.addEventListener('craftsmanClick', handleCraftsmanClick);
-
-    return () => {
-      window.removeEventListener('craftsmanClick', handleCraftsmanClick);
     };
   }, [craftsmen, onCraftsmanClick]);
 
