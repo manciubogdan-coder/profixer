@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { Button } from "@/components/ui/button";
 
 const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXVpdnVidCJ9.l1qMsSzaQBOq8sopVis4BQ";
 
@@ -138,8 +137,8 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
               <p class="text-sm text-gray-600 mt-1">${craftsman.city}, ${craftsman.county}</p>
               <p class="text-sm text-gray-600">${craftsman.craftsman_type ? craftsman.craftsman_type.replace('_', ' ').charAt(0).toUpperCase() + craftsman.craftsman_type.slice(1) : 'General'}</p>
               <button
-                onclick="window.dispatchEvent(new CustomEvent('craftsmanClick', { detail: '${craftsman.id}' }))"
                 class="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
+                onclick="window.dispatchEvent(new CustomEvent('craftsmanClick', { detail: '${craftsman.id}' }))"
               >
                 Vezi profilul
               </button>
@@ -154,17 +153,18 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
   // Add event listener for craftsman click
   useEffect(() => {
-    const handleCraftsmanClick = (event: CustomEvent) => {
-      const craftsman = craftsmen.find(c => c.id === event.detail);
+    const handleCraftsmanClick = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const craftsman = craftsmen.find(c => c.id === customEvent.detail);
       if (craftsman) {
         onCraftsmanClick(craftsman);
       }
     };
 
-    window.addEventListener('craftsmanClick', handleCraftsmanClick as EventListener);
+    window.addEventListener('craftsmanClick', handleCraftsmanClick);
 
     return () => {
-      window.removeEventListener('craftsmanClick', handleCraftsmanClick as EventListener);
+      window.removeEventListener('craftsmanClick', handleCraftsmanClick);
     };
   }, [craftsmen, onCraftsmanClick]);
 

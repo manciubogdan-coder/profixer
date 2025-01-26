@@ -29,7 +29,7 @@ const Search = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<CraftsmanType | null>(null);
   const [maxDistance, setMaxDistance] = useState(50);
-  const [minRating, setMinRating] = useState(0); // Changed initial value to 0
+  const [minRating, setMinRating] = useState(0);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedCraftsman, setSelectedCraftsman] = useState<Craftsman | null>(null);
   const navigate = useNavigate();
