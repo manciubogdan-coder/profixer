@@ -10,6 +10,9 @@ interface MapProps {
   userLocation?: { lat: number; lng: number } | null;
 }
 
+// Create a WeakMap to store event listeners
+const markerListeners = new WeakMap<HTMLElement, (event: Event) => void>();
+
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWFuY2l1Ym9nZGFuIiwiYSI6ImNscmh3Z2FyeTBwc2Uya3BpeDU2OWdvemoifQ.zvqaE-ZGaEDDhxI5RZVm8A";
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -50,7 +53,15 @@ const MapComponent = ({ craftsmen, onCraftsmanClick, userLocation }: MapProps) =
     if (!map.current) return;
 
     // Remove existing markers
-    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current.forEach((marker) => {
+      const el = marker.getElement();
+      const listener = markerListeners.get(el);
+      if (listener) {
+        el.removeEventListener('click', listener);
+        markerListeners.delete(el);
+      }
+      marker.remove();
+    });
     markersRef.current = [];
 
     // Add new markers
@@ -90,28 +101,26 @@ const MapComponent = ({ craftsmen, onCraftsmanClick, userLocation }: MapProps) =
         .setLngLat([craftsman.longitude, craftsman.latitude])
         .addTo(map.current);
 
-      // Add click handler
+      // Create and store click handler
       const handleClick = () => {
         onCraftsmanClick(craftsman);
       };
 
       el.addEventListener('click', handleClick);
+      markerListeners.set(el, handleClick);
 
-      // Store both marker and its event listener for cleanup
+      // Store marker for cleanup
       markersRef.current.push(marker);
-
-      // Store the event listener reference for cleanup
-      marker.getElement()._cleanupListener = handleClick;
     });
 
     // Cleanup function
     return () => {
       markersRef.current.forEach((marker) => {
-        // Remove the event listener using the stored reference
         const el = marker.getElement();
-        if (el._cleanupListener) {
-          el.removeEventListener('click', el._cleanupListener);
-          delete el._cleanupListener;
+        const listener = markerListeners.get(el);
+        if (listener) {
+          el.removeEventListener('click', listener);
+          markerListeners.delete(el);
         }
         marker.remove();
       });
