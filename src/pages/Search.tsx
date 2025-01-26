@@ -29,7 +29,7 @@ const Search = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<CraftsmanType | null>(null);
   const [maxDistance, setMaxDistance] = useState(50);
-  const [minRating, setMinRating] = useState(1);
+  const [minRating, setMinRating] = useState(0); // Changed initial value to 0
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedCraftsman, setSelectedCraftsman] = useState<Craftsman | null>(null);
   const navigate = useNavigate();
@@ -183,8 +183,11 @@ const Search = () => {
           setMinRating={setMinRating}
           onCraftsmanClick={setSelectedCraftsman}
         />
-        <Map craftsmen={craftsmen} userLocation={userLocation} />
-
+        <Map 
+          craftsmen={craftsmen} 
+          userLocation={userLocation}
+          onCraftsmanClick={setSelectedCraftsman}
+        />
         <Dialog open={!!selectedCraftsman} onOpenChange={() => setSelectedCraftsman(null)}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>

@@ -99,7 +99,7 @@ export const SearchSidebar = ({
           onValueChange={(value) => setMinRating(value[0])}
           max={5}
           step={0.5}
-          min={1}
+          min={0}
         />
       </div>
 

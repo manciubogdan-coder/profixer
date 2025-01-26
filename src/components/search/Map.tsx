@@ -8,36 +8,51 @@ import {
   Paintbrush,
   Plug,
   User,
+  Ruler,
+  Lock,
+  Home,
+  Wind,
+  HardHat,
 } from "lucide-react";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
+import { Button } from "@/components/ui/button";
 
 const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXVpdnVidCJ9.l1qMsSzaQBOq8sopVis4BQ";
 
 interface MapProps {
   craftsmen: Craftsman[];
   userLocation: { lat: number; lng: number } | null;
+  onCraftsmanClick: (craftsman: Craftsman) => void;
 }
 
 const getCraftsmanIcon = (type: string | null) => {
   switch (type) {
     case "carpenter":
+      return Ruler;
     case "mason":
+      return HardHat;
     case "general_contractor":
-      return Hammer;
+      return Home;
     case "plumber":
-    case "hvac_technician":
       return Wrench;
+    case "hvac_technician":
+      return Wind;
     case "painter":
       return Paintbrush;
     case "electrician":
       return Plug;
+    case "locksmith":
+      return Lock;
+    case "welder":
+    case "roofer":
+      return Hammer;
     default:
       return User;
   }
 };
 
-export const Map = ({ craftsmen, userLocation }: MapProps) => {
+export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -117,18 +132,41 @@ export const Map = ({ craftsmen, userLocation }: MapProps) => {
       const marker = new mapboxgl.Marker(el)
         .setLngLat([craftsman.longitude, craftsman.latitude])
         .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(
-            `<div class="p-2">
-              <h3 class="font-medium">${craftsman.first_name} ${craftsman.last_name}</h3>
-              <p class="text-sm text-gray-500">${craftsman.city}, ${craftsman.county}</p>
-            </div>`
-          )
+          new mapboxgl.Popup({ offset: 25 }).setHTML(`
+            <div class="p-4">
+              <h3 class="text-lg font-semibold">${craftsman.first_name} ${craftsman.last_name}</h3>
+              <p class="text-sm text-gray-600 mt-1">${craftsman.city}, ${craftsman.county}</p>
+              <p class="text-sm text-gray-600">${craftsman.craftsman_type ? craftsman.craftsman_type.replace('_', ' ').charAt(0).toUpperCase() + craftsman.craftsman_type.slice(1) : 'General'}</p>
+              <button
+                onclick="window.dispatchEvent(new CustomEvent('craftsmanClick', { detail: '${craftsman.id}' }))"
+                class="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
+              >
+                Vezi profilul
+              </button>
+            </div>
+          `)
         )
         .addTo(map.current);
 
       markersRef.current.push(marker);
     });
   }, [craftsmen]);
+
+  // Add event listener for craftsman click
+  useEffect(() => {
+    const handleCraftsmanClick = (event: CustomEvent) => {
+      const craftsman = craftsmen.find(c => c.id === event.detail);
+      if (craftsman) {
+        onCraftsmanClick(craftsman);
+      }
+    };
+
+    window.addEventListener('craftsmanClick', handleCraftsmanClick as EventListener);
+
+    return () => {
+      window.removeEventListener('craftsmanClick', handleCraftsmanClick as EventListener);
+    };
+  }, [craftsmen, onCraftsmanClick]);
 
   return (
     <div className="flex-1 relative">
