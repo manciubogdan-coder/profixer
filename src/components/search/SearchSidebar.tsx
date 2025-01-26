@@ -151,10 +151,10 @@ export const SearchSidebar = ({
       </div>
 
       {/* Mobile sidebar */}
-      <div className="md:hidden fixed bottom-4 right-4 z-50">
+      <div className="md:hidden fixed bottom-4 left-4 z-50">
         <Sheet>
           <SheetTrigger asChild>
-            <Button size="icon">
+            <Button size="icon" className="bg-primary hover:bg-primary/90">
               <Menu className="h-4 w-4" />
             </Button>
           </SheetTrigger>

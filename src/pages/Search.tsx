@@ -35,7 +35,6 @@ const Search = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Get user's location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -103,7 +102,7 @@ const Search = () => {
           *,
           reviews!reviews_craftsman_id_fkey(rating)
         `)
-        .eq("role", "professional"); // Only fetch professionals
+        .eq("role", "professional");
 
       if (searchTerm) {
         query = query.or(
@@ -166,6 +165,10 @@ const Search = () => {
     return (value * Math.PI) / 180;
   };
 
+  const handleCraftsmanClick = (craftsman: Craftsman) => {
+    navigate(`/profile/${craftsman.id}`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -181,44 +184,13 @@ const Search = () => {
           setMaxDistance={setMaxDistance}
           minRating={minRating}
           setMinRating={setMinRating}
-          onCraftsmanClick={setSelectedCraftsman}
+          onCraftsmanClick={handleCraftsmanClick}
         />
         <Map 
           craftsmen={craftsmen} 
           userLocation={userLocation}
-          onCraftsmanClick={setSelectedCraftsman}
+          onCraftsmanClick={handleCraftsmanClick}
         />
-        <Dialog open={!!selectedCraftsman} onOpenChange={() => setSelectedCraftsman(null)}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedCraftsman?.first_name} {selectedCraftsman?.last_name}
-              </DialogTitle>
-              <DialogDescription>
-                <div className="space-y-2 mt-2">
-                  <p>Oraș: {selectedCraftsman?.city}</p>
-                  <p>Județ: {selectedCraftsman?.county}</p>
-                  <p>Telefon: {selectedCraftsman?.phone}</p>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span>4.5</span>
-                  </div>
-                </div>
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                onClick={() => {
-                  if (selectedCraftsman) {
-                    navigate(`/profile/${selectedCraftsman.id}`);
-                  }
-                }}
-              >
-                Vezi profil complet
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
