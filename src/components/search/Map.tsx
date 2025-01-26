@@ -37,6 +37,13 @@ const MapComponent = ({ craftsmen, userLocation }: MapProps) => {
 
       map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
     }
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
   }, [lng, lat, zoom]);
 
   useEffect(() => {
@@ -80,10 +87,6 @@ const MapComponent = ({ craftsmen, userLocation }: MapProps) => {
 
       el.innerHTML = iconHtml;
 
-      // Create a unique ID for the button
-      const buttonId = `craftsman-${craftsman.id}`;
-
-      // Create and add the marker
       const marker = new mapboxgl.Marker(el)
         .setLngLat([craftsman.longitude, craftsman.latitude])
         .setPopup(
@@ -93,7 +96,7 @@ const MapComponent = ({ craftsmen, userLocation }: MapProps) => {
               <p class="text-sm text-gray-600 mt-1">${craftsman.city}, ${craftsman.county}</p>
               <p class="text-sm text-gray-600">${craftsman.craftsman_type ? craftsman.craftsman_type.replace('_', ' ').charAt(0).toUpperCase() + craftsman.craftsman_type.slice(1) : 'General'}</p>
               <button
-                id="${buttonId}"
+                onclick="window.location.href='/profile/${craftsman.id}'"
                 class="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
               >
                 Vezi profilul
@@ -102,14 +105,6 @@ const MapComponent = ({ craftsmen, userLocation }: MapProps) => {
           `)
         )
         .addTo(map.current);
-
-      // Add click handler for the button after popup is opened
-      marker.getPopup().on('open', () => {
-        const button = document.getElementById(buttonId);
-        if (button) {
-          button.onclick = () => navigate(`/profile/${craftsman.id}`);
-        }
-      });
 
       markersRef.current.push(marker);
     });
