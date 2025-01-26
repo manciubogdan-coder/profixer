@@ -85,46 +85,39 @@ const MapComponent = ({ craftsmen, onCraftsmanClick, userLocation }: MapProps) =
 
       el.innerHTML = iconHtml;
 
-      // Create a serializable popup content string
-      const popupContent = `
-        <div class="p-4">
-          <h3 class="text-lg font-semibold">${craftsman.first_name} ${craftsman.last_name}</h3>
-          <p class="text-sm text-gray-600 mt-1">${craftsman.city}, ${craftsman.county}</p>
-          <p class="text-sm text-gray-600">${craftsman.craftsman_type ? craftsman.craftsman_type.replace('_', ' ').charAt(0).toUpperCase() + craftsman.craftsman_type.slice(1) : 'General'}</p>
-          <button
-            class="view-profile mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
-            data-craftsman-id="${craftsman.id}"
-          >
-            Vezi profilul
-          </button>
-        </div>
-      `;
-
-      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
-
       // Create marker
       const marker = new mapboxgl.Marker(el)
         .setLngLat([craftsman.longitude, craftsman.latitude])
-        .setPopup(popup)
         .addTo(map.current);
 
-      // Add click handler using DOM event delegation
-      marker.getElement().addEventListener('click', () => {
+      // Add click handler
+      const handleClick = () => {
         onCraftsmanClick(craftsman);
-      });
+      };
 
+      el.addEventListener('click', handleClick);
+
+      // Store both marker and its event listener for cleanup
       markersRef.current.push(marker);
+
+      // Store the event listener reference for cleanup
+      marker.getElement()._cleanupListener = handleClick;
     });
 
     // Cleanup function
     return () => {
       markersRef.current.forEach((marker) => {
-        marker.getElement().removeEventListener('click', () => {});
+        // Remove the event listener using the stored reference
+        const el = marker.getElement();
+        if (el._cleanupListener) {
+          el.removeEventListener('click', el._cleanupListener);
+          delete el._cleanupListener;
+        }
         marker.remove();
       });
       markersRef.current = [];
     };
-  }, [craftsmen, navigate, onCraftsmanClick]);
+  }, [craftsmen, onCraftsmanClick]);
 
   return (
     <div className="w-full h-full">
