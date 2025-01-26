@@ -85,6 +85,7 @@ const MapComponent = ({ craftsmen, onCraftsmanClick, userLocation }: MapProps) =
 
       el.innerHTML = iconHtml;
 
+      // Create a serializable popup content string
       const popupContent = `
         <div class="p-4">
           <h3 class="text-lg font-semibold">${craftsman.first_name} ${craftsman.last_name}</h3>
@@ -99,36 +100,31 @@ const MapComponent = ({ craftsmen, onCraftsmanClick, userLocation }: MapProps) =
         </div>
       `;
 
-      const popup = new mapboxgl.Popup({ offset: 25 })
-        .setHTML(popupContent);
+      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupContent);
 
-      // Add click handler to popup
-      popup.on('open', () => {
-        const button = popup.getElement()?.querySelector('.view-profile');
-        if (button) {
-          button.addEventListener('click', (e) => {
-            e.preventDefault();
-            const craftsmanId = (e.target as HTMLElement).getAttribute('data-craftsman-id');
-            if (craftsmanId) {
-              navigate(`/profile/${craftsmanId}`);
-            }
-          });
-        }
-      });
-
+      // Create marker
       const marker = new mapboxgl.Marker(el)
         .setLngLat([craftsman.longitude, craftsman.latitude])
         .setPopup(popup)
         .addTo(map.current);
 
+      // Add click handler using DOM event delegation
+      marker.getElement().addEventListener('click', () => {
+        onCraftsmanClick(craftsman);
+      });
+
       markersRef.current.push(marker);
     });
 
+    // Cleanup function
     return () => {
-      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current.forEach((marker) => {
+        marker.getElement().removeEventListener('click', () => {});
+        marker.remove();
+      });
       markersRef.current = [];
     };
-  }, [craftsmen, navigate]);
+  }, [craftsmen, navigate, onCraftsmanClick]);
 
   return (
     <div className="w-full h-full">
