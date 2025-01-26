@@ -2,18 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useNavigate } from "react-router-dom";
-import { Profile } from "@/types";
+import { Tables } from "@/integrations/supabase/types";
 
 interface MapProps {
-  craftsmen: Profile[];
-  onCraftsmanClick: (craftsman: Profile) => void;
+  craftsmen: Tables<"profiles">[];
+  onCraftsmanClick: (craftsman: Tables<"profiles">) => void;
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWFuY2l1Ym9nZGFuIiwiYSI6ImNscmh3Z2FyeTBwc2Uya3BpeDU2OWdvemoifQ.zvqaE-ZGaEDDhxI5RZVm8A";
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
-const Map = ({ craftsmen }: MapProps) => {
+const MapComponent = ({ craftsmen, userLocation }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -126,4 +127,4 @@ const Map = ({ craftsmen }: MapProps) => {
   );
 };
 
-export default Map;
+export default MapComponent;

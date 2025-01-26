@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Navigation } from "@/components/Navigation";
 import { SearchSidebar } from "@/components/search/SearchSidebar";
-import { Map } from "@/components/search/Map";
+import MapComponent from "@/components/search/Map";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables, Enums } from "@/integrations/supabase/types";
@@ -183,7 +183,7 @@ const Search = () => {
           setMinRating={setMinRating}
           onCraftsmanClick={setSelectedCraftsman}
         />
-        <Map 
+        <MapComponent 
           craftsmen={craftsmen} 
           userLocation={userLocation}
           onCraftsmanClick={setSelectedCraftsman}
