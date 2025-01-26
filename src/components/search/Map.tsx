@@ -14,7 +14,7 @@ const MAPBOX_TOKEN = "pk.eyJ1IjoibWFuY2l1Ym9nZGFuIiwiYSI6ImNscmh3Z2FyeTBwc2Uya3B
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
-const MapComponent = ({ craftsmen, userLocation }: MapProps) => {
+const MapComponent = ({ craftsmen, onCraftsmanClick, userLocation }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -57,11 +57,9 @@ const MapComponent = ({ craftsmen, userLocation }: MapProps) => {
     craftsmen.forEach((craftsman) => {
       if (!craftsman.latitude || !craftsman.longitude) return;
 
-      // Create custom element for marker
       const el = document.createElement("div");
       el.className = "marker";
 
-      // Define icon based on craftsman type
       let iconHtml = "";
       switch (craftsman.craftsman_type) {
         case "carpenter":
@@ -87,23 +85,40 @@ const MapComponent = ({ craftsmen, userLocation }: MapProps) => {
 
       el.innerHTML = iconHtml;
 
+      const popupContent = `
+        <div class="p-4">
+          <h3 class="text-lg font-semibold">${craftsman.first_name} ${craftsman.last_name}</h3>
+          <p class="text-sm text-gray-600 mt-1">${craftsman.city}, ${craftsman.county}</p>
+          <p class="text-sm text-gray-600">${craftsman.craftsman_type ? craftsman.craftsman_type.replace('_', ' ').charAt(0).toUpperCase() + craftsman.craftsman_type.slice(1) : 'General'}</p>
+          <button
+            class="view-profile mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
+            data-craftsman-id="${craftsman.id}"
+          >
+            Vezi profilul
+          </button>
+        </div>
+      `;
+
+      const popup = new mapboxgl.Popup({ offset: 25 })
+        .setHTML(popupContent);
+
+      // Add click handler to popup
+      popup.on('open', () => {
+        const button = popup.getElement()?.querySelector('.view-profile');
+        if (button) {
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const craftsmanId = (e.target as HTMLElement).getAttribute('data-craftsman-id');
+            if (craftsmanId) {
+              navigate(`/profile/${craftsmanId}`);
+            }
+          });
+        }
+      });
+
       const marker = new mapboxgl.Marker(el)
         .setLngLat([craftsman.longitude, craftsman.latitude])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(`
-            <div class="p-4">
-              <h3 class="text-lg font-semibold">${craftsman.first_name} ${craftsman.last_name}</h3>
-              <p class="text-sm text-gray-600 mt-1">${craftsman.city}, ${craftsman.county}</p>
-              <p class="text-sm text-gray-600">${craftsman.craftsman_type ? craftsman.craftsman_type.replace('_', ' ').charAt(0).toUpperCase() + craftsman.craftsman_type.slice(1) : 'General'}</p>
-              <button
-                onclick="window.location.href='/profile/${craftsman.id}'"
-                class="mt-3 px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
-              >
-                Vezi profilul
-              </button>
-            </div>
-          `)
-        )
+        .setPopup(popup)
         .addTo(map.current);
 
       markersRef.current.push(marker);
