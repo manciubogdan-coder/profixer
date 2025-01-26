@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useNavigate } from "react-router-dom";
 import { Tables } from "@/integrations/supabase/types";
 
 interface MapProps {
@@ -21,7 +20,6 @@ const MapComponent = ({ craftsmen, onCraftsmanClick, userLocation }: MapProps) =
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const navigate = useNavigate();
 
   const [lng] = useState(26.1025);
   const [lat] = useState(44.4268);
@@ -103,7 +101,8 @@ const MapComponent = ({ craftsmen, onCraftsmanClick, userLocation }: MapProps) =
 
       // Create and store click handler
       const handleClick = () => {
-        onCraftsmanClick(craftsman);
+        const craftsmanCopy = JSON.parse(JSON.stringify(craftsman));
+        onCraftsmanClick(craftsmanCopy);
       };
 
       el.addEventListener('click', handleClick);
