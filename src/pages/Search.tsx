@@ -103,7 +103,7 @@ const Search = () => {
           *,
           reviews!reviews_craftsman_id_fkey(rating)
         `)
-        .eq("role", "professional");
+        .eq("role", "professional"); // Only fetch professionals
 
       if (searchTerm) {
         query = query.or(
