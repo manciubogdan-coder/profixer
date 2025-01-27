@@ -18,8 +18,6 @@ import {
 } from "lucide-react";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXVpdnVidCJ9.l1qMsSzaQBOq8sopVis4BQ";
 
@@ -157,6 +155,19 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       // Create popup content
       const popupContent = document.createElement("div");
       popupContent.className = "p-4";
+
+      // Create a simplified version of the craftsman object for serialization
+      const simplifiedCraftsman = {
+        id: craftsman.id,
+        first_name: craftsman.first_name,
+        last_name: craftsman.last_name,
+        phone: craftsman.phone,
+        city: craftsman.city,
+        county: craftsman.county,
+        craftsman_type: craftsman.craftsman_type,
+        average_rating: craftsman.average_rating,
+      };
+
       popupContent.innerHTML = `
         <div class="space-y-4">
           <div>
@@ -171,7 +182,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
             <span class="text-sm">${craftsman.average_rating?.toFixed(1) || "N/A"}</span>
           </div>
           <div class="flex gap-2">
-            <button class="bg-primary text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary/90" onclick="window.viewProfile('${craftsman.id}')">
+            <button class="bg-primary text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary/90" onclick="window.viewProfile('${JSON.stringify(simplifiedCraftsman).replace(/"/g, '&quot;')}')">
               ${renderToString(createElement(User, { size: 16 }))}
               Vezi profil
             </button>
@@ -201,10 +212,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     });
 
     // Add global functions for the popup buttons
-    window.viewProfile = (id: string) => {
-      const craftsman = craftsmen.find(c => c.id === id);
-      if (craftsman) {
+    window.viewProfile = (craftsmanJson: string) => {
+      try {
+        const craftsman = JSON.parse(craftsmanJson);
         onCraftsmanClick(craftsman);
+      } catch (error) {
+        console.error("Error parsing craftsman data:", error);
       }
     };
 
@@ -231,7 +244,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 // Add TypeScript declarations for the global functions
 declare global {
   interface Window {
-    viewProfile: (id: string) => void;
+    viewProfile: (craftsmanJson: string) => void;
     callCraftsman: (phone: string) => void;
   }
 }
