@@ -21,6 +21,12 @@ import { renderToString } from "react-dom/server";
 
 const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXVpdnVidCJ9.l1qMsSzaQBOq8sopVis4BQ";
 
+interface MapProps {
+  craftsmen: Craftsman[];
+  userLocation: { lat: number; lng: number } | null;
+  onCraftsmanClick: (craftsman: Craftsman) => void;
+}
+
 const getCraftsmanIcon = (type: string | null) => {
   switch (type) {
     case "carpenter":
@@ -62,12 +68,6 @@ const getCraftsmanTypeLabel = (type: string | null) => {
   };
   return type ? types[type] : "Necunoscut";
 };
-
-interface MapProps {
-  craftsmen: Craftsman[];
-  userLocation: { lat: number; lng: number } | null;
-  onCraftsmanClick: (craftsman: Craftsman) => void;
-}
 
 export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -156,7 +156,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       const popupContent = document.createElement("div");
       popupContent.className = "p-4 bg-background text-foreground";
 
-      // Store only the necessary data as a data attribute
+      // Store only the necessary data as data attributes
       const craftsmanId = craftsman.id;
       
       popupContent.innerHTML = `
@@ -248,11 +248,3 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     </div>
   );
 };
-
-// Add TypeScript declarations for the global functions
-declare global {
-  interface Window {
-    viewProfile: (craftsmanJson: string) => void;
-    callCraftsman: (phone: string) => void;
-  }
-}
