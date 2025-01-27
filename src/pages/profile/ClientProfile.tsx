@@ -57,7 +57,7 @@ interface Profile {
   address: string;
   role: Database["public"]["Enums"]["user_role"];
   avatar_url?: string | null;
-  craftsman_type?: Database["public"]["Enums"]["craftsman_type"] | null;
+  craftsman_type?: string | null; // Changed to string | null to match the UUID from trades table
 }
 
 interface Specialization {
