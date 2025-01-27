@@ -10,33 +10,19 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star, Filter } from "lucide-react";
 import type { Craftsman } from "@/pages/Search";
-import { Enums } from "@/integrations/supabase/types";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-
-type CraftsmanType = Enums<"craftsman_type"> | "all";
-
-const craftsmanTypeLabels: Record<Exclude<CraftsmanType, "all">, string> = {
-  carpenter: "Tâmplar",
-  plumber: "Instalator",
-  electrician: "Electrician",
-  painter: "Zugrav",
-  mason: "Zidar",
-  welder: "Sudor",
-  locksmith: "Lăcătuș",
-  roofer: "Acoperișar",
-  hvac_technician: "Tehnician HVAC",
-  general_contractor: "Constructor",
-};
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SearchSidebarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  selectedType: CraftsmanType | null;
-  setSelectedType: (type: CraftsmanType | null) => void;
+  selectedType: string | null;
+  setSelectedType: (type: string | null) => void;
   craftsmen: Craftsman[];
   isLoading: boolean;
   maxDistance: number;
@@ -59,6 +45,23 @@ export const SearchSidebar = ({
   setMinRating,
   onCraftsmanClick,
 }: SearchSidebarProps) => {
+  const { data: trades = [] } = useQuery({
+    queryKey: ["trades"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("trades")
+        .select("*")
+        .order("name");
+
+      if (error) {
+        console.error("Error fetching trades:", error);
+        return [];
+      }
+
+      return data;
+    },
+  });
+
   const filters = (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -75,23 +78,18 @@ export const SearchSidebar = ({
         <Label>Meserie</Label>
         <Select
           value={selectedType || undefined}
-          onValueChange={(value) => setSelectedType(value as CraftsmanType || null)}
+          onValueChange={(value) => setSelectedType(value || null)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Alege meseria" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toate</SelectItem>
-            <SelectItem value="carpenter">Tâmplar</SelectItem>
-            <SelectItem value="plumber">Instalator</SelectItem>
-            <SelectItem value="electrician">Electrician</SelectItem>
-            <SelectItem value="painter">Zugrav</SelectItem>
-            <SelectItem value="mason">Zidar</SelectItem>
-            <SelectItem value="welder">Sudor</SelectItem>
-            <SelectItem value="locksmith">Lăcătuș</SelectItem>
-            <SelectItem value="roofer">Acoperișar</SelectItem>
-            <SelectItem value="hvac_technician">Tehnician HVAC</SelectItem>
-            <SelectItem value="general_contractor">Constructor</SelectItem>
+            <SelectItem value="">Toate</SelectItem>
+            {trades.map((trade) => (
+              <SelectItem key={trade.id} value={trade.id}>
+                {trade.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -122,7 +120,7 @@ export const SearchSidebar = ({
           <h3 className="font-medium">Rezultate</h3>
           {selectedType && (
             <Badge variant="secondary" className="ml-2">
-              {selectedType === 'all' ? 'Toate meseriile' : craftsmanTypeLabels[selectedType]}
+              {trades.find(t => t.id === selectedType)?.name || 'Toate meseriile'}
             </Badge>
           )}
           {maxDistance < 400 && (
@@ -160,9 +158,9 @@ export const SearchSidebar = ({
                     <p className="text-sm text-muted-foreground">
                       {craftsman.city}, {craftsman.county}
                     </p>
-                    {craftsman.craftsman_type && (
+                    {craftsman.trade && (
                       <p className="text-sm text-primary">
-                        {craftsmanTypeLabels[craftsman.craftsman_type]}
+                        {craftsman.trade.name}
                       </p>
                     )}
                   </div>

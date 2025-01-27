@@ -4,7 +4,7 @@ import { SearchSidebar } from "@/components/search/SearchSidebar";
 import { Map } from "@/components/search/Map";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Tables, Enums } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,13 +12,14 @@ export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
   longitude?: number;
   average_rating?: number;
+  trade?: {
+    name: string;
+  } | null;
 };
-
-type CraftsmanType = Enums<"craftsman_type"> | "all";
 
 const Search = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedType, setSelectedType] = useState<CraftsmanType | null>(null);
+  const [selectedType, setSelectedType] = useState<string | null>(null);
   const [maxDistance, setMaxDistance] = useState(50);
   const [minRating, setMinRating] = useState(0);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -90,7 +91,8 @@ const Search = () => {
         .from("profiles")
         .select(`
           *,
-          reviews!reviews_craftsman_id_fkey(rating)
+          reviews!reviews_craftsman_id_fkey(rating),
+          trade:craftsman_type(name)
         `)
         .eq("role", "professional");
 
@@ -100,7 +102,7 @@ const Search = () => {
         );
       }
 
-      if (selectedType && selectedType !== "all") {
+      if (selectedType) {
         query = query.eq("craftsman_type", selectedType);
       }
 
@@ -180,12 +182,12 @@ const Search = () => {
           setMaxDistance={setMaxDistance}
           minRating={minRating}
           setMinRating={setMinRating}
-          onCraftsmanClick={handleCraftsmanClick}
+          onCraftsmanClick={(craftsman) => navigate(`/profile/${craftsman.id}`)}
         />
         <Map 
           craftsmen={craftsmen} 
           userLocation={userLocation}
-          onCraftsmanClick={handleCraftsmanClick}
+          onCraftsmanClick={(craftsman) => navigate(`/profile/${craftsman.id}`)}
         />
       </div>
     </div>

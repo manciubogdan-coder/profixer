@@ -290,6 +290,17 @@ export type Database = {
       }
     }
     Enums: {
+      craftsman_type:
+        | "carpenter"
+        | "plumber"
+        | "electrician"
+        | "painter"
+        | "mason"
+        | "welder"
+        | "locksmith"
+        | "roofer"
+        | "hvac_technician"
+        | "general_contractor"
       user_role: "client" | "professional"
     }
     CompositeTypes: {
