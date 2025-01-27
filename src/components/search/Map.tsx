@@ -21,12 +21,6 @@ import { renderToString } from "react-dom/server";
 
 const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXVpdnVidCJ9.l1qMsSzaQBOq8sopVis4BQ";
 
-interface MapProps {
-  craftsmen: Craftsman[];
-  userLocation: { lat: number; lng: number } | null;
-  onCraftsmanClick: (craftsman: Craftsman) => void;
-}
-
 const getCraftsmanIcon = (type: string | null) => {
   switch (type) {
     case "carpenter":
@@ -68,6 +62,12 @@ const getCraftsmanTypeLabel = (type: string | null) => {
   };
   return type ? types[type] : "Necunoscut";
 };
+
+interface MapProps {
+  craftsmen: Craftsman[];
+  userLocation: { lat: number; lng: number } | null;
+  onCraftsmanClick: (craftsman: Craftsman) => void;
+}
 
 export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -156,18 +156,9 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       const popupContent = document.createElement("div");
       popupContent.className = "p-4 bg-background text-foreground";
 
-      // Create a simplified version of the craftsman object for serialization
-      const simplifiedCraftsman = {
-        id: craftsman.id,
-        first_name: craftsman.first_name,
-        last_name: craftsman.last_name,
-        phone: craftsman.phone,
-        city: craftsman.city,
-        county: craftsman.county,
-        craftsman_type: craftsman.craftsman_type,
-        average_rating: craftsman.average_rating,
-      };
-
+      // Store only the necessary data as a data attribute
+      const craftsmanId = craftsman.id;
+      
       popupContent.innerHTML = `
         <div class="space-y-4">
           <div>
@@ -182,17 +173,37 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
             <span class="text-sm text-foreground">${craftsman.average_rating?.toFixed(1) || "N/A"}</span>
           </div>
           <div class="flex gap-2">
-            <button class="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary/90" onclick="window.viewProfile('${JSON.stringify(simplifiedCraftsman).replace(/"/g, '&quot;')}')">
+            <button class="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary/90" data-craftsman-id="${craftsmanId}">
               ${renderToString(createElement(User, { size: 16 }))}
               Vezi profil
             </button>
-            <button class="bg-green-600 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-green-700" onclick="window.callCraftsman('${craftsman.phone}')">
+            <button class="bg-green-600 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-green-700" data-phone="${craftsman.phone}">
               ${renderToString(createElement(PhoneCall, { size: 16 }))}
               Sună acum
             </button>
           </div>
         </div>
       `;
+
+      // Add click handlers directly to the popup content
+      popupContent.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        const button = target.closest('button');
+        if (!button) return;
+
+        if (button.hasAttribute('data-craftsman-id')) {
+          const id = button.getAttribute('data-craftsman-id');
+          const selectedCraftsman = craftsmen.find(c => c.id === id);
+          if (selectedCraftsman) {
+            onCraftsmanClick(selectedCraftsman);
+          }
+        } else if (button.hasAttribute('data-phone')) {
+          const phone = button.getAttribute('data-phone');
+          if (phone) {
+            window.location.href = `tel:${phone}`;
+          }
+        }
+      });
 
       // Create and add the popup with theme-aware styles
       const popup = new mapboxgl.Popup({
@@ -211,28 +222,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
       markersRef.current.push(marker);
     });
-
-    // Add global functions for the popup buttons
-    window.viewProfile = (craftsmanJson: string) => {
-      try {
-        const craftsman = JSON.parse(craftsmanJson);
-        onCraftsmanClick(craftsman);
-      } catch (error) {
-        console.error("Error parsing craftsman data:", error);
-      }
-    };
-
-    window.callCraftsman = (phone: string) => {
-      if (phone) {
-        window.location.href = `tel:${phone}`;
-      }
-    };
-
-    return () => {
-      // Cleanup global functions
-      delete window.viewProfile;
-      delete window.callCraftsman;
-    };
 
   }, [craftsmen, onCraftsmanClick]);
 
