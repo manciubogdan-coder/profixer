@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "@/pages/Index";
@@ -27,8 +27,10 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/search" element={<Search />} />
-            <Route path="/profile" element={<ClientProfile />} />
+            <Route path="/profile/me" element={<ClientProfile />} />
             <Route path="/profile/:id" element={<CraftsmanPublicProfile />} />
+            {/* Redirect /profile to /profile/me */}
+            <Route path="/profile" element={<Navigate to="/profile/me" replace />} />
           </Routes>
           <Toaster />
         </AuthProvider>
