@@ -15,7 +15,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 type CraftsmanType = Enums<"craftsman_type"> | "all";
 
@@ -180,33 +180,35 @@ export const SearchSidebar = ({
   );
 
   return (
-    <>
-      {/* Desktop sidebar */}
-      <div className="hidden md:block w-96 border-r bg-background p-6 overflow-y-auto">
-        {filters}
-      </div>
+    <TooltipProvider>
+      <>
+        {/* Desktop sidebar */}
+        <div className="hidden md:block w-96 border-r bg-background p-6 overflow-y-auto">
+          {filters}
+        </div>
 
-      {/* Mobile sidebar */}
-      <div className="md:hidden fixed top-[4.5rem] right-4 z-50">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button size="lg" className="bg-primary hover:bg-primary/90 shadow-lg">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filtrează ({craftsmen.length})
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                {filters}
-              </SheetContent>
-            </Sheet>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Filtrează meșterii după meserie, distanță și rating</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
-    </>
+        {/* Mobile sidebar */}
+        <div className="md:hidden fixed top-[4.5rem] right-4 z-50">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button size="lg" className="bg-primary hover:bg-primary/90 shadow-lg">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filtrează ({craftsmen.length})
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  {filters}
+                </SheetContent>
+              </Sheet>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Filtrează meșterii după meserie, distanță și rating</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </>
+    </TooltipProvider>
   );
 };
