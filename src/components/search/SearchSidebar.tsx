@@ -45,9 +45,10 @@ export const SearchSidebar = ({
   setMinRating,
   onCraftsmanClick,
 }: SearchSidebarProps) => {
-  const { data: trades = [] } = useQuery({
+  const { data: trades = [], isLoading: isLoadingTrades } = useQuery({
     queryKey: ["trades"],
     queryFn: async () => {
+      console.log("Fetching trades...");
       const { data, error } = await supabase
         .from("trades")
         .select("*")
@@ -58,6 +59,7 @@ export const SearchSidebar = ({
         return [];
       }
 
+      console.log("Fetched trades:", data);
       return data;
     },
   });
@@ -77,14 +79,14 @@ export const SearchSidebar = ({
       <div className="space-y-2">
         <Label>Meserie</Label>
         <Select
-          value={selectedType || undefined}
-          onValueChange={(value) => setSelectedType(value || null)}
+          value={selectedType || "all"}
+          onValueChange={(value) => setSelectedType(value === "all" ? null : value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Alege meseria" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Toate</SelectItem>
+            <SelectItem value="all">Toate meseriile</SelectItem>
             {trades.map((trade) => (
               <SelectItem key={trade.id} value={trade.id}>
                 {trade.name}
