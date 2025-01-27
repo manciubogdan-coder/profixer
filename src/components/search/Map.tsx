@@ -134,9 +134,18 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
       // Add click handler directly to the marker element
       el.addEventListener("click", () => {
-        // Create a serializable copy of the craftsman object
-        const serializableCraftsman = JSON.parse(JSON.stringify(craftsman));
-        onCraftsmanClick(serializableCraftsman);
+        // Create a serializable copy of the craftsman object by only including necessary properties
+        const serializableCraftsman = {
+          id: craftsman.id,
+          first_name: craftsman.first_name,
+          last_name: craftsman.last_name,
+          craftsman_type: craftsman.craftsman_type,
+          city: craftsman.city,
+          county: craftsman.county,
+          latitude: craftsman.latitude,
+          longitude: craftsman.longitude,
+        };
+        onCraftsmanClick(serializableCraftsman as Craftsman);
       });
 
       markersRef.current.push(marker);
