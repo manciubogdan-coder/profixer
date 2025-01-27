@@ -154,7 +154,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
       // Create popup content
       const popupContent = document.createElement("div");
-      popupContent.className = "p-4";
+      popupContent.className = "p-4 bg-background text-foreground";
 
       // Create a simplified version of the craftsman object for serialization
       const simplifiedCraftsman = {
@@ -171,18 +171,18 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       popupContent.innerHTML = `
         <div class="space-y-4">
           <div>
-            <h3 class="text-lg font-semibold">${craftsman.first_name} ${craftsman.last_name}</h3>
-            <p class="text-sm text-gray-500">${getCraftsmanTypeLabel(craftsman.craftsman_type)}</p>
-            <p class="text-sm text-gray-500">${craftsman.city}, ${craftsman.county}</p>
+            <h3 class="text-lg font-semibold text-foreground">${craftsman.first_name} ${craftsman.last_name}</h3>
+            <p class="text-sm text-muted-foreground">${getCraftsmanTypeLabel(craftsman.craftsman_type)}</p>
+            <p class="text-sm text-muted-foreground">${craftsman.city}, ${craftsman.county}</p>
           </div>
           <div class="flex items-center gap-1">
             <span class="flex items-center">
               ${renderToString(createElement(Star, { size: 16, className: "text-yellow-400 fill-yellow-400" }))}
             </span>
-            <span class="text-sm">${craftsman.average_rating?.toFixed(1) || "N/A"}</span>
+            <span class="text-sm text-foreground">${craftsman.average_rating?.toFixed(1) || "N/A"}</span>
           </div>
           <div class="flex gap-2">
-            <button class="bg-primary text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary/90" onclick="window.viewProfile('${JSON.stringify(simplifiedCraftsman).replace(/"/g, '&quot;')}')">
+            <button class="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary/90" onclick="window.viewProfile('${JSON.stringify(simplifiedCraftsman).replace(/"/g, '&quot;')}')">
               ${renderToString(createElement(User, { size: 16 }))}
               Vezi profil
             </button>
@@ -194,11 +194,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         </div>
       `;
 
-      // Create and add the popup
+      // Create and add the popup with theme-aware styles
       const popup = new mapboxgl.Popup({
         offset: 25,
         closeButton: true,
         closeOnClick: false,
+        className: 'custom-popup',
       })
         .setDOMContent(popupContent);
 
@@ -232,11 +233,29 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       delete window.viewProfile;
       delete window.callCraftsman;
     };
+
   }, [craftsmen, onCraftsmanClick]);
 
   return (
     <div className="flex-1 relative">
       <div ref={mapContainer} className="absolute inset-0" />
+      <style>{`
+        .mapboxgl-popup-content {
+          background-color: hsl(var(--background));
+          color: hsl(var(--foreground));
+          border: 1px solid hsl(var(--border));
+          border-radius: 0.5rem;
+        }
+        .mapboxgl-popup-close-button {
+          color: hsl(var(--foreground));
+          font-size: 16px;
+          padding: 4px 8px;
+        }
+        .mapboxgl-popup-close-button:hover {
+          background-color: hsl(var(--muted));
+          border-radius: 4px;
+        }
+      `}</style>
     </div>
   );
 };
