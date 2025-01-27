@@ -8,13 +8,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star } from "lucide-react";
+import { Star, Filter } from "lucide-react";
 import type { Craftsman } from "@/pages/Search";
 import { Enums } from "@/integrations/supabase/types";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Menu } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type CraftsmanType = Enums<"craftsman_type"> | "all";
 
@@ -117,7 +118,24 @@ export const SearchSidebar = ({
       </div>
 
       <div className="space-y-4">
-        <h3 className="font-medium">Rezultate</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium">Rezultate</h3>
+          {selectedType && (
+            <Badge variant="secondary" className="ml-2">
+              {selectedType === 'all' ? 'Toate meseriile' : craftsmanTypeLabels[selectedType]}
+            </Badge>
+          )}
+          {maxDistance < 400 && (
+            <Badge variant="secondary" className="ml-2">
+              {maxDistance}km
+            </Badge>
+          )}
+          {minRating > 0 && (
+            <Badge variant="secondary" className="ml-2">
+              ≥{minRating}★
+            </Badge>
+          )}
+        </div>
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="space-y-3">
@@ -169,17 +187,25 @@ export const SearchSidebar = ({
       </div>
 
       {/* Mobile sidebar */}
-      <div className="md:hidden fixed bottom-4 left-4 z-50">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button size="icon" className="bg-primary hover:bg-primary/90">
-              <Menu className="h-4 w-4" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-            {filters}
-          </SheetContent>
-        </Sheet>
+      <div className="md:hidden fixed top-[4.5rem] right-4 z-50">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="lg" className="bg-primary hover:bg-primary/90 shadow-lg">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtrează ({craftsmen.length})
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                {filters}
+              </SheetContent>
+            </Sheet>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Filtrează meșterii după meserie, distanță și rating</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </>
   );
