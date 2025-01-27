@@ -13,9 +13,13 @@ import {
   Home,
   Wind,
   HardHat,
+  Star,
+  PhoneCall,
 } from "lucide-react";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXVpdnVidCJ9.l1qMsSzaQBOq8sopVis4BQ";
 
@@ -51,10 +55,27 @@ const getCraftsmanIcon = (type: string | null) => {
   }
 };
 
+const getCraftsmanTypeLabel = (type: string | null) => {
+  const types: Record<string, string> = {
+    carpenter: "Tâmplar",
+    plumber: "Instalator",
+    electrician: "Electrician",
+    painter: "Zugrav",
+    mason: "Zidar",
+    welder: "Sudor",
+    locksmith: "Lăcătuș",
+    roofer: "Acoperișar",
+    hvac_technician: "Tehnician HVAC",
+    general_contractor: "Constructor",
+  };
+  return type ? types[type] : "Necunoscut";
+};
+
 export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const popupRef = useRef<mapboxgl.Popup | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -100,6 +121,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
+    // Clear existing popup
+    if (popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+    }
+
     craftsmen.forEach((craftsman) => {
       if (!craftsman.latitude || !craftsman.longitude) return;
 
@@ -127,33 +154,70 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       );
       el.innerHTML = iconHtml;
 
+      // Create popup content
+      const popupContent = document.createElement("div");
+      popupContent.className = "p-4";
+      popupContent.innerHTML = `
+        <div class="space-y-4">
+          <div>
+            <h3 class="text-lg font-semibold">${craftsman.first_name} ${craftsman.last_name}</h3>
+            <p class="text-sm text-gray-500">${getCraftsmanTypeLabel(craftsman.craftsman_type)}</p>
+            <p class="text-sm text-gray-500">${craftsman.city}, ${craftsman.county}</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="flex items-center">
+              ${renderToString(createElement(Star, { size: 16, className: "text-yellow-400 fill-yellow-400" }))}
+            </span>
+            <span class="text-sm">${craftsman.average_rating?.toFixed(1) || "N/A"}</span>
+          </div>
+          <div class="flex gap-2">
+            <button class="bg-primary text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-primary/90" onclick="window.viewProfile('${craftsman.id}')">
+              ${renderToString(createElement(User, { size: 16 }))}
+              Vezi profil
+            </button>
+            <button class="bg-green-600 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-green-700" onclick="window.callCraftsman('${craftsman.phone}')">
+              ${renderToString(createElement(PhoneCall, { size: 16 }))}
+              Sună acum
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Create and add the popup
+      const popup = new mapboxgl.Popup({
+        offset: 25,
+        closeButton: true,
+        closeOnClick: false,
+      })
+        .setDOMContent(popupContent);
+
       // Create and add the marker
       const marker = new mapboxgl.Marker(el)
         .setLngLat([craftsman.longitude, craftsman.latitude])
+        .setPopup(popup)
         .addTo(map.current);
-
-      // Add click handler directly to the marker element
-      el.addEventListener("click", () => {
-        // Create a serializable copy of the craftsman object by only including necessary properties
-        const serializableCraftsman = {
-          id: craftsman.id,
-          first_name: craftsman.first_name,
-          last_name: craftsman.last_name,
-          craftsman_type: craftsman.craftsman_type,
-          city: craftsman.city,
-          county: craftsman.county,
-          latitude: craftsman.latitude,
-          longitude: craftsman.longitude,
-        };
-        onCraftsmanClick(serializableCraftsman as Craftsman);
-      });
 
       markersRef.current.push(marker);
     });
 
+    // Add global functions for the popup buttons
+    window.viewProfile = (id: string) => {
+      const craftsman = craftsmen.find(c => c.id === id);
+      if (craftsman) {
+        onCraftsmanClick(craftsman);
+      }
+    };
+
+    window.callCraftsman = (phone: string) => {
+      if (phone) {
+        window.location.href = `tel:${phone}`;
+      }
+    };
+
     return () => {
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
+      // Cleanup global functions
+      delete window.viewProfile;
+      delete window.callCraftsman;
     };
   }, [craftsmen, onCraftsmanClick]);
 
@@ -163,3 +227,11 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     </div>
   );
 };
+
+// Add TypeScript declarations for the global functions
+declare global {
+  interface Window {
+    viewProfile: (id: string) => void;
+    callCraftsman: (phone: string) => void;
+  }
+}

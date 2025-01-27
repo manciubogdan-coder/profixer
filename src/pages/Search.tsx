@@ -5,22 +5,13 @@ import { Map } from "@/components/search/Map";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables, Enums } from "@/integrations/supabase/types";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Star } from "lucide-react";
 
 export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
   longitude?: number;
+  average_rating?: number;
 };
 
 type CraftsmanType = Enums<"craftsman_type"> | "all";
@@ -31,7 +22,6 @@ const Search = () => {
   const [maxDistance, setMaxDistance] = useState(50);
   const [minRating, setMinRating] = useState(0);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [selectedCraftsman, setSelectedCraftsman] = useState<Craftsman | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -129,6 +119,12 @@ const Search = () => {
             ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
             : 0;
 
+          // Add average rating to craftsman object
+          const craftsmanWithRating = {
+            ...craftsman,
+            average_rating: avgRating,
+          };
+
           // Filter by rating
           if (avgRating < minRating) return null;
 
@@ -143,7 +139,7 @@ const Search = () => {
             if (distance > maxDistance) return null;
           }
 
-          return craftsman;
+          return craftsmanWithRating;
         })
         .filter(Boolean) as Craftsman[];
     },

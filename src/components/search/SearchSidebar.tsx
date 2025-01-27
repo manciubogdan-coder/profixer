@@ -18,6 +18,19 @@ import { Menu } from "lucide-react";
 
 type CraftsmanType = Enums<"craftsman_type"> | "all";
 
+const craftsmanTypeLabels: Record<Exclude<CraftsmanType, "all">, string> = {
+  carpenter: "Tâmplar",
+  plumber: "Instalator",
+  electrician: "Electrician",
+  painter: "Zugrav",
+  mason: "Zidar",
+  welder: "Sudor",
+  locksmith: "Lăcătuș",
+  roofer: "Acoperișar",
+  hvac_technician: "Tehnician HVAC",
+  general_contractor: "Constructor",
+};
+
 interface SearchSidebarProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
@@ -129,10 +142,15 @@ export const SearchSidebar = ({
                     <p className="text-sm text-muted-foreground">
                       {craftsman.city}, {craftsman.county}
                     </p>
+                    {craftsman.craftsman_type && (
+                      <p className="text-sm text-primary">
+                        {craftsmanTypeLabels[craftsman.craftsman_type]}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm">4.5</span>
+                    <span className="text-sm">{craftsman.average_rating?.toFixed(1) || "N/A"}</span>
                   </div>
                 </div>
               </div>
