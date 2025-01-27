@@ -80,7 +80,7 @@ export type Database = {
           city: string
           country: string
           county: string
-          craftsman_type: Database["public"]["Enums"]["craftsman_type"] | null
+          craftsman_type: string | null
           created_at: string
           first_name: string
           id: string
@@ -98,7 +98,7 @@ export type Database = {
           city: string
           country: string
           county: string
-          craftsman_type?: Database["public"]["Enums"]["craftsman_type"] | null
+          craftsman_type?: string | null
           created_at?: string
           first_name: string
           id: string
@@ -116,7 +116,7 @@ export type Database = {
           city?: string
           country?: string
           county?: string
-          craftsman_type?: Database["public"]["Enums"]["craftsman_type"] | null
+          craftsman_type?: string | null
           created_at?: string
           first_name?: string
           id?: string
@@ -128,7 +128,15 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_craftsman_type_fkey"
+            columns: ["craftsman_type"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       qualifications: {
         Row: {
@@ -244,6 +252,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trades: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
     }
     Views: {

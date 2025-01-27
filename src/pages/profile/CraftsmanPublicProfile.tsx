@@ -8,35 +8,35 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Star } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
+  trade?: {
+    name: string;
+  } | null;
+};
+
 type Review = Database["public"]["Tables"]["reviews"]["Row"] & {
   client: {
     first_name: string;
     last_name: string;
   } | null;
 };
+
 type Portfolio = {
   id: string;
   title: string;
   description: string | null;
   images: { id: string; image_url: string }[];
 };
+
 type Specialization = Database["public"]["Tables"]["specializations"]["Row"];
 type Qualification = Database["public"]["Tables"]["qualifications"]["Row"];
-
-const CRAFTSMAN_TYPES = {
-  carpenter: "Tâmplar",
-  plumber: "Instalator",
-  electrician: "Electrician",
-  painter: "Zugrav",
-  mason: "Zidar",
-  welder: "Sudor",
-  locksmith: "Lăcătuș",
-  roofer: "Acoperișar",
-  hvac_technician: "Tehnician HVAC",
-  general_contractor: "Constructor General"
-} as const;
 
 const CraftsmanPublicProfile = () => {
   const { id } = useParams();
@@ -47,6 +47,11 @@ const CraftsmanPublicProfile = () => {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Validate UUID format
@@ -62,7 +67,10 @@ const CraftsmanPublicProfile = () => {
         console.log("Fetching profile for craftsman:", id);
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("*")
+          .select(`
+            *,
+            trade:craftsman_type(name)
+          `)
           .eq("id", id)
           .eq("role", "professional")
           .maybeSingle();
@@ -183,6 +191,47 @@ const CraftsmanPublicProfile = () => {
     setReviews(mappedReviews);
   };
 
+  const handleAddReview = async () => {
+    if (!user) {
+      toast({
+        title: "Trebuie să fii autentificat",
+        description: "Pentru a adăuga o recenzie, te rugăm să te autentifici.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("reviews")
+        .insert({
+          craftsman_id: id,
+          client_id: user.id,
+          rating,
+          comment,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Recenzie adăugată",
+        description: "Recenzia ta a fost adăugată cu succes.",
+      });
+
+      setIsReviewDialogOpen(false);
+      setRating(5);
+      setComment("");
+      fetchReviews(id!);
+    } catch (error) {
+      console.error("Error adding review:", error);
+      toast({
+        title: "Eroare",
+        description: "Nu am putut adăuga recenzia. Te rugăm să încerci din nou.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -227,9 +276,9 @@ const CraftsmanPublicProfile = () => {
                   <CardTitle className="text-3xl font-bold">
                     {profile.first_name} {profile.last_name}
                   </CardTitle>
-                  {profile.craftsman_type && (
+                  {profile.trade && (
                     <div className="text-lg text-muted-foreground mt-2">
-                      {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                      {profile.trade.name}
                     </div>
                   )}
                 </div>
@@ -306,6 +355,47 @@ const CraftsmanPublicProfile = () => {
 
                 <TabsContent value="reviews">
                   <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-semibold">Recenzii</h3>
+                      <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button>Adaugă recenzie</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Adaugă o recenzie</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label>Rating</Label>
+                              <div className="flex gap-2">
+                                {[1, 2, 3, 4, 5].map((value) => (
+                                  <Button
+                                    key={value}
+                                    variant={rating >= value ? "default" : "outline"}
+                                    size="icon"
+                                    onClick={() => setRating(value)}
+                                  >
+                                    <Star className={rating >= value ? "fill-primary" : ""} />
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Comentariu</Label>
+                              <Textarea
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                placeholder="Scrie un comentariu..."
+                              />
+                            </div>
+                            <Button onClick={handleAddReview} className="w-full">
+                              Adaugă recenzie
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                     {reviews.map((review) => (
                       <Card key={review.id}>
                         <CardContent className="pt-6">
