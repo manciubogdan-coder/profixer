@@ -1,31 +1,29 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Database } from "@/integrations/supabase/types";
 import { Navigation } from "@/components/Navigation";
-import { Star } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useAuth } from "@/contexts/AuthContext";
+import { Star } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type Review = Database["public"]["Tables"]["reviews"]["Row"] & {
+  client: {
+    first_name: string;
+    last_name: string;
+  } | null;
+};
+type Portfolio = {
+  id: string;
+  title: string;
+  description: string | null;
+  images: { id: string; image_url: string }[];
+};
+type Specialization = Database["public"]["Tables"]["specializations"]["Row"];
+type Qualification = Database["public"]["Tables"]["qualifications"]["Row"];
 
 const CRAFTSMAN_TYPES = {
   carpenter: "Tâmplar",
@@ -42,18 +40,23 @@ const CRAFTSMAN_TYPES = {
 
 const CraftsmanPublicProfile = () => {
   const { id } = useParams();
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [specializations, setSpecializations] = useState<Specialization[]>([]);
+  const [qualifications, setQualifications] = useState<Qualification[]>([]);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [specializations, setSpecializations] = useState([]);
-  const [qualifications, setQualifications] = useState([]);
-  const [portfolios, setPortfolios] = useState([]);
-  const [reviews, setReviews] = useState([]);
-  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
 
   useEffect(() => {
+    // Validate UUID format
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!id || !UUID_REGEX.test(id)) {
+      console.error("Invalid UUID format:", id);
+      navigate("/profile/me");
+      return;
+    }
+
     const fetchProfile = async () => {
       try {
         console.log("Fetching profile for craftsman:", id);
@@ -61,162 +64,167 @@ const CraftsmanPublicProfile = () => {
           .from("profiles")
           .select("*")
           .eq("id", id)
-          .single();
+          .eq("role", "professional")
+          .maybeSingle();
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          throw profileError;
+        }
 
-        console.log("Profile data:", profileData);
+        if (!profileData) {
+          console.error("No profile found for ID:", id);
+          navigate("/profile/me");
+          return;
+        }
+
         setProfile(profileData);
 
-        // Fetch specializations
-        const { data: specializationsData } = await supabase
-          .from("specializations")
-          .select("*")
-          .eq("craftsman_id", id);
-        setSpecializations(specializationsData || []);
-
-        // Fetch qualifications
-        const { data: qualificationsData } = await supabase
-          .from("qualifications")
-          .select("*")
-          .eq("craftsman_id", id);
-        setQualifications(qualificationsData || []);
-
-        // Fetch portfolios with images
-        const { data: portfoliosData } = await supabase
-          .from("portfolios")
-          .select(`
-            id,
-            title,
-            description,
-            portfolio_images (
-              id,
-              image_url
-            )
-          `)
-          .eq("craftsman_id", id);
-        setPortfolios(portfoliosData || []);
-
-        // Fetch reviews
-        const { data: reviewsData } = await supabase
-          .from("reviews")
-          .select(`
-            *,
-            profiles!reviews_client_id_fkey (
-              first_name,
-              last_name
-            )
-          `)
-          .eq("craftsman_id", id);
-        setReviews(reviewsData || []);
-
+        // Fetch related data
+        await Promise.all([
+          fetchSpecializations(id),
+          fetchQualifications(id),
+          fetchPortfolios(id),
+          fetchReviews(id)
+        ]);
       } catch (error) {
-        console.error("Error fetching profile:", error);
-        toast.error("Nu am putut încărca profilul. Vă rugăm să încercați din nou.");
+        console.error("Error in profile fetch:", error);
+        navigate("/profile/me");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (id) {
-      fetchProfile();
-    }
-  }, [id]);
+    fetchProfile();
+  }, [id, navigate]);
 
-  const handleSubmitReview = async () => {
-    if (!user) {
-      toast.error("Trebuie să fiți autentificat pentru a lăsa o recenzie");
+  const fetchSpecializations = async (craftsmanId: string) => {
+    const { data, error } = await supabase
+      .from("specializations")
+      .select("*")
+      .eq("craftsman_id", craftsmanId);
+
+    if (error) {
+      console.error("Error fetching specializations:", error);
       return;
     }
 
-    try {
-      const { error } = await supabase
-        .from("reviews")
-        .insert({
-          craftsman_id: id,
-          client_id: user.id,
-          rating,
-          comment,
-        });
+    setSpecializations(data || []);
+  };
 
-      if (error) throw error;
+  const fetchQualifications = async (craftsmanId: string) => {
+    const { data, error } = await supabase
+      .from("qualifications")
+      .select("*")
+      .eq("craftsman_id", craftsmanId);
 
-      toast.success("Recenzia a fost adăugată cu succes");
-      setIsReviewDialogOpen(false);
-      setRating(0);
-      setComment("");
-
-      // Refresh reviews
-      const { data: reviewsData } = await supabase
-        .from("reviews")
-        .select(`
-          *,
-          profiles!reviews_client_id_fkey (
-            first_name,
-            last_name
-          )
-        `)
-        .eq("craftsman_id", id);
-      setReviews(reviewsData || []);
-    } catch (error) {
-      console.error("Error submitting review:", error);
-      toast.error("Nu am putut adăuga recenzia. Vă rugăm să încercați din nou.");
+    if (error) {
+      console.error("Error fetching qualifications:", error);
+      return;
     }
+
+    setQualifications(data || []);
+  };
+
+  const fetchPortfolios = async (craftsmanId: string) => {
+    const { data: portfoliosData, error: portfoliosError } = await supabase
+      .from("portfolios")
+      .select(`
+        id,
+        title,
+        description,
+        portfolio_images (
+          id,
+          image_url
+        )
+      `)
+      .eq("craftsman_id", craftsmanId);
+
+    if (portfoliosError) {
+      console.error("Error fetching portfolios:", portfoliosError);
+      return;
+    }
+
+    const mappedPortfolios: Portfolio[] = portfoliosData.map(portfolio => ({
+      id: portfolio.id,
+      title: portfolio.title,
+      description: portfolio.description,
+      images: portfolio.portfolio_images
+    }));
+
+    setPortfolios(mappedPortfolios);
+  };
+
+  const fetchReviews = async (craftsmanId: string) => {
+    const { data: reviewsData, error: reviewsError } = await supabase
+      .from("reviews")
+      .select(`
+        *,
+        profiles!reviews_client_id_fkey (
+          first_name,
+          last_name
+        )
+      `)
+      .eq("craftsman_id", craftsmanId);
+
+    if (reviewsError) {
+      console.error("Error fetching reviews:", reviewsError);
+      return;
+    }
+
+    const mappedReviews: Review[] = reviewsData.map(review => ({
+      ...review,
+      client: review.profiles ? {
+        first_name: review.profiles.first_name,
+        last_name: review.profiles.last_name
+      } : null
+    }));
+
+    setReviews(mappedReviews);
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              <Skeleton className="h-8 w-[200px]" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <main className="container py-6">
+          <div className="mx-auto max-w-4xl space-y-8">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-8 w-[200px]" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
     );
   }
 
   if (!profile) {
-    return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-center text-muted-foreground">
-              Profilul nu a fost găsit
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
   }
-
-  const averageRating = reviews.length > 0
-    ? reviews.reduce((acc: number, review: any) => acc + review.rating, 0) / reviews.length
-    : 0;
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <main className="container py-6">
         <div className="mx-auto max-w-4xl space-y-8">
-          <Card className="bg-white/5 backdrop-blur-lg border-0">
+          <Card>
             <CardHeader className="text-center pb-8">
               <div className="flex flex-col items-center space-y-4">
                 <Avatar className="w-32 h-32">
-                  <AvatarImage src={profile.avatar_url} />
+                  <AvatarImage src={profile.avatar_url || undefined} />
                   <AvatarFallback>
-                    {profile.first_name?.[0]}{profile.last_name?.[0]}
+                    {profile.first_name[0]}{profile.last_name[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                  <CardTitle className="text-3xl font-bold">
                     {profile.first_name} {profile.last_name}
                   </CardTitle>
                   {profile.craftsman_type && (
@@ -224,29 +232,12 @@ const CraftsmanPublicProfile = () => {
                       {CRAFTSMAN_TYPES[profile.craftsman_type]}
                     </div>
                   )}
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-5 h-5 ${
-                            i < Math.round(averageRating)
-                              ? "fill-primary text-primary"
-                              : "fill-muted text-muted"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-muted-foreground">
-                      ({reviews.length} recenzii)
-                    </span>
-                  </div>
                 </div>
               </div>
             </CardHeader>
 
             <CardContent>
-              <Tabs defaultValue="about" className="w-full">
+              <Tabs defaultValue="about">
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="about">Despre</TabsTrigger>
                   <TabsTrigger value="specializations">Specializări</TabsTrigger>
@@ -254,182 +245,93 @@ const CraftsmanPublicProfile = () => {
                   <TabsTrigger value="reviews">Recenzii</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="about">
+                <TabsContent value="about" className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                      <h3 className="text-xl font-semibold text-primary">Contact</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-muted-foreground">Telefon</Label>
-                          <p className="text-lg font-medium mt-1">{profile.phone}</p>
-                        </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Contact</h3>
+                      <div className="space-y-2">
+                        <p>Telefon: {profile.phone}</p>
                       </div>
                     </div>
-
-                    <div className="space-y-6">
-                      <h3 className="text-xl font-semibold text-primary">Locație</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-muted-foreground">Oraș</Label>
-                          <p className="text-lg font-medium mt-1">{profile.city}</p>
-                        </div>
-                        <div>
-                          <Label className="text-muted-foreground">Județ</Label>
-                          <p className="text-lg font-medium mt-1">{profile.county}</p>
-                        </div>
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Locație</h3>
+                      <div className="space-y-2">
+                        <p>{profile.address}</p>
+                        <p>{profile.city}, {profile.county}</p>
+                        <p>{profile.country}</p>
                       </div>
                     </div>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="specializations">
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-semibold">Specializări</h3>
-                    {specializations.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {specializations.map((spec: any) => (
-                          <Card key={spec.id}>
-                            <CardHeader>
-                              <CardTitle>{spec.name}</CardTitle>
-                            </CardHeader>
-                            {spec.description && (
-                              <CardContent>
-                                <p>{spec.description}</p>
-                              </CardContent>
-                            )}
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground">Nu există specializări adăugate.</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {specializations.map((spec) => (
+                      <Card key={spec.id}>
+                        <CardHeader>
+                          <CardTitle>{spec.name}</CardTitle>
+                        </CardHeader>
+                        {spec.description && (
+                          <CardContent>
+                            <p>{spec.description}</p>
+                          </CardContent>
+                        )}
+                      </Card>
+                    ))}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="portfolio">
-                  <div className="space-y-6">
-                    <h3 className="text-xl font-semibold">Portofoliu</h3>
-                    {portfolios.length > 0 ? (
-                      <div className="space-y-8">
-                        {portfolios.map((portfolio: any) => (
-                          <div key={portfolio.id} className="space-y-4">
-                            <h4 className="text-lg font-medium">{portfolio.title}</h4>
-                            {portfolio.description && (
-                              <p className="text-muted-foreground">{portfolio.description}</p>
-                            )}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {portfolio.portfolio_images.map((img: any) => (
-                                <img
-                                  key={img.id}
-                                  src={img.image_url}
-                                  alt="Lucrare din portofoliu"
-                                  className="rounded-lg object-cover w-full h-48"
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        ))}
+                  <div className="space-y-8">
+                    {portfolios.map((portfolio) => (
+                      <div key={portfolio.id} className="space-y-4">
+                        <h4 className="text-lg font-medium">{portfolio.title}</h4>
+                        {portfolio.description && (
+                          <p className="text-muted-foreground">{portfolio.description}</p>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {portfolio.images.map((img) => (
+                            <img
+                              key={img.id}
+                              src={img.image_url}
+                              alt="Lucrare din portofoliu"
+                              className="rounded-lg object-cover w-full h-48"
+                            />
+                          ))}
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-muted-foreground">Nu există lucrări în portofoliu.</p>
-                    )}
+                    ))}
                   </div>
                 </TabsContent>
 
                 <TabsContent value="reviews">
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-xl font-semibold">Recenzii</h3>
-                      {user && user.id !== id && (
-                        <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button>Adaugă recenzie</Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Adaugă o recenzie</DialogTitle>
-                              <DialogDescription>
-                                Împărtășește experiența ta cu acest meșter
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-4">
-                              <div className="space-y-2">
-                                <Label>Rating</Label>
-                                <div className="flex gap-2">
-                                  {[1, 2, 3, 4, 5].map((value) => (
-                                    <Button
-                                      key={value}
-                                      variant={rating === value ? "default" : "outline"}
-                                      size="icon"
-                                      onClick={() => setRating(value)}
-                                    >
-                                      <Star className={`w-4 h-4 ${
-                                        rating >= value ? "fill-primary" : ""
-                                      }`} />
-                                    </Button>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Comentariu</Label>
-                                <Textarea
-                                  value={comment}
-                                  onChange={(e) => setComment(e.target.value)}
-                                  placeholder="Scrie un comentariu despre experiența ta..."
-                                />
-                              </div>
+                  <div className="space-y-4">
+                    {reviews.map((review) => (
+                      <Card key={review.id}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-center gap-2 mb-2">
+                            {[...Array(review.rating)].map((_, i) => (
+                              <Star key={i} className="w-5 h-5 fill-primary text-primary" />
+                            ))}
+                          </div>
+                          <p className="text-lg mb-2">{review.comment}</p>
+                          {review.craftsman_response && (
+                            <div className="mt-4 pl-4 border-l-2 border-primary">
+                              <p className="text-sm text-muted-foreground">Răspuns:</p>
+                              <p>{review.craftsman_response}</p>
                             </div>
-                            <DialogFooter>
-                              <Button
-                                onClick={handleSubmitReview}
-                                disabled={!rating || !comment}
-                              >
-                                Trimite recenzia
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      )}
-                    </div>
-                    {reviews.length > 0 ? (
-                      <div className="grid gap-4">
-                        {reviews.map((review: any) => (
-                          <Card key={review.id}>
-                            <CardContent className="pt-6">
-                              <div className="flex items-center gap-2 mb-2">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`w-5 h-5 ${
-                                      i < review.rating
-                                        ? "fill-primary text-primary"
-                                        : "fill-muted text-muted"
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                              <p className="text-lg mb-2">{review.comment}</p>
-                              {review.craftsman_response && (
-                                <div className="mt-4 pl-4 border-l-2 border-primary">
-                                  <p className="text-sm text-muted-foreground">Răspuns:</p>
-                                  <p>{review.craftsman_response}</p>
-                                </div>
-                              )}
-                              <div className="mt-4 text-sm text-muted-foreground">
-                                <p>
-                                  {review.profiles
-                                    ? `${review.profiles.first_name} ${review.profiles.last_name}`
-                                    : "Client anonim"}
-                                </p>
-                                <p>{new Date(review.created_at).toLocaleDateString()}</p>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground">Nu există recenzii încă.</p>
-                    )}
+                          )}
+                          <div className="mt-4 text-sm text-muted-foreground">
+                            <p>
+                              {review.client
+                                ? `${review.client.first_name} ${review.client.last_name}`
+                                : "Client anonim"}
+                            </p>
+                            <p>{new Date(review.created_at).toLocaleDateString()}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </TabsContent>
               </Tabs>
