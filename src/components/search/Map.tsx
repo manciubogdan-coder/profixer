@@ -36,6 +36,7 @@ interface MapProps {
 
 const getCraftsmanIcon = (tradeName: string | null) => {
   // Map trade names to specific icons
+  console.log("Trade name:", tradeName); // Debug log
   switch (tradeName?.toLowerCase()) {
     case "tâmplar":
       return Ruler;
@@ -74,6 +75,7 @@ const getCraftsmanIcon = (tradeName: string | null) => {
     case "demolări":
       return HardHat;
     default:
+      console.log("Using default icon for trade:", tradeName); // Debug log
       return User;
   }
 };

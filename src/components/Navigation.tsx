@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { User, Bell, Search, LogOut } from "lucide-react";
+import { User, Bell, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -52,9 +52,6 @@ export const Navigation = () => {
         <div className="flex flex-1 items-center justify-end space-x-4">
           {user ? (
             <>
-              <Button variant="ghost" size="icon">
-                <Search className="h-5 w-5" />
-              </Button>
               <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />
               </Button>
