@@ -53,22 +53,6 @@ const getCraftsmanIcon = (type: string | null) => {
   }
 };
 
-const getCraftsmanTypeLabel = (type: string | null) => {
-  const types: Record<string, string> = {
-    carpenter: "Tâmplar",
-    plumber: "Instalator",
-    electrician: "Electrician",
-    painter: "Zugrav",
-    mason: "Zidar",
-    welder: "Sudor",
-    locksmith: "Lăcătuș",
-    roofer: "Acoperișar",
-    hvac_technician: "Tehnician HVAC",
-    general_contractor: "Constructor",
-  };
-  return type ? types[type] : "Necunoscut";
-};
-
 export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -163,7 +147,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         <div class="space-y-4">
           <div>
             <h3 class="text-lg font-semibold text-foreground">${craftsman.first_name} ${craftsman.last_name}</h3>
-            <p class="text-sm text-muted-foreground">${getCraftsmanTypeLabel(craftsman.craftsman_type)}</p>
+            <p class="text-sm text-muted-foreground">${craftsman.trade?.name || "Meserie nesetată"}</p>
             <p class="text-sm text-muted-foreground">${craftsman.city}, ${craftsman.county}</p>
           </div>
           <div class="flex items-center gap-1">
@@ -186,7 +170,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       `;
 
       // Add click handlers directly to the popup content
-      popupContent.addEventListener('click', (e) => {
+      const handlePopupClick = (e: Event) => {
         const target = e.target as HTMLElement;
         const button = target.closest('button');
         if (!button) return;
@@ -203,7 +187,9 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
             window.location.href = `tel:${phone}`;
           }
         }
-      });
+      };
+
+      popupContent.addEventListener('click', handlePopupClick);
 
       // Create and add the popup with theme-aware styles
       const popup = new mapboxgl.Popup({
@@ -221,6 +207,11 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         .addTo(map.current);
 
       markersRef.current.push(marker);
+
+      // Cleanup function to remove event listener
+      return () => {
+        popupContent.removeEventListener('click', handlePopupClick);
+      };
     });
 
   }, [craftsmen, onCraftsmanClick]);
