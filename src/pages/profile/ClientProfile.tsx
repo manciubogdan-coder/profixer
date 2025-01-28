@@ -92,6 +92,12 @@ interface Review {
   } | null;
 }
 
+interface Trade {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
 const CRAFTSMAN_TYPES = {
   carpenter: "Tâmplar",
   plumber: "Instalator",
@@ -120,6 +126,7 @@ const ClientProfile = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [isEditPortfolioOpen, setIsEditPortfolioOpen] = useState(false);
+  const [trades, setTrades] = useState<Trade[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -130,30 +137,37 @@ const ClientProfile = () => {
     const fetchProfile = async () => {
       try {
         console.log("Fetching profile for user:", user.id);
-        const { data, error } = await supabase
+        const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("*")
+          .select(`
+            *,
+            trade:craftsman_type(
+              id,
+              name
+            )
+          `)
           .eq("id", user.id)
           .maybeSingle();
 
-        if (error) {
-          console.error("Error fetching profile:", error);
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
           toast.error("Nu am putut încărca profilul. Vă rugăm să încercați din nou.");
           return;
         }
 
-        if (data) {
-          console.log("Profile data:", data);
-          const profileData = { ...data, email: user.email };
-          setProfile(profileData);
-          setEditedProfile(profileData);
+        if (profileData) {
+          console.log("Profile data:", profileData);
+          const profileWithEmail = { ...profileData, email: user.email };
+          setProfile(profileWithEmail);
+          setEditedProfile(profileWithEmail);
 
-          if (data.role === "professional") {
+          if (profileData.role === "professional") {
             await Promise.all([
               fetchSpecializations(user.id),
               fetchQualifications(user.id),
               fetchPortfolios(user.id),
-              fetchReviews(user.id)
+              fetchReviews(user.id),
+              fetchTrades()
             ]);
           }
         }
@@ -167,6 +181,19 @@ const ClientProfile = () => {
 
     fetchProfile();
   }, [user, navigate]);
+
+  const fetchTrades = async () => {
+    const { data, error } = await supabase
+      .from('trades')
+      .select('*');
+
+    if (error) {
+      console.error("Error fetching trades:", error);
+      return;
+    }
+
+    setTrades(data || []);
+  };
 
   const fetchSpecializations = async (userId: string) => {
     const { data, error } = await supabase
@@ -340,6 +367,7 @@ const ClientProfile = () => {
       setIsEditing(false);
       toast.success("Profilul a fost actualizat cu succes");
     } catch (error) {
+      console.error("Error updating profile:", error);
       toast.error("Nu am putut actualiza profilul");
     }
   };
@@ -526,9 +554,9 @@ const ClientProfile = () => {
                                       <SelectValue placeholder="Selectează tipul de meșter" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {Object.entries(CRAFTSMAN_TYPES).map(([value, label]) => (
-                                        <SelectItem key={value} value={value}>
-                                          {label}
+                                      {trades.map((trade) => (
+                                        <SelectItem key={trade.id} value={trade.id}>
+                                          {trade.name}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
