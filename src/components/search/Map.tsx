@@ -155,12 +155,13 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       );
       el.innerHTML = iconHtml;
 
-      // Create popup content
+      // Create popup content with minimal data
       const popupContent = document.createElement("div");
       popupContent.className = "p-4 bg-background text-foreground";
 
       // Store only the necessary data as data attributes
       const craftsmanId = craftsman.id;
+      const phone = craftsman.phone;
       
       popupContent.innerHTML = `
         <div class="space-y-4">
@@ -180,7 +181,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
               ${renderToString(createElement(User, { size: 16 }))}
               Vezi profil
             </button>
-            <button class="bg-green-600 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-green-700" data-phone="${craftsman.phone}">
+            <button class="bg-green-600 text-white px-4 py-2 rounded-md text-sm flex items-center gap-2 hover:bg-green-700" data-phone="${phone}">
               ${renderToString(createElement(PhoneCall, { size: 16 }))}
               Sună acum
             </button>
@@ -188,18 +189,14 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         </div>
       `;
 
-      // Add click handlers
+      // Add click handlers using data attributes
       const handlePopupClick = (e: Event) => {
         const target = e.target as HTMLElement;
         const button = target.closest('button');
         if (!button) return;
 
         if (button.hasAttribute('data-craftsman-id')) {
-          const id = button.getAttribute('data-craftsman-id');
-          const selectedCraftsman = craftsmen.find(c => c.id === id);
-          if (selectedCraftsman) {
-            onCraftsmanClick(selectedCraftsman);
-          }
+          onCraftsmanClick(craftsman);
         } else if (button.hasAttribute('data-phone')) {
           const phone = button.getAttribute('data-phone');
           if (phone) {
