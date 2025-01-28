@@ -15,6 +15,13 @@ import {
   HardHat,
   Star,
   PhoneCall,
+  Shovel,
+  Scissors,
+  Construction,
+  Warehouse,
+  Truck,
+  Lightbulb,
+  Blocks,
 } from "lucide-react";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
@@ -27,27 +34,45 @@ interface MapProps {
   onCraftsmanClick: (craftsman: Craftsman) => void;
 }
 
-const getCraftsmanIcon = (type: string | null) => {
-  switch (type) {
-    case "carpenter":
+const getCraftsmanIcon = (tradeName: string | null) => {
+  // Map trade names to specific icons
+  switch (tradeName?.toLowerCase()) {
+    case "tâmplar":
       return Ruler;
-    case "mason":
-      return HardHat;
-    case "general_contractor":
-      return Home;
-    case "plumber":
+    case "zidar":
+      return Blocks;
+    case "constructor":
+      return Construction;
+    case "instalator":
       return Wrench;
-    case "hvac_technician":
+    case "tehnician hvac":
       return Wind;
-    case "painter":
+    case "zugrav":
       return Paintbrush;
     case "electrician":
       return Plug;
-    case "locksmith":
+    case "lăcătuș":
       return Lock;
-    case "welder":
-    case "roofer":
-      return Hammer;
+    case "sudor":
+      return Construction;
+    case "acoperișar":
+      return Home;
+    case "amenajări interioare":
+      return Warehouse;
+    case "amenajări exterioare":
+      return Shovel;
+    case "gresie și faianță":
+      return Blocks;
+    case "parchetar":
+      return Scissors;
+    case "rigipsar":
+      return Construction;
+    case "termotehnist":
+      return Lightbulb;
+    case "transport":
+      return Truck;
+    case "demolări":
+      return HardHat;
     default:
       return User;
   }
@@ -126,7 +151,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       el.style.cursor = "pointer";
 
       // Create the icon element using renderToString
-      const IconComponent = getCraftsmanIcon(craftsman.craftsman_type);
+      const IconComponent = getCraftsmanIcon(craftsman.trade?.name || null);
       const iconHtml = renderToString(
         createElement(IconComponent, {
           size: 20,
