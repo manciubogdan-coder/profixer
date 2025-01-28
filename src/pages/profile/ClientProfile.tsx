@@ -576,11 +576,11 @@ const ClientProfile = () => {
                                   {profile?.first_name} {profile?.last_name}
                                 </p>
                               </div>
-                              {profile?.role === "professional" && profile?.craftsman_type && (
+                              {profile?.role === "professional" && (
                                 <div>
                                   <Label className="text-muted-foreground">Tip de Meșter</Label>
                                   <p className="text-lg font-medium mt-1">
-                                    {CRAFTSMAN_TYPES[profile.craftsman_type] || "Meserie nesetată"}
+                                    {profile.trade?.name || "Meserie nesetată"}
                                   </p>
                                 </div>
                               )}
