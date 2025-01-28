@@ -490,9 +490,9 @@ const ClientProfile = () => {
                   <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
                     {isEditing ? "Editare Profil" : "Profilul Meu"}
                   </CardTitle>
-                  {profile?.role === "professional" && profile.craftsman_type && (
+                  {profile?.role === "professional" && (
                     <div className="text-lg text-muted-foreground mt-2">
-                      {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                      {profile.trade?.name || "Meserie nesetată"}
                     </div>
                   )}
                 </div>
@@ -576,7 +576,7 @@ const ClientProfile = () => {
                                 <div>
                                   <Label className="text-muted-foreground">Tip de Meșter</Label>
                                   <p className="text-lg font-medium mt-1">
-                                    {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                                    {CRAFTSMAN_TYPES[profile.craftsman_type] || "Meserie nesetată"}
                                   </p>
                                 </div>
                               )}
@@ -925,7 +925,7 @@ const ClientProfile = () => {
                             <div>
                               <Label className="text-muted-foreground">Tip de Meșter</Label>
                               <p className="text-lg font-medium mt-1">
-                                {CRAFTSMAN_TYPES[profile.craftsman_type]}
+                                {CRAFTSMAN_TYPES[profile.craftsman_type] || "Meserie nesetată"}
                               </p>
                             </div>
                           )}
