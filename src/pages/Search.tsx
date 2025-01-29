@@ -82,29 +82,27 @@ const Search = () => {
         return [];
       }
 
-      // Process the data to ensure it's serializable
-      return craftsmenData.map((craftsman) => {
+      // Process the data to ensure it's serializable and matches the Craftsman type
+      const processedCraftsmen = craftsmenData.map((craftsman) => {
         const ratings = craftsman.reviews as { rating: number }[];
         const avgRating = ratings.length > 0
           ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
           : 0;
 
-        // Create a plain object with only the necessary data
-        return {
-          id: craftsman.id,
-          first_name: craftsman.first_name,
-          last_name: craftsman.last_name,
-          latitude: craftsman.latitude,
-          longitude: craftsman.longitude,
+        // Create a craftsman object that matches the Craftsman type
+        const processedCraftsman: Craftsman = {
+          ...craftsman,
           average_rating: avgRating,
-          trade: craftsman.trade,
-          // Add other necessary fields but keep them serializable
+          trade: craftsman.trade ? { name: craftsman.trade.name } : null
         };
-      }).filter((craftsman) => {
-        // Filter by rating
-        if (craftsman.average_rating < minRating) return false;
 
-        // Filter by distance if user location is available
+        return processedCraftsman;
+      });
+
+      // Filter the craftsmen based on rating and distance
+      return processedCraftsmen.filter((craftsman) => {
+        if ((craftsman.average_rating || 0) < minRating) return false;
+
         if (userLocation && craftsman.latitude && craftsman.longitude) {
           const distance = calculateDistance(
             userLocation.lat,
