@@ -10,7 +10,7 @@ export const Statistics = () => {
       const { data, error } = await supabase
         .from('platform_statistics')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching statistics:", error);
@@ -30,7 +30,7 @@ export const Statistics = () => {
     },
     {
       icon: Star,
-      value: `${stats?.avg_rating || "0"}/5`,
+      value: `${stats?.avg_rating?.toFixed(1) || "0"}/5`,
       label: "Rating Mediu",
     },
     {
@@ -39,6 +39,22 @@ export const Statistics = () => {
       label: "Meșteri Verificați",
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="py-20">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-32 bg-muted rounded-xl"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-20 relative overflow-hidden">
