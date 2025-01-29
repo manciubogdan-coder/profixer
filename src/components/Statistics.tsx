@@ -1,25 +1,41 @@
-import { Users, Star, Clock, CheckCircle } from "lucide-react";
+import { Users, Star, CheckCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Statistics = () => {
-  const stats = [
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["platform-statistics"],
+    queryFn: async () => {
+      console.log("Fetching platform statistics...");
+      const { data, error } = await supabase
+        .from('platform_statistics')
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error("Error fetching statistics:", error);
+        return null;
+      }
+
+      console.log("Fetched statistics:", data);
+      return data;
+    }
+  });
+
+  const statisticsData = [
     {
       icon: Users,
-      value: "10,000+",
+      value: stats?.total_clients?.toString() || "0",
       label: "Clienți Mulțumiți",
     },
     {
       icon: Star,
-      value: "4.8/5",
+      value: `${stats?.avg_rating || "0"}/5`,
       label: "Rating Mediu",
     },
     {
-      icon: Clock,
-      value: "<1 oră",
-      label: "Timp de Răspuns",
-    },
-    {
       icon: CheckCircle,
-      value: "100%",
+      value: stats?.total_craftsmen?.toString() || "0",
       label: "Meșteri Verificați",
     },
   ];
@@ -29,8 +45,8 @@ export const Statistics = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-background to-background" />
       
       <div className="container mx-auto relative z-10">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((stat, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {statisticsData.map((stat, index) => (
             <div
               key={index}
               className="text-center p-6 rounded-xl backdrop-blur-md bg-white/5 border border-white/10 

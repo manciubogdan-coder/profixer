@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
@@ -18,13 +19,26 @@ export type Craftsman = Tables<"profiles"> & {
 };
 
 const Search = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Autentificare necesară",
+        description: "Trebuie să fii autentificat pentru a căuta meșteri",
+        variant: "destructive",
+      });
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [maxDistance, setMaxDistance] = useState(50);
   const [minRating, setMinRating] = useState(0);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (navigator.geolocation) {

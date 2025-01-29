@@ -1,7 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const CallToAction = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleClick = () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    navigate("/search");
+  };
+
   return (
     <div className="py-20 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background to-transparent" />
@@ -23,6 +36,7 @@ export const CallToAction = () => {
             <Button 
               size="lg"
               className="bg-gradient-to-r from-primary to-purple-600 hover:from-purple-600 hover:to-primary transition-all duration-300"
+              onClick={handleClick}
             >
               Începe Acum
               <ArrowRight className="ml-2 h-5 w-5" />
