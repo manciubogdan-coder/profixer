@@ -37,11 +37,12 @@ export const LoginForm = ({ onToggleForm }: LoginFormProps) => {
 
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
-      console.log("Attempting login with email:", values.email);
+      const { email, password } = values;
+      console.log("Attempting login with email:", email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
+        email,
+        password,
       });
 
       console.log("Login response:", { data, error });
@@ -73,7 +74,7 @@ export const LoginForm = ({ onToggleForm }: LoginFormProps) => {
         navigate("/");
       }
       
-    } catch (error: any) {
+    } catch (error) {
       console.error("Unexpected error during login:", error);
       
       toast({
