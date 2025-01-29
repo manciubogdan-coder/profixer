@@ -12,7 +12,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 const loginSchema = z.object({
@@ -26,7 +26,7 @@ interface LoginFormProps {
 
 export const LoginForm = ({ onToggleForm }: LoginFormProps) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -38,50 +38,30 @@ export const LoginForm = ({ onToggleForm }: LoginFormProps) => {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     try {
       const { email, password } = values;
-      console.log("Attempting login with email:", email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log("Login response:", { data, error });
-
       if (error) {
-        let errorMessage = "Credențiale invalide. Vă rugăm să verificați email-ul și parola sau să vă înregistrați dacă nu aveți cont.";
+        let errorMessage = "Credențiale invalide. Vă rugăm să verificați email-ul și parola.";
         
         if (error.message.includes("Email not confirmed")) {
           errorMessage = "Vă rugăm să confirmați adresa de email înainte de autentificare";
         }
         
-        toast({
-          variant: "destructive",
-          title: "Eroare la autentificare",
-          description: errorMessage,
-        });
-        
-        console.error("Login error:", error);
+        toast.error(errorMessage);
         return;
       }
 
       if (data.user) {
-        toast({
-          title: "Succes",
-          description: "Autentificare reușită",
-        });
-        
-        console.log("Login successful, navigating to home");
+        toast.success("Autentificare reușită");
         navigate("/");
       }
       
     } catch (error) {
-      console.error("Unexpected error during login:", error);
-      
-      toast({
-        variant: "destructive",
-        title: "Eroare",
-        description: "A apărut o eroare neașteptată. Vă rugăm să încercați din nou.",
-      });
+      toast.error("A apărut o eroare neașteptată. Vă rugăm să încercați din nou.");
     }
   };
 

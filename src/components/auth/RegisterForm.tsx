@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 const registrationSchema = z.object({
@@ -40,7 +40,6 @@ interface RegisterFormProps {
 }
 
 export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
-  const { toast } = useToast();
   const navigate = useNavigate();
   
   const form = useForm<z.infer<typeof registrationSchema>>({
@@ -61,8 +60,6 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
 
   const onSubmit = async (values: z.infer<typeof registrationSchema>) => {
     try {
-      console.log("Starting registration process with values:", values);
-      
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -81,40 +78,24 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
       });
 
       if (signUpError) {
-        console.error("Registration error:", signUpError);
-        
-        let errorMessage = "A apărut o eroare la crearea contului. Vă rugăm să încercați din nou.";
+        let errorMessage = "A apărut o eroare la crearea contului.";
         
         if (signUpError.message.includes("User already registered")) {
           errorMessage = "Există deja un cont cu această adresă de email.";
         }
         
-        toast({
-          variant: "destructive",
-          title: "Eroare la înregistrare",
-          description: errorMessage,
-        });
+        toast.error(errorMessage);
         return;
       }
 
       if (signUpData.user) {
-        toast({
-          title: "Cont creat cu succes",
-          description: "Vă rugăm să vă verificați emailul pentru a confirma contul",
-        });
-        
+        toast.success("Cont creat cu succes! Vă rugăm să vă verificați emailul pentru confirmare.");
         form.reset();
         navigate("/");
       }
       
-    } catch (error: any) {
-      console.error("Error in registration process:", error);
-      
-      toast({
-        variant: "destructive",
-        title: "Eroare",
-        description: "A apărut o eroare neașteptată. Vă rugăm să încercați din nou.",
-      });
+    } catch (error) {
+      toast.error("A apărut o eroare neașteptată. Vă rugăm să încercați din nou.");
     }
   };
 
