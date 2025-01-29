@@ -75,44 +75,48 @@ const Search = () => {
         query = query.eq("craftsman_type", selectedType);
       }
 
-      const { data, error } = await query;
+      const { data: craftsmenData, error } = await query;
 
       if (error) {
         console.error("Error fetching craftsmen:", error);
         return [];
       }
 
-      return data
-        .map((craftsman) => {
-          // Calculate average rating
-          const ratings = craftsman.reviews as { rating: number }[];
-          const avgRating = ratings.length > 0
-            ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
-            : 0;
+      // Process the data to ensure it's serializable
+      return craftsmenData.map((craftsman) => {
+        const ratings = craftsman.reviews as { rating: number }[];
+        const avgRating = ratings.length > 0
+          ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+          : 0;
 
-          // Add average rating to craftsman object
-          const craftsmanWithRating = {
-            ...craftsman,
-            average_rating: avgRating,
-          };
+        // Create a plain object with only the necessary data
+        return {
+          id: craftsman.id,
+          first_name: craftsman.first_name,
+          last_name: craftsman.last_name,
+          latitude: craftsman.latitude,
+          longitude: craftsman.longitude,
+          average_rating: avgRating,
+          trade: craftsman.trade,
+          // Add other necessary fields but keep them serializable
+        };
+      }).filter((craftsman) => {
+        // Filter by rating
+        if (craftsman.average_rating < minRating) return false;
 
-          // Filter by rating
-          if (avgRating < minRating) return null;
+        // Filter by distance if user location is available
+        if (userLocation && craftsman.latitude && craftsman.longitude) {
+          const distance = calculateDistance(
+            userLocation.lat,
+            userLocation.lng,
+            craftsman.latitude,
+            craftsman.longitude
+          );
+          if (distance > maxDistance) return false;
+        }
 
-          // Filter by distance if user location is available
-          if (userLocation && craftsman.latitude && craftsman.longitude) {
-            const distance = calculateDistance(
-              userLocation.lat,
-              userLocation.lng,
-              craftsman.latitude,
-              craftsman.longitude
-            );
-            if (distance > maxDistance) return null;
-          }
-
-          return craftsmanWithRating;
-        })
-        .filter(Boolean) as Craftsman[];
+        return true;
+      });
     },
     enabled: !!user,
   });
