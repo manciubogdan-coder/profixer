@@ -62,11 +62,19 @@ const Search = () => {
           id,
           first_name,
           last_name,
-          city,
+          phone,
+          country,
           county,
+          city,
+          address,
+          role,
+          created_at,
+          updated_at,
+          avatar_url,
+          craftsman_type,
           latitude,
           longitude,
-          craftsman_type,
+          last_location_update,
           reviews!reviews_craftsman_id_fkey(rating),
           trade:craftsman_type(name)
         `)
@@ -90,21 +98,30 @@ const Search = () => {
       }
 
       // Process the data to ensure it's serializable
-      const processedCraftsmen = craftsmenData.map((craftsman) => {
+      const processedCraftsmen = craftsmenData.map((craftsman): Craftsman => {
         const reviews = craftsman.reviews as { rating: number }[] || [];
         const avgRating = reviews.length > 0
           ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
           : 0;
 
-        // Create a serializable object with only the necessary data
+        // Create a serializable object that matches the Craftsman type
         return {
           id: craftsman.id,
           first_name: craftsman.first_name,
           last_name: craftsman.last_name,
-          city: craftsman.city,
+          phone: craftsman.phone,
+          country: craftsman.country,
           county: craftsman.county,
+          city: craftsman.city,
+          address: craftsman.address,
+          role: craftsman.role,
+          created_at: craftsman.created_at,
+          updated_at: craftsman.updated_at,
+          avatar_url: craftsman.avatar_url,
+          craftsman_type: craftsman.craftsman_type,
           latitude: craftsman.latitude,
           longitude: craftsman.longitude,
+          last_location_update: craftsman.last_location_update,
           average_rating: avgRating,
           trade: craftsman.trade ? { name: craftsman.trade.name } : null
         };
