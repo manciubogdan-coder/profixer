@@ -276,7 +276,14 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      platform_statistics: {
+        Row: {
+          avg_rating: number | null
+          total_clients: number | null
+          total_craftsmen: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_distance: {
