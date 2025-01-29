@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { SearchSidebar } from "@/components/search/SearchSidebar";
 import { Map } from "@/components/search/Map";
@@ -6,8 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
@@ -21,15 +21,10 @@ export type Craftsman = Tables<"profiles"> & {
 const Search = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-
+  
   useEffect(() => {
     if (!user) {
-      toast({
-        title: "Autentificare necesară",
-        description: "Trebuie să fii autentificat pentru a căuta meșteri",
-        variant: "destructive",
-      });
+      toast.error("Trebuie să fii autentificat pentru a căuta meșteri");
       navigate("/auth");
     }
   }, [user, navigate]);
@@ -51,56 +46,16 @@ const Search = () => {
         },
         (error) => {
           console.error("Error getting location:", error);
-          toast({
-            title: "Eroare",
-            description: "Nu am putut obține locația ta. Te rugăm să activezi serviciile de localizare.",
-            variant: "destructive",
-          });
+          toast.error("Nu am putut obține locația ta. Te rugăm să activezi serviciile de localizare.");
         }
       );
     }
   }, []);
 
-  // Update craftsman location periodically if they are a professional
-  useEffect(() => {
-    const updateLocation = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role !== "professional") return;
-
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          const { error } = await supabase
-            .from("profiles")
-            .update({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              last_location_update: new Date().toISOString(),
-            })
-            .eq("id", user.id);
-
-          if (error) {
-            console.error("Error updating location:", error);
-          }
-        });
-      }
-    };
-
-    const interval = setInterval(updateLocation, 10000); // Update every 10 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
   const { data: craftsmen = [], isLoading } = useQuery({
     queryKey: ["craftsmen", searchTerm, selectedType, maxDistance, minRating, userLocation],
     queryFn: async () => {
+      console.log("Fetching craftsmen...");
       let query = supabase
         .from("profiles")
         .select(`
@@ -159,9 +114,10 @@ const Search = () => {
         })
         .filter(Boolean) as Craftsman[];
     },
+    enabled: !!user,
   });
 
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371; // Earth's radius in kilometers
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
@@ -171,15 +127,19 @@ const Search = () => {
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
-  };
+  }, []);
 
-  const toRad = (value: number) => {
+  const toRad = useCallback((value: number) => {
     return (value * Math.PI) / 180;
-  };
+  }, []);
 
-  const handleCraftsmanClick = (craftsman: Craftsman) => {
+  const handleCraftsmanClick = useCallback((craftsman: Craftsman) => {
     navigate(`/profile/${craftsman.id}`);
-  };
+  }, [navigate]);
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -196,12 +156,12 @@ const Search = () => {
           setMaxDistance={setMaxDistance}
           minRating={minRating}
           setMinRating={setMinRating}
-          onCraftsmanClick={(craftsman) => navigate(`/profile/${craftsman.id}`)}
+          onCraftsmanClick={handleCraftsmanClick}
         />
         <Map 
           craftsmen={craftsmen} 
           userLocation={userLocation}
-          onCraftsmanClick={(craftsman) => navigate(`/profile/${craftsman.id}`)}
+          onCraftsmanClick={handleCraftsmanClick}
         />
       </div>
     </div>
