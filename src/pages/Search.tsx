@@ -59,7 +59,14 @@ const Search = () => {
       let query = supabase
         .from("profiles")
         .select(`
-          *,
+          id,
+          first_name,
+          last_name,
+          city,
+          county,
+          latitude,
+          longitude,
+          craftsman_type,
           reviews!reviews_craftsman_id_fkey(rating),
           trade:craftsman_type(name)
         `)
@@ -82,24 +89,28 @@ const Search = () => {
         return [];
       }
 
-      // Process the data to ensure it's serializable and matches the Craftsman type
+      // Process the data to ensure it's serializable
       const processedCraftsmen = craftsmenData.map((craftsman) => {
-        const ratings = craftsman.reviews as { rating: number }[];
-        const avgRating = ratings.length > 0
-          ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+        const reviews = craftsman.reviews as { rating: number }[] || [];
+        const avgRating = reviews.length > 0
+          ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
           : 0;
 
-        // Create a craftsman object that matches the Craftsman type
-        const processedCraftsman: Craftsman = {
-          ...craftsman,
+        // Create a serializable object with only the necessary data
+        return {
+          id: craftsman.id,
+          first_name: craftsman.first_name,
+          last_name: craftsman.last_name,
+          city: craftsman.city,
+          county: craftsman.county,
+          latitude: craftsman.latitude,
+          longitude: craftsman.longitude,
           average_rating: avgRating,
           trade: craftsman.trade ? { name: craftsman.trade.name } : null
         };
-
-        return processedCraftsman;
       });
 
-      // Filter the craftsmen based on rating and distance
+      // Filter based on rating and distance
       return processedCraftsmen.filter((craftsman) => {
         if ((craftsman.average_rating || 0) < minRating) return false;
 
