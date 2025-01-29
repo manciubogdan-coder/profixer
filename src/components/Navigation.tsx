@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { User, Bell, LogOut } from "lucide-react";
+import { User, Bell, LogOut, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -30,15 +30,13 @@ export const Navigation = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
+        <Link to="/" className="flex items-center gap-2 mr-6">
+          <Wrench className="h-6 w-6 text-primary" />
+          <span className="font-bold text-xl text-primary">Profixer</span>
+        </Link>
+
         <NavigationMenu>
           <NavigationMenuList>
-            <NavigationMenuItem>
-              <Link to="/">
-                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                  Acasă
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
             <NavigationMenuItem>
               <Link to="/search">
                 <NavigationMenuLink className={navigationMenuTriggerStyle()}>
