@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, MapPin, Phone, MessageCircle, User } from "lucide-react";
+import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award, Wrench } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
@@ -45,6 +45,17 @@ const CraftsmanPublicProfile = () => {
               last_name,
               avatar_url
             )
+          ),
+          specializations(
+            id,
+            name,
+            description
+          ),
+          qualifications(
+            id,
+            title,
+            document_url,
+            issue_date
           ),
           trade:craftsman_type(
             id,
@@ -100,6 +111,8 @@ const CraftsmanPublicProfile = () => {
   }
 
   const reviews = profile.reviews || [];
+  const specializations = profile.specializations || [];
+  const qualifications = profile.qualifications || [];
   const averageRating = reviews.length > 0
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
@@ -165,14 +178,78 @@ const CraftsmanPublicProfile = () => {
           </Card>
         </div>
 
-        <Tabs defaultValue="reviews" className="space-y-4">
+        <Tabs defaultValue="about" className="space-y-4">
           <TabsList>
+            <TabsTrigger value="about">Despre</TabsTrigger>
             <TabsTrigger value="reviews">Recenzii</TabsTrigger>
             <TabsTrigger value="portfolio">Portofoliu</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="about" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <Briefcase className="h-5 w-5" />
+                  <CardTitle>Specializări</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {specializations.length === 0 ? (
+                  <p className="text-muted-foreground">Nu există specializări adăugate.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {specializations.map((specialization) => (
+                      <div key={specialization.id} className="space-y-2">
+                        <h4 className="font-medium">{specialization.name}</h4>
+                        {specialization.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {specialization.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <Award className="h-5 w-5" />
+                  <CardTitle>Calificări</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {qualifications.length === 0 ? (
+                  <p className="text-muted-foreground">Nu există calificări adăugate.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {qualifications.map((qualification) => (
+                      <div key={qualification.id} className="space-y-2">
+                        <h4 className="font-medium">{qualification.title}</h4>
+                        {qualification.issue_date && (
+                          <p className="text-sm text-muted-foreground">
+                            Data emiterii: {new Date(qualification.issue_date).toLocaleDateString()}
+                          </p>
+                        )}
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={qualification.document_url} target="_blank" rel="noopener noreferrer">
+                            Vezi document
+                          </a>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="reviews" className="space-y-4">
             <ReviewSection craftsman={profile} />
           </TabsContent>
+
           <TabsContent value="portfolio">
             <p className="text-muted-foreground">Portofoliul va fi disponibil în curând.</p>
           </TabsContent>
