@@ -69,11 +69,15 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
       }
 
       console.log("Fetched messages:", data);
+      
       // Transform the attachments from Json type to MessageAttachment[]
       const transformedMessages = data.map(message => ({
         ...message,
-        attachments: (message.attachments as Json as MessageAttachment[]) || []
+        attachments: Array.isArray(message.attachments) 
+          ? (message.attachments as unknown as MessageAttachment[])
+          : []
       }));
+      
       setMessages(transformedMessages);
     };
 
@@ -94,7 +98,9 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
           console.log("New message received:", payload);
           const newMessage = {
             ...payload.new,
-            attachments: (payload.new.attachments as Json as MessageAttachment[]) || []
+            attachments: Array.isArray(payload.new.attachments)
+              ? (payload.new.attachments as unknown as MessageAttachment[])
+              : []
           } as Message;
           setMessages((prev) => [...prev, newMessage]);
         }
