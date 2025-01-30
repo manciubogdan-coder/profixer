@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, ArrowLeft, Paperclip } from "lucide-react";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
+
+interface MessageAttachment {
+  name: string;
+  url: string;
+  type: string;
+}
 
 interface Message {
   id: string;
@@ -14,11 +21,7 @@ interface Message {
   receiver_id: string;
   content: string;
   created_at: string;
-  attachments: Array<{
-    name: string;
-    url: string;
-    type: string;
-  }>;
+  attachments: MessageAttachment[];
   sender?: {
     first_name: string;
     last_name: string;
@@ -38,6 +41,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
   const [isLoading, setIsLoading] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const { user } = useAuth();
+  const inputFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -65,7 +69,12 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
       }
 
       console.log("Fetched messages:", data);
-      setMessages(data || []);
+      // Transform the attachments from Json type to MessageAttachment[]
+      const transformedMessages = data.map(message => ({
+        ...message,
+        attachments: (message.attachments as Json as MessageAttachment[]) || []
+      }));
+      setMessages(transformedMessages);
     };
 
     fetchMessages();
@@ -83,7 +92,11 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
         },
         (payload) => {
           console.log("New message received:", payload);
-          setMessages((prev) => [...prev, payload.new as Message]);
+          const newMessage = {
+            ...payload.new,
+            attachments: (payload.new.attachments as Json as MessageAttachment[]) || []
+          } as Message;
+          setMessages((prev) => [...prev, newMessage]);
         }
       )
       .subscribe();
@@ -165,9 +178,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
     }
   };
 
-  const inputFileRef = React.useRef<HTMLInputElement>(null);
-
-  const renderAttachment = (attachment: Message['attachments'][0]) => {
+  const renderAttachment = (attachment: MessageAttachment) => {
     if (attachment.type.startsWith('image/')) {
       return (
         <img 
