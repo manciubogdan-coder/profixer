@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft } from "lucide-react";
+import { Send, ArrowLeft, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -14,6 +14,11 @@ interface Message {
   receiver_id: string;
   content: string;
   created_at: string;
+  attachments: Array<{
+    name: string;
+    url: string;
+    type: string;
+  }>;
   sender?: {
     first_name: string;
     last_name: string;
@@ -31,6 +36,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -87,29 +93,101 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
     };
   }, [user, recipientId]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
+    }
+  };
+
+  const uploadFiles = async (files: File[]) => {
+    const uploadedFiles = [];
+    
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from('message-attachments')
+        .upload(fileName, file);
+        
+      if (error) {
+        console.error('Error uploading file:', error);
+        toast.error(`Eroare la încărcarea fișierului ${file.name}`);
+        continue;
+      }
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('message-attachments')
+        .getPublicUrl(fileName);
+        
+      uploadedFiles.push({
+        name: file.name,
+        url: publicUrl,
+        type: file.type
+      });
+    }
+    
+    return uploadedFiles;
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newMessage.trim()) return;
+    if (!user || (!newMessage.trim() && files.length === 0)) return;
 
     setIsLoading(true);
     try {
+      let uploadedFiles = [];
+      if (files.length > 0) {
+        uploadedFiles = await uploadFiles(files);
+      }
+
       const { error } = await supabase.from("messages").insert([
         {
           sender_id: user.id,
           receiver_id: recipientId,
           content: newMessage.trim(),
+          attachments: uploadedFiles
         },
       ]);
 
       if (error) throw error;
 
       setNewMessage("");
+      setFiles([]);
+      if (inputFileRef.current) {
+        inputFileRef.current.value = '';
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Nu am putut trimite mesajul");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const inputFileRef = React.useRef<HTMLInputElement>(null);
+
+  const renderAttachment = (attachment: Message['attachments'][0]) => {
+    if (attachment.type.startsWith('image/')) {
+      return (
+        <img 
+          src={attachment.url} 
+          alt={attachment.name} 
+          className="max-w-[200px] max-h-[200px] rounded-lg object-cover"
+        />
+      );
+    }
+    return (
+      <a 
+        href={attachment.url} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="text-primary hover:underline flex items-center gap-2"
+      >
+        <Paperclip className="h-4 w-4" />
+        {attachment.name}
+      </a>
+    );
   };
 
   return (
@@ -146,7 +224,16 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
                     : "bg-muted"
                 }`}
               >
-                <p className="text-sm">{message.content}</p>
+                {message.content && <p className="text-sm mb-2">{message.content}</p>}
+                {message.attachments && message.attachments.length > 0 && (
+                  <div className="space-y-2">
+                    {message.attachments.map((attachment, index) => (
+                      <div key={index}>
+                        {renderAttachment(attachment)}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <span className="text-xs opacity-70">
                   {new Date(message.created_at).toLocaleTimeString()}
                 </span>
@@ -156,16 +243,38 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
         </div>
       </ScrollArea>
 
-      <form onSubmit={sendMessage} className="p-4 border-t flex gap-2">
-        <Input
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Scrie un mesaj..."
-          disabled={isLoading}
+      <form onSubmit={sendMessage} className="p-4 border-t space-y-2">
+        <div className="flex gap-2">
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Scrie un mesaj..."
+            disabled={isLoading}
+          />
+          <Button type="button" variant="outline" size="icon" onClick={() => inputFileRef.current?.click()}>
+            <Paperclip className="h-4 w-4" />
+          </Button>
+          <Button type="submit" disabled={isLoading || (!newMessage.trim() && files.length === 0)}>
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
+        <input
+          type="file"
+          ref={inputFileRef}
+          onChange={handleFileChange}
+          className="hidden"
+          multiple
+          accept="image/*,video/*,application/*"
         />
-        <Button type="submit" disabled={isLoading || !newMessage.trim()}>
-          <Send className="w-4 h-4" />
-        </Button>
+        {files.length > 0 && (
+          <div className="flex gap-2 flex-wrap">
+            {files.map((file, index) => (
+              <div key={index} className="text-sm text-muted-foreground">
+                {file.name}
+              </div>
+            ))}
+          </div>
+        )}
       </form>
     </div>
   );

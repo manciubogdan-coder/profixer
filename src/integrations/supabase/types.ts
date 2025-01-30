@@ -40,6 +40,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachments: Json | null
           content: string
           created_at: string | null
           id: string
@@ -49,6 +50,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          attachments?: Json | null
           content: string
           created_at?: string | null
           id?: string
@@ -58,6 +60,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          attachments?: Json | null
           content?: string
           created_at?: string | null
           id?: string
