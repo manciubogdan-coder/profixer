@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
-
 const CraftsmanPublicProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
