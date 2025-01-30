@@ -41,6 +41,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ChatDialog } from "@/components/chat/ChatDialog";
+import { MessageSquare } from "lucide-react";
 
 type UserRole = Database["public"]["Enums"]["user_role"];
 type CraftsmanType = Database["public"]["Enums"]["craftsman_type"];
@@ -463,6 +465,16 @@ const ClientProfile = () => {
       <Navigation />
       <main className="container py-6">
         <div className="mx-auto max-w-4xl space-y-8">
+          {/* Add Chat Dialog Button */}
+          <div className="flex justify-end">
+            <ChatDialog>
+              <Button variant="outline" className="gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Mesaje
+              </Button>
+            </ChatDialog>
+          </div>
+
           <Card className="bg-white/5 backdrop-blur-lg border-0">
             <CardHeader className="text-center pb-8">
               <div className="flex flex-col items-center space-y-4">
