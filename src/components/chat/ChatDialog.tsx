@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from "lucide-react";
@@ -28,8 +27,15 @@ interface Conversation {
   unread_count: number;
 }
 
-export function ChatDialog() {
-  const [open, setOpen] = useState(false);
+interface ChatDialogProps {
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  recipientId?: string;
+  recipientName?: string;
+}
+
+export function ChatDialog({ children, open, onOpenChange, recipientId, recipientName }: ChatDialogProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedUser, setSelectedUser] = useState<{id: string; name: string} | null>(null);
   const { user } = useAuth();
@@ -93,17 +99,19 @@ export function ChatDialog() {
     fetchConversations();
   }, [user, open]);
 
+  useEffect(() => {
+    if (recipientId && recipientName) {
+      setSelectedUser({ id: recipientId, name: recipientName });
+    }
+  }, [recipientId, recipientName]);
+
   const handleUserSelect = (userId: string, userName: string) => {
     setSelectedUser({ id: userId, name: userName });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <MessageSquare className="h-5 w-5" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {children}
       <DialogContent className="sm:max-w-[800px] h-[700px]">
         <DialogHeader>
           <DialogTitle>Mesaje</DialogTitle>

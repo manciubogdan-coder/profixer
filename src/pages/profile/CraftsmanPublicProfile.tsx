@@ -449,8 +449,12 @@ const CraftsmanPublicProfile = () => {
       </main>
 
       {user && user.id !== profile.id && (
-        <ChatDialog open={isChatOpen} onOpenChange={setIsChatOpen} recipientId={profile.id} recipientName={`${profile.first_name} ${profile.last_name}`}>
-          <Button variant="ghost" size="icon" onClick={() => setIsChatOpen(true)}>
+        <ChatDialog>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setIsChatOpen(true)}
+          >
             <MessageCircle className="h-5 w-5" />
           </Button>
         </ChatDialog>
