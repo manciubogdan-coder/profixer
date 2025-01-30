@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -10,93 +8,89 @@ import {
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from "lucide-react";
 import { ChatInterface } from "./ChatInterface";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
-  profile: {
+  user: {
     id: string;
     first_name: string;
     last_name: string;
     avatar_url: string | null;
   };
-  last_message: {
-    content: string;
-    created_at: string;
-  };
+  last_message: string;
+  last_message_time: string;
   unread_count: number;
 }
 
 interface ChatDialogProps {
   children?: React.ReactNode;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
   recipientId?: string;
   recipientName?: string;
 }
 
-export function ChatDialog({ children, open, onOpenChange, recipientId, recipientName }: ChatDialogProps) {
+export function ChatDialog({ children, recipientId, recipientName }: ChatDialogProps) {
+  const [open, setOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedUser, setSelectedUser] = useState<{id: string; name: string} | null>(null);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (!user || !open) return;
+  const fetchConversations = async () => {
+    if (!user) return;
 
-    const fetchConversations = async () => {
-      console.log("Fetching conversations for user:", user.id);
-      const { data, error } = await supabase
-        .from("messages")
+    console.log("Fetching conversations...");
+    
+    try {
+      // Get all messages where the user is either sender or receiver
+      const { data: messages, error } = await supabase
+        .from('messages')
         .select(`
-          sender:profiles!messages_sender_id_fkey (
-            id,
-            first_name,
-            last_name,
-            avatar_url
-          ),
-          receiver:profiles!messages_receiver_id_fkey (
-            id,
-            first_name,
-            last_name,
-            avatar_url
-          ),
-          content,
-          created_at,
-          read
+          *,
+          sender:sender_id(id, first_name, last_name, avatar_url),
+          receiver:receiver_id(id, first_name, last_name, avatar_url)
         `)
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order("created_at", { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.error("Error fetching conversations:", error);
+        console.error("Error fetching messages:", error);
         return;
       }
 
-      console.log("Fetched messages:", data);
+      console.log("Fetched messages:", messages);
 
-      // Process conversations
-      const conversationsMap = new Map<string, Conversation>();
-      
-      data?.forEach((message) => {
-        const otherUser = message.sender.id === user.id ? message.receiver : message.sender;
-        const existingConv = conversationsMap.get(otherUser.id);
+      // Process messages into conversations
+      const conversationsMap = new Map();
+
+      messages.forEach((message) => {
+        const otherUser = message.sender_id === user.id ? message.receiver : message.sender;
+        if (!otherUser) return;
+
+        const conversationKey = otherUser.id;
         
-        if (!existingConv || new Date(existingConv.last_message.created_at) < new Date(message.created_at)) {
-          conversationsMap.set(otherUser.id, {
-            profile: otherUser,
-            last_message: {
-              content: message.content,
-              created_at: message.created_at,
-            },
-            unread_count: message.read ? 0 : 1,
+        if (!conversationsMap.has(conversationKey)) {
+          conversationsMap.set(conversationKey, {
+            user: otherUser,
+            last_message: message.content,
+            last_message_time: message.created_at,
+            unread_count: message.receiver_id === user.id && !message.read ? 1 : 0
           });
+        } else if (!message.read && message.receiver_id === user.id) {
+          const conversation = conversationsMap.get(conversationKey);
+          conversation.unread_count += 1;
         }
       });
 
       setConversations(Array.from(conversationsMap.values()));
-    };
+    } catch (error) {
+      console.error("Error processing conversations:", error);
+    }
+  };
 
-    fetchConversations();
+  useEffect(() => {
+    if (open) {
+      fetchConversations();
+    }
   }, [user, open]);
 
   useEffect(() => {
@@ -110,61 +104,50 @@ export function ChatDialog({ children, open, onOpenChange, recipientId, recipien
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {children}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <div onClick={() => setOpen(true)}>
+        {children}
+      </div>
       <DialogContent className="sm:max-w-[800px] h-[700px]">
         <DialogHeader>
           <DialogTitle>Mesaje</DialogTitle>
         </DialogHeader>
-        <div className="flex h-full gap-4">
+        <div className="flex h-full">
           {!selectedUser ? (
-            <ScrollArea className="flex-1">
-              <div className="space-y-4">
-                {conversations.map((conv) => (
-                  <div
-                    key={conv.profile.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer"
-                    onClick={() => handleUserSelect(
-                      conv.profile.id,
-                      `${conv.profile.first_name} ${conv.profile.last_name}`
-                    )}
-                  >
-                    <Avatar>
-                      <AvatarImage src={conv.profile.avatar_url || undefined} />
-                      <AvatarFallback>
-                        {conv.profile.first_name[0]}
-                        {conv.profile.last_name[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">
-                        {conv.profile.first_name} {conv.profile.last_name}
-                      </p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {conv.last_message.content}
-                      </p>
+            <div className="w-full space-y-4">
+              {conversations.map((conversation) => (
+                <div
+                  key={conversation.user.id}
+                  className="flex items-center space-x-4 p-4 hover:bg-accent rounded-lg cursor-pointer"
+                  onClick={() => handleUserSelect(
+                    conversation.user.id,
+                    `${conversation.user.first_name} ${conversation.user.last_name}`
+                  )}
+                >
+                  <div className="flex-1">
+                    <div className="flex justify-between">
+                      <h4 className="font-medium">
+                        {conversation.user.first_name} {conversation.user.last_name}
+                      </h4>
+                      {conversation.unread_count > 0 && (
+                        <span className="bg-primary text-primary-foreground px-2 rounded-full text-sm">
+                          {conversation.unread_count}
+                        </span>
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(conv.last_message.created_at).toLocaleDateString()}
-                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {conversation.last_message}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          ) : (
-            <div className="flex-1">
-              <Button
-                variant="ghost"
-                className="mb-4"
-                onClick={() => setSelectedUser(null)}
-              >
-                ← Înapoi
-              </Button>
-              <ChatInterface
-                recipientId={selectedUser.id}
-                recipientName={selectedUser.name}
-              />
+                </div>
+              ))}
             </div>
+          ) : (
+            <ChatInterface
+              recipientId={selectedUser.id}
+              recipientName={selectedUser.name}
+              onBack={() => setSelectedUser(null)}
+            />
           )}
         </div>
       </DialogContent>
