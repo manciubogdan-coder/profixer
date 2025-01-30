@@ -36,7 +36,7 @@ const CraftsmanPublicProfile = () => {
         .from("profiles")
         .select(`
           *,
-          reviews(
+          reviews!reviews_craftsman_id_fkey(
             id,
             rating,
             comment,
@@ -246,7 +246,7 @@ const CraftsmanPublicProfile = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="reviews" className="space-y-4">
+          <TabsContent value="reviews">
             <ReviewSection craftsman={profile} />
           </TabsContent>
 
