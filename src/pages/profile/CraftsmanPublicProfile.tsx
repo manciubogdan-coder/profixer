@@ -39,7 +39,7 @@ const CraftsmanPublicProfile = () => {
             rating,
             comment,
             created_at,
-            user:profiles!reviews_user_id_fkey(
+            user:profiles!reviews_client_id_fkey(
               id,
               first_name,
               last_name,
@@ -59,7 +59,10 @@ const CraftsmanPublicProfile = () => {
         throw error;
       }
 
-      return profile;
+      return {
+        ...profile,
+        reviews: profile.reviews || []
+      };
     },
     enabled: !!user && !!id,
   });

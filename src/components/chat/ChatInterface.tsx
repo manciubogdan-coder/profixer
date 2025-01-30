@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send } from "lucide-react";
+import { Send, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -24,9 +24,10 @@ interface Message {
 interface ChatInterfaceProps {
   recipientId: string;
   recipientName: string;
+  onBack?: () => void;
 }
 
-export const ChatInterface = ({ recipientId, recipientName }: ChatInterfaceProps) => {
+export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -113,7 +114,12 @@ export const ChatInterface = ({ recipientId, recipientName }: ChatInterfaceProps
 
   return (
     <div className="flex flex-col h-[600px] bg-background border rounded-lg">
-      <div className="p-4 border-b">
+      <div className="p-4 border-b flex items-center gap-2">
+        {onBack && (
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <h2 className="text-lg font-semibold">{recipientName}</h2>
       </div>
 
