@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award } from "lucide-react";
+import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award, Mail } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
 
 const CraftsmanPublicProfile = () => {
   const { id } = useParams();
@@ -62,6 +63,16 @@ const CraftsmanPublicProfile = () => {
           trade:craftsman_type(
             id,
             name
+          ),
+          portfolios(
+            id,
+            title,
+            description,
+            created_at,
+            portfolio_images(
+              id,
+              image_url
+            )
           )
         `)
         .eq("id", id)
@@ -113,6 +124,7 @@ const CraftsmanPublicProfile = () => {
   const reviews = profile?.reviews || [];
   const specializations = profile?.specializations || [];
   const qualifications = profile?.qualifications || [];
+  const portfolios = profile?.portfolios || [];
   const averageRating = reviews.length > 0
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
@@ -148,9 +160,15 @@ const CraftsmanPublicProfile = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="icon" asChild>
+                  <Button 
+                    variant="default" 
+                    size="lg" 
+                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    asChild
+                  >
                     <a href={`tel:${profile?.phone}`}>
-                      <Phone className="h-5 w-5" />
+                      <Phone className="h-5 w-5 mr-2" />
+                      Sună acum
                     </a>
                   </Button>
                   {user && user.id !== profile?.id && (
@@ -158,8 +176,13 @@ const CraftsmanPublicProfile = () => {
                       recipientId={profile?.id}
                       recipientName={`${profile?.first_name} ${profile?.last_name}`}
                     >
-                      <Button variant="ghost" size="icon">
-                        <MessageCircle className="h-5 w-5" />
+                      <Button 
+                        variant="outline"
+                        size="lg"
+                        className="border-2 border-purple-600 text-purple-600 hover:bg-purple-50 shadow-md hover:shadow-lg transition-all duration-200"
+                      >
+                        <MessageCircle className="h-5 w-5 mr-2" />
+                        Trimite mesaj
                       </Button>
                     </ChatDialog>
                   )}
@@ -186,6 +209,35 @@ const CraftsmanPublicProfile = () => {
           </TabsList>
 
           <TabsContent value="about" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <CardTitle>Informații personale</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Adresă</p>
+                    <p>{profile.address}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Telefon</p>
+                    <p>{profile.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Oraș</p>
+                    <p>{profile.city}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Județ</p>
+                    <p>{profile.county}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <div className="flex items-center space-x-2">
@@ -247,11 +299,59 @@ const CraftsmanPublicProfile = () => {
           </TabsContent>
 
           <TabsContent value="reviews">
-            <ReviewSection craftsman={profile} />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Recenzii</CardTitle>
+                {user && user.id !== profile.id && (
+                  <AddReviewDialog craftsman={profile}>
+                    <Button variant="default" className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700">
+                      Adaugă recenzie
+                    </Button>
+                  </AddReviewDialog>
+                )}
+              </CardHeader>
+              <CardContent>
+                <ReviewSection craftsman={profile} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="portfolio">
-            <p className="text-muted-foreground">Portofoliul va fi disponibil în curând.</p>
+            <Card>
+              <CardHeader>
+                <CardTitle>Portofoliu</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {portfolios.length === 0 ? (
+                  <p className="text-muted-foreground">Nu există proiecte în portofoliu încă.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {portfolios.map((portfolio) => (
+                      <Card key={portfolio.id}>
+                        <CardHeader>
+                          <CardTitle>{portfolio.title}</CardTitle>
+                          {portfolio.description && (
+                            <CardDescription>{portfolio.description}</CardDescription>
+                          )}
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-2">
+                            {portfolio.portfolio_images?.map((image) => (
+                              <img
+                                key={image.id}
+                                src={image.image_url}
+                                alt={portfolio.title}
+                                className="w-full h-32 object-cover rounded-lg"
+                              />
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
