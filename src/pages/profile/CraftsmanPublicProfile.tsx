@@ -6,7 +6,7 @@ import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star } from "lucide-react";
+import { Star, MessageCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Statistics } from "@/components/Statistics";
+import { ChatDialog } from "@/components/chat/ChatDialog";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
   trade?: {
@@ -36,7 +38,6 @@ type Portfolio = {
 };
 
 type Specialization = Database["public"]["Tables"]["specializations"]["Row"];
-type Qualification = Database["public"]["Tables"]["qualifications"]["Row"];
 
 const CraftsmanPublicProfile = () => {
   const { id } = useParams();
@@ -52,6 +53,7 @@ const CraftsmanPublicProfile = () => {
   const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   useEffect(() => {
     // Validate UUID format
@@ -282,13 +284,24 @@ const CraftsmanPublicProfile = () => {
                     </div>
                   )}
                 </div>
+                {user && user.id !== profile.id && (
+                  <Button 
+                    onClick={() => setIsChatOpen(true)}
+                    className="mt-4"
+                    variant="outline"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Trimite mesaj
+                  </Button>
+                )}
               </div>
             </CardHeader>
 
             <CardContent>
               <Tabs defaultValue="about">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="about">Despre</TabsTrigger>
+                  <TabsTrigger value="statistics">Statistici</TabsTrigger>
                   <TabsTrigger value="specializations">Specializări</TabsTrigger>
                   <TabsTrigger value="portfolio">Portofoliu</TabsTrigger>
                   <TabsTrigger value="reviews">Recenzii</TabsTrigger>
@@ -311,6 +324,10 @@ const CraftsmanPublicProfile = () => {
                       </div>
                     </div>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="statistics">
+                  <Statistics />
                 </TabsContent>
 
                 <TabsContent value="specializations">
@@ -429,6 +446,15 @@ const CraftsmanPublicProfile = () => {
           </Card>
         </div>
       </main>
+
+      {user && user.id !== profile.id && (
+        <ChatDialog
+          open={isChatOpen}
+          onOpenChange={setIsChatOpen}
+          recipientId={profile.id}
+          recipientName={`${profile.first_name} ${profile.last_name}`}
+        />
+      )}
     </div>
   );
 };
