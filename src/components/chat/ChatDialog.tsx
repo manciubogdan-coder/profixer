@@ -41,13 +41,12 @@ export function ChatDialog({ children, recipientId, recipientName }: ChatDialogP
     console.log("Fetching conversations...");
     
     try {
-      // Get all messages where the user is either sender or receiver
       const { data: messages, error } = await supabase
         .from('messages')
         .select(`
           *,
-          sender:sender_id(id, first_name, last_name, avatar_url),
-          receiver:receiver_id(id, first_name, last_name, avatar_url)
+          sender:profiles!messages_sender_id_fkey(id, first_name, last_name, avatar_url),
+          receiver:profiles!messages_receiver_id_fkey(id, first_name, last_name, avatar_url)
         `)
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
