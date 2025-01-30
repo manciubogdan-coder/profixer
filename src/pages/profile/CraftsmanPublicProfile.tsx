@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award, Wrench } from "lucide-react";
+import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
@@ -30,11 +30,13 @@ const CraftsmanPublicProfile = () => {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["craftsman", id],
     queryFn: async () => {
+      console.log("Fetching craftsman profile for ID:", id);
+      
       const { data: profile, error } = await supabase
         .from("profiles")
         .select(`
           *,
-          reviews!reviews_craftsman_id_fkey(
+          reviews(
             id,
             rating,
             comment,
@@ -70,10 +72,8 @@ const CraftsmanPublicProfile = () => {
         throw error;
       }
 
-      return {
-        ...profile,
-        reviews: profile.reviews || []
-      };
+      console.log("Fetched profile:", profile);
+      return profile;
     },
     enabled: !!user && !!id,
   });
@@ -110,9 +110,9 @@ const CraftsmanPublicProfile = () => {
     );
   }
 
-  const reviews = profile.reviews || [];
-  const specializations = profile.specializations || [];
-  const qualifications = profile.qualifications || [];
+  const reviews = profile?.reviews || [];
+  const specializations = profile?.specializations || [];
+  const qualifications = profile?.qualifications || [];
   const averageRating = reviews.length > 0
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
@@ -127,36 +127,36 @@ const CraftsmanPublicProfile = () => {
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src={profile.avatar_url || undefined} />
+                    <AvatarImage src={profile?.avatar_url || undefined} />
                     <AvatarFallback>
                       <User className="h-12 w-12" />
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <CardTitle className="text-2xl">
-                      {profile.first_name} {profile.last_name}
+                      {profile?.first_name} {profile?.last_name}
                     </CardTitle>
-                    {profile.trade && (
+                    {profile?.trade && (
                       <Badge variant="secondary" className="mt-2">
                         {profile.trade.name}
                       </Badge>
                     )}
                     <div className="flex items-center mt-2 text-muted-foreground">
                       <MapPin className="h-4 w-4 mr-1" />
-                      <span>{profile.city}, {profile.county}</span>
+                      <span>{profile?.city}, {profile?.county}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="icon" asChild>
-                    <a href={`tel:${profile.phone}`}>
+                    <a href={`tel:${profile?.phone}`}>
                       <Phone className="h-5 w-5" />
                     </a>
                   </Button>
-                  {user && user.id !== profile.id && (
+                  {user && user.id !== profile?.id && (
                     <ChatDialog
-                      recipientId={profile.id}
-                      recipientName={`${profile.first_name} ${profile.last_name}`}
+                      recipientId={profile?.id}
+                      recipientName={`${profile?.first_name} ${profile?.last_name}`}
                     >
                       <Button variant="ghost" size="icon">
                         <MessageCircle className="h-5 w-5" />
