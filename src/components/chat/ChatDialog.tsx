@@ -93,6 +93,32 @@ export function ChatDialog({ children, recipientId, recipientName }: ChatDialogP
   }, [user, open]);
 
   useEffect(() => {
+    if (!user) return;
+
+    // Set up real-time subscription for new messages
+    const channel = supabase
+      .channel("messages_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("New message received:", payload);
+          fetchConversations(); // Refresh conversations when new message arrives
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  useEffect(() => {
     if (recipientId && recipientName) {
       setSelectedUser({ id: recipientId, name: recipientName });
     }
