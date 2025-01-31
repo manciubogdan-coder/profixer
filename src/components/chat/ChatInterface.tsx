@@ -239,8 +239,8 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-background">
-      <div className="p-4 border-b flex items-center gap-2 bg-background sticky top-0 z-10">
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b flex items-center gap-2 bg-background">
         {onBack && (
           <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
             <ArrowLeft className="h-4 w-4" />
@@ -314,7 +314,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
         </div>
       </ScrollArea>
 
-      <form onSubmit={sendMessage} className="p-4 border-t space-y-2 bg-background sticky bottom-0">
+      <form onSubmit={sendMessage} className="p-4 border-t mt-auto bg-background">
         <div className="flex gap-2">
           <Input
             value={newMessage}
@@ -349,7 +349,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
           accept="image/*,video/*,application/*"
         />
         {files.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap mt-2">
             {files.map((file, index) => (
               <div key={index} className="text-sm text-muted-foreground">
                 {file.name}
