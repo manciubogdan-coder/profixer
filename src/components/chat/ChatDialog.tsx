@@ -133,13 +133,13 @@ export function ChatDialog({ children, recipientId, recipientName }: ChatDialogP
       <div onClick={() => setOpen(true)}>
         {children}
       </div>
-      <DialogContent className="sm:max-w-[800px] h-[700px]">
-        <DialogHeader>
+      <DialogContent className="w-full h-[100dvh] p-0 md:h-[700px] md:p-6 md:max-w-[800px]">
+        <DialogHeader className="p-4 md:p-0">
           <DialogTitle>Mesaje</DialogTitle>
         </DialogHeader>
-        <div className="flex h-full">
+        <div className="flex h-[calc(100%-4rem)]">
           {!selectedUser ? (
-            <div className="w-full space-y-4">
+            <div className="w-full space-y-4 p-4">
               {conversations.map((conversation) => (
                 <div
                   key={conversation.user.id}

@@ -7,7 +7,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, ArrowLeft, Paperclip, MoreVertical, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Json } from "@/integrations/supabase/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +47,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
   const [files, setFiles] = useState<File[]>([]);
   const { user } = useAuth();
   const inputFileRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -155,6 +155,14 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
     return uploadedFiles;
   };
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || (!newMessage.trim() && files.length === 0)) return;
@@ -231,8 +239,8 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] w-full bg-background border rounded-lg overflow-hidden">
-      <div className="p-4 border-b flex items-center gap-2">
+    <div className="flex flex-col h-full w-full bg-background">
+      <div className="p-4 border-b flex items-center gap-2 bg-background sticky top-0 z-10">
         {onBack && (
           <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
             <ArrowLeft className="h-4 w-4" />
@@ -250,14 +258,14 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
                 message.sender_id === user?.id ? "flex-row-reverse" : ""
               }`}
             >
-              <Avatar className="w-8 h-8 shrink-0">
+              <Avatar className="w-8 h-8">
                 <AvatarImage src={message.sender?.avatar_url || undefined} />
                 <AvatarFallback>
                   {message.sender?.first_name?.[0]}
                   {message.sender?.last_name?.[0]}
                 </AvatarFallback>
               </Avatar>
-              <div className="group relative max-w-[85%] space-y-1">
+              <div className="group relative max-w-[75%] space-y-1">
                 <div
                   className={`rounded-lg p-3 ${
                     message.sender_id === user?.id
@@ -269,7 +277,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="space-y-2">
                       {message.attachments.map((attachment, index) => (
-                        <div key={index}>
+                        <div key={index} className="max-w-full">
                           {renderAttachment(attachment)}
                         </div>
                       ))}
@@ -302,10 +310,11 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
-      <form onSubmit={sendMessage} className="p-4 border-t space-y-2">
+      <form onSubmit={sendMessage} className="p-4 border-t space-y-2 bg-background sticky bottom-0">
         <div className="flex gap-2">
           <Input
             value={newMessage}
