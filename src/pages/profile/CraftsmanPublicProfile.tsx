@@ -12,7 +12,7 @@ import { ChatDialog } from "@/components/chat/ChatDialog";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
 
