@@ -31,27 +31,37 @@ export function NotificationsDialog() {
   const fetchNotifications = async () => {
     if (!user) return;
 
-    console.log("Fetching notifications for user:", user.id);
-    const { data, error } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    try {
+      console.log("Fetching notifications for user:", user.id);
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching notifications:", error);
-      return;
+      if (error) {
+        console.error("Error fetching notifications:", error);
+        toast.error("Nu am putut încărca notificările");
+        return;
+      }
+
+      console.log("Fetched notifications:", data);
+      setNotifications(data || []);
+      setUnreadCount(data?.filter(n => !n.read).length || 0);
+    } catch (error) {
+      console.error("Error in fetchNotifications:", error);
+      toast.error("A apărut o eroare la încărcarea notificărilor");
     }
-
-    console.log("Fetched notifications:", data);
-    setNotifications(data || []);
-    setUnreadCount(data?.filter(n => !n.read).length || 0);
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (open) {
+      fetchNotifications();
+    }
+  }, [user, open]);
 
-    fetchNotifications();
+  useEffect(() => {
+    if (!user) return;
 
     // Set up real-time subscription
     const channel = supabase
@@ -59,40 +69,19 @@ export function NotificationsDialog() {
       .on(
         "postgres_changes",
         {
-          event: "*", // Listen to all events (INSERT, UPDATE, DELETE)
+          event: "*",
           schema: "public",
           table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
           console.log("Notification change received:", payload);
-          
-          if (payload.eventType === "INSERT") {
-            setNotifications((prev) => [payload.new as Notification, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-          } else if (payload.eventType === "DELETE") {
-            setNotifications((prev) => 
-              prev.filter((n) => n.id !== payload.old.id)
-            );
-            if (!payload.old.read) {
-              setUnreadCount((prev) => Math.max(0, prev - 1));
-            }
-          } else if (payload.eventType === "UPDATE") {
-            setNotifications((prev) =>
-              prev.map((n) =>
-                n.id === payload.new.id ? payload.new as Notification : n
-              )
-            );
-            // Update unread count if read status changed
-            if (payload.old.read !== payload.new.read) {
-              setUnreadCount((prev) => 
-                payload.new.read ? prev - 1 : prev + 1
-              );
-            }
-          }
+          fetchNotifications(); // Refresh notifications when changes occur
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Subscription status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -100,15 +89,27 @@ export function NotificationsDialog() {
   }, [user]);
 
   const markAsRead = async (notificationId: string) => {
-    const { error } = await supabase
-      .from("notifications")
-      .update({ read: true })
-      .eq("id", notificationId);
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read: true })
+        .eq("id", notificationId);
 
-    if (error) {
-      console.error("Error marking notification as read:", error);
-      toast.error("Nu am putut marca notificarea ca citită");
-      return;
+      if (error) {
+        console.error("Error marking notification as read:", error);
+        toast.error("Nu am putut marca notificarea ca citită");
+        return;
+      }
+
+      setNotifications(prev =>
+        prev.map(n =>
+          n.id === notificationId ? { ...n, read: true } : n
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Error in markAsRead:", error);
+      toast.error("A apărut o eroare la marcarea notificării");
     }
   };
 
@@ -119,12 +120,17 @@ export function NotificationsDialog() {
         .delete()
         .eq("id", notificationId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error deleting notification:", error);
+        toast.error("Nu am putut șterge notificarea");
+        return;
+      }
 
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
       toast.success("Notificarea a fost ștearsă");
     } catch (error) {
-      console.error("Error deleting notification:", error);
-      toast.error("Nu am putut șterge notificarea");
+      console.error("Error in deleteNotification:", error);
+      toast.error("A apărut o eroare la ștergerea notificării");
     }
   };
 
@@ -140,12 +146,12 @@ export function NotificationsDialog() {
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="max-w-[100dvw] h-[100dvh] p-0 md:max-w-[800px] md:h-[80vh] md:max-h-[700px] md:p-6">
+        <DialogHeader className="p-4 md:p-0">
           <DialogTitle>Notificări</DialogTitle>
         </DialogHeader>
         <ScrollArea className="h-[500px]">
-          <div className="space-y-4">
+          <div className="space-y-4 p-4">
             {notifications.map((notification) => (
               <div
                 key={notification.id}
