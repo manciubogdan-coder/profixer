@@ -5,9 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Send, ArrowLeft, Paperclip } from "lucide-react";
+import { Send, ArrowLeft, Paperclip, MoreVertical, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Json } from "@/integrations/supabase/types";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MessageAttachment {
   name: string;
@@ -207,8 +213,25 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
     );
   };
 
+  const deleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", messageId);
+
+      if (error) throw error;
+
+      setMessages((prev) => prev.filter((msg) => msg.id !== messageId));
+      toast.success("Mesaj șters cu succes");
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      toast.error("Nu am putut șterge mesajul");
+    }
+  };
+
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] md:h-[600px] w-full md:w-auto bg-background border rounded-lg">
+    <div className="flex flex-col h-[calc(100vh-4rem)] w-full bg-background border rounded-lg overflow-hidden">
       <div className="p-4 border-b flex items-center gap-2">
         {onBack && (
           <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
@@ -234,26 +257,48 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
                   {message.sender?.last_name?.[0]}
                 </AvatarFallback>
               </Avatar>
-              <div
-                className={`max-w-[85%] md:max-w-[70%] rounded-lg p-3 ${
-                  message.sender_id === user?.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
-              >
-                {message.content && <p className="text-sm mb-2 break-words">{message.content}</p>}
-                {message.attachments && message.attachments.length > 0 && (
-                  <div className="space-y-2">
-                    {message.attachments.map((attachment, index) => (
-                      <div key={index}>
-                        {renderAttachment(attachment)}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <span className="text-xs opacity-70">
-                  {new Date(message.created_at).toLocaleTimeString()}
-                </span>
+              <div className="group relative max-w-[85%] space-y-1">
+                <div
+                  className={`rounded-lg p-3 ${
+                    message.sender_id === user?.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  {message.content && <p className="text-sm mb-2 break-words">{message.content}</p>}
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="space-y-2">
+                      {message.attachments.map((attachment, index) => (
+                        <div key={index}>
+                          {renderAttachment(attachment)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <span className="text-xs opacity-70">
+                    {new Date(message.created_at).toLocaleTimeString()}
+                  </span>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-0 right-0 h-8 w-8 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => deleteMessage(message.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Șterge mesajul
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           ))}
