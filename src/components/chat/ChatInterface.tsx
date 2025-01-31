@@ -208,10 +208,10 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-background border rounded-lg">
+    <div className="flex flex-col h-[calc(100vh-2rem)] md:h-[600px] w-full md:w-auto bg-background border rounded-lg">
       <div className="p-4 border-b flex items-center gap-2">
         {onBack && (
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
@@ -227,7 +227,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
                 message.sender_id === user?.id ? "flex-row-reverse" : ""
               }`}
             >
-              <Avatar className="w-8 h-8">
+              <Avatar className="w-8 h-8 shrink-0">
                 <AvatarImage src={message.sender?.avatar_url || undefined} />
                 <AvatarFallback>
                   {message.sender?.first_name?.[0]}
@@ -235,13 +235,13 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
                 </AvatarFallback>
               </Avatar>
               <div
-                className={`max-w-[70%] rounded-lg p-3 ${
+                className={`max-w-[85%] md:max-w-[70%] rounded-lg p-3 ${
                   message.sender_id === user?.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted"
                 }`}
               >
-                {message.content && <p className="text-sm mb-2">{message.content}</p>}
+                {message.content && <p className="text-sm mb-2 break-words">{message.content}</p>}
                 {message.attachments && message.attachments.length > 0 && (
                   <div className="space-y-2">
                     {message.attachments.map((attachment, index) => (
@@ -267,11 +267,22 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Scrie un mesaj..."
             disabled={isLoading}
+            className="flex-1"
           />
-          <Button type="button" variant="outline" size="icon" onClick={() => inputFileRef.current?.click()}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="icon" 
+            onClick={() => inputFileRef.current?.click()}
+            className="shrink-0"
+          >
             <Paperclip className="h-4 w-4" />
           </Button>
-          <Button type="submit" disabled={isLoading || (!newMessage.trim() && files.length === 0)}>
+          <Button 
+            type="submit" 
+            disabled={isLoading || (!newMessage.trim() && files.length === 0)}
+            className="shrink-0"
+          >
             <Send className="w-4 h-4" />
           </Button>
         </div>

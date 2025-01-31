@@ -6,15 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award, Mail } from "lucide-react";
+import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
+
 const CraftsmanPublicProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -135,7 +136,7 @@ const CraftsmanPublicProfile = () => {
         <div className="flex flex-col md:flex-row md:items-start gap-8">
           <Card className="flex-1">
             <CardHeader>
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={profile?.avatar_url || undefined} />
@@ -158,11 +159,11 @@ const CraftsmanPublicProfile = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                   <Button 
                     variant="default" 
                     size="lg" 
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                     asChild
                   >
                     <a href={`tel:${profile?.phone}`}>
@@ -178,7 +179,7 @@ const CraftsmanPublicProfile = () => {
                       <Button 
                         variant="outline"
                         size="lg"
-                        className="border-2 border-purple-600 text-purple-600 hover:bg-purple-50 shadow-md hover:shadow-lg transition-all duration-200"
+                        className="w-full sm:w-auto border-2 border-purple-600 text-purple-600 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200"
                       >
                         <MessageCircle className="h-5 w-5 mr-2" />
                         Trimite mesaj
