@@ -9,8 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { addMonths, startOfMonth, endOfMonth, subMonths, format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon } from "lucide-react";
+import { addMonths, startOfMonth, endOfMonth, subMonths, format, startOfWeek, endOfWeek } from "date-fns";
 import { ro } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface CraftsmanStats {
   total_clients: number;
@@ -29,6 +34,8 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
   const [stats, setStats] = useState<CraftsmanStats | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
+  const [isCustomRange, setIsCustomRange] = useState(false);
+  const [customDateRange, setCustomDateRange] = useState<DateRange>({ start: null, end: null });
 
   const updateDateRange = (period: string) => {
     const now = new Date();
@@ -37,8 +44,8 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
 
     switch (period) {
       case "this_week":
-        start = new Date(now.setDate(now.getDate() - now.getDay()));
-        end = new Date();
+        start = startOfWeek(now, { locale: ro });
+        end = endOfWeek(now, { locale: ro });
         break;
       case "this_month":
         start = startOfMonth(now);
@@ -52,24 +59,28 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
         start = startOfMonth(subMonths(now, 3));
         end = new Date();
         break;
+      case "custom":
+        setIsCustomRange(true);
+        return;
       case "all":
       default:
         start = null;
         end = null;
     }
 
+    setIsCustomRange(false);
     setDateRange({ start, end });
   };
 
   useEffect(() => {
     const fetchStats = async () => {
       console.log("Fetching stats for craftsman:", craftsmanId);
-      console.log("Date range:", dateRange);
+      console.log("Date range:", isCustomRange ? customDateRange : dateRange);
 
       const { data, error } = await supabase.rpc("get_craftsman_statistics", {
         craftsman_id_param: craftsmanId,
-        start_date: dateRange.start?.toISOString(),
-        end_date: dateRange.end?.toISOString(),
+        start_date: isCustomRange ? customDateRange.start?.toISOString() : dateRange.start?.toISOString(),
+        end_date: isCustomRange ? customDateRange.end?.toISOString() : dateRange.end?.toISOString(),
       });
 
       if (error) {
@@ -84,18 +95,29 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
     if (craftsmanId) {
       fetchStats();
     }
-  }, [craftsmanId, dateRange]);
+  }, [craftsmanId, dateRange, customDateRange, isCustomRange]);
 
   const handlePeriodChange = (value: string) => {
     setSelectedPeriod(value);
     updateDateRange(value);
   };
 
+  const handleCustomRangeChange = (range: DateRange) => {
+    setCustomDateRange(range);
+  };
+
+  const formatCustomRange = () => {
+    if (customDateRange.start && customDateRange.end) {
+      return `${format(customDateRange.start, 'dd MMM yyyy', { locale: ro })} - ${format(customDateRange.end, 'dd MMM yyyy', { locale: ro })}`;
+    }
+    return "Selectează perioada";
+  };
+
   if (!stats) return null;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
         <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Selectează perioada" />
@@ -106,8 +128,37 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
             <SelectItem value="this_month">Luna aceasta</SelectItem>
             <SelectItem value="last_month">Luna trecută</SelectItem>
             <SelectItem value="last_3_months">Ultimele 3 luni</SelectItem>
+            <SelectItem value="custom">Interval personalizat</SelectItem>
           </SelectContent>
         </Select>
+
+        {selectedPeriod === "custom" && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[280px] justify-start text-left font-normal",
+                  !customDateRange && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {formatCustomRange()}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={customDateRange?.start}
+                selected={customDateRange}
+                onSelect={handleCustomRangeChange}
+                numberOfMonths={2}
+                locale={ro}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
