@@ -250,6 +250,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
       </div>
 
       <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
