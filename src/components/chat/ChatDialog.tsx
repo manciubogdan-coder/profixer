@@ -6,10 +6,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, ArrowLeft, Trash2 } from "lucide-react";
 import { ChatInterface } from "./ChatInterface";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Conversation {
   user: {
@@ -86,6 +98,31 @@ export function ChatDialog({ children, recipientId, recipientName }: ChatDialogP
     }
   };
 
+  const deleteConversation = async (userId: string) => {
+    if (!user) return;
+
+    try {
+      // Delete all messages between the current user and the selected user
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`);
+
+      if (error) {
+        console.error("Error deleting conversation:", error);
+        toast.error("Nu am putut șterge conversația");
+        return;
+      }
+
+      toast.success("Conversația a fost ștearsă");
+      fetchConversations();
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      toast.error("Nu am putut șterge conversația");
+    }
+  };
+
   useEffect(() => {
     if (open) {
       fetchConversations();
@@ -135,7 +172,19 @@ export function ChatDialog({ children, recipientId, recipientName }: ChatDialogP
       </div>
       <DialogContent className="max-w-[100dvw] h-[100dvh] p-0 md:max-w-[800px] md:h-[80vh] md:max-h-[700px] md:p-6 flex flex-col">
         <DialogHeader className="p-4 md:p-0">
-          <DialogTitle>Mesaje</DialogTitle>
+          <div className="flex items-center justify-between">
+            {selectedUser && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setSelectedUser(null)}
+                className="mr-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
+            <DialogTitle>Mesaje</DialogTitle>
+          </div>
         </DialogHeader>
         <div className="flex-1 overflow-hidden">
           {!selectedUser ? (
@@ -143,13 +192,15 @@ export function ChatDialog({ children, recipientId, recipientName }: ChatDialogP
               {conversations.map((conversation) => (
                 <div
                   key={conversation.user.id}
-                  className="flex items-center space-x-4 p-4 hover:bg-accent rounded-lg cursor-pointer"
-                  onClick={() => handleUserSelect(
-                    conversation.user.id,
-                    `${conversation.user.first_name} ${conversation.user.last_name}`
-                  )}
+                  className="flex items-center justify-between p-4 hover:bg-accent rounded-lg cursor-pointer"
                 >
-                  <div className="flex-1">
+                  <div 
+                    className="flex-1"
+                    onClick={() => handleUserSelect(
+                      conversation.user.id,
+                      `${conversation.user.first_name} ${conversation.user.last_name}`
+                    )}
+                  >
                     <div className="flex justify-between">
                       <h4 className="font-medium">
                         {conversation.user.first_name} {conversation.user.last_name}
@@ -164,6 +215,34 @@ export function ChatDialog({ children, recipientId, recipientName }: ChatDialogP
                       {conversation.last_message}
                     </p>
                   </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="ml-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Șterge conversația</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Ești sigur că vrei să ștergi această conversație? Această acțiune nu poate fi anulată.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Anulează</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => deleteConversation(conversation.user.id)}
+                        >
+                          Șterge
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               ))}
             </div>

@@ -242,7 +242,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
     <div className="flex flex-col h-full">
       <div className="p-4 border-b flex items-center gap-2 bg-background">
         {onBack && (
-          <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden">
+          <Button variant="ghost" size="icon" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
@@ -250,7 +250,6 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
       </div>
 
       <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
