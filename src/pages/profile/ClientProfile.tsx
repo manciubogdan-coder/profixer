@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { MessageSquare } from "lucide-react";
+import { CraftsmanStats } from "@/components/profile/CraftsmanStats";
 
 type UserRole = Database["public"]["Enums"]["user_role"];
 type CraftsmanType = Database["public"]["Enums"]["craftsman_type"];
@@ -474,6 +475,11 @@ const ClientProfile = () => {
               </Button>
             </ChatDialog>
           </div>
+
+          {/* Add Stats for professionals */}
+          {profile?.role === "professional" && (
+            <CraftsmanStats craftsmanId={profile.id} />
+          )}
 
           <Card className="bg-white/5 backdrop-blur-lg border-0">
             <CardHeader className="text-center pb-8">
