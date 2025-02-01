@@ -1,4 +1,4 @@
-import { Users, Star, CheckCircle } from "lucide-react";
+import { Users, Star, CheckCircle, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -7,18 +7,28 @@ export const Statistics = () => {
     queryKey: ["platform-statistics"],
     queryFn: async () => {
       console.log("Fetching platform statistics...");
-      const { data, error } = await supabase
+      const { data: platformStats, error: platformError } = await supabase
         .from('platform_statistics')
         .select('*')
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching statistics:", error);
+      if (platformError) {
+        console.error("Error fetching platform statistics:", platformError);
         return null;
       }
 
-      console.log("Fetched statistics:", data);
-      return data;
+      // Get total messages count
+      const { count: totalMessages, error: messagesError } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true });
+
+      if (messagesError) {
+        console.error("Error fetching messages count:", messagesError);
+        return { ...platformStats, total_messages: 0 };
+      }
+
+      console.log("Fetched statistics:", { ...platformStats, total_messages: totalMessages });
+      return { ...platformStats, total_messages: totalMessages };
     }
   });
 
@@ -38,14 +48,19 @@ export const Statistics = () => {
       value: stats?.total_craftsmen?.toString() || "0",
       label: "Meșteri Verificați",
     },
+    {
+      icon: MessageSquare,
+      value: stats?.total_messages?.toString() || "0",
+      label: "Mesaje Trimise",
+    },
   ];
 
   if (isLoading) {
     return (
       <div className="py-20">
         <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="animate-pulse">
                 <div className="h-32 bg-muted rounded-xl"></div>
               </div>
@@ -61,7 +76,7 @@ export const Statistics = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-background to-background" />
       
       <div className="container mx-auto relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {statisticsData.map((stat, index) => (
             <div
               key={index}
