@@ -33,13 +33,6 @@ export type Database = {
             foreignKeyName: "craftsman_statistics_craftsman_id_fkey"
             columns: ["craftsman_id"]
             isOneToOne: false
-            referencedRelation: "craftsman_profile_statistics"
-            referencedColumns: ["craftsman_id"]
-          },
-          {
-            foreignKeyName: "craftsman_statistics_craftsman_id_fkey"
-            columns: ["craftsman_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -81,22 +74,8 @@ export type Database = {
             foreignKeyName: "messages_receiver_id_fkey"
             columns: ["receiver_id"]
             isOneToOne: false
-            referencedRelation: "craftsman_profile_statistics"
-            referencedColumns: ["craftsman_id"]
-          },
-          {
-            foreignKeyName: "messages_receiver_id_fkey"
-            columns: ["receiver_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "craftsman_profile_statistics"
-            referencedColumns: ["craftsman_id"]
           },
           {
             foreignKeyName: "messages_sender_id_fkey"
@@ -136,13 +115,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "craftsman_profile_statistics"
-            referencedColumns: ["craftsman_id"]
-          },
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
@@ -207,13 +179,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "portfolios_craftsman_id_fkey"
-            columns: ["craftsman_id"]
-            isOneToOne: false
-            referencedRelation: "craftsman_profile_statistics"
-            referencedColumns: ["craftsman_id"]
-          },
           {
             foreignKeyName: "portfolios_craftsman_id_fkey"
             columns: ["craftsman_id"]
@@ -318,13 +283,6 @@ export type Database = {
             foreignKeyName: "qualifications_craftsman_id_fkey"
             columns: ["craftsman_id"]
             isOneToOne: false
-            referencedRelation: "craftsman_profile_statistics"
-            referencedColumns: ["craftsman_id"]
-          },
-          {
-            foreignKeyName: "qualifications_craftsman_id_fkey"
-            columns: ["craftsman_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -366,22 +324,8 @@ export type Database = {
             foreignKeyName: "reviews_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "craftsman_profile_statistics"
-            referencedColumns: ["craftsman_id"]
-          },
-          {
-            foreignKeyName: "reviews_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reviews_craftsman_id_fkey"
-            columns: ["craftsman_id"]
-            isOneToOne: false
-            referencedRelation: "craftsman_profile_statistics"
-            referencedColumns: ["craftsman_id"]
           },
           {
             foreignKeyName: "reviews_craftsman_id_fkey"
@@ -415,13 +359,6 @@ export type Database = {
           name?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "specializations_craftsman_id_fkey"
-            columns: ["craftsman_id"]
-            isOneToOne: false
-            referencedRelation: "craftsman_profile_statistics"
-            referencedColumns: ["craftsman_id"]
-          },
           {
             foreignKeyName: "specializations_craftsman_id_fkey"
             columns: ["craftsman_id"]
@@ -483,6 +420,21 @@ export type Database = {
           lon2: number
         }
         Returns: number
+      }
+      get_craftsman_statistics: {
+        Args: {
+          craftsman_id_param: string
+          start_date?: string
+          end_date?: string
+        }
+        Returns: {
+          craftsman_id: string
+          total_clients: number
+          average_rating: number
+          total_projects: number
+          total_messages: number
+          positive_reviews: number
+        }[]
       }
     }
     Enums: {
