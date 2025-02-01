@@ -16,6 +16,7 @@ import { CalendarIcon } from "lucide-react";
 import { addMonths, startOfMonth, endOfMonth, subMonths, format, startOfWeek, endOfWeek } from "date-fns";
 import { ro } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 
 interface CraftsmanStats {
   total_clients: number;
@@ -25,22 +26,17 @@ interface CraftsmanStats {
   positive_reviews: number;
 }
 
-type DateRange = {
-  start: Date | null;
-  end: Date | null;
-};
-
 export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
   const [stats, setStats] = useState<CraftsmanStats | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
-  const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isCustomRange, setIsCustomRange] = useState(false);
-  const [customDateRange, setCustomDateRange] = useState<DateRange>({ start: null, end: null });
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>();
 
   const updateDateRange = (period: string) => {
     const now = new Date();
-    let start: Date | null = null;
-    let end: Date | null = null;
+    let start: Date | undefined = undefined;
+    let end: Date | undefined = undefined;
 
     switch (period) {
       case "this_week":
@@ -64,12 +60,12 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
         return;
       case "all":
       default:
-        start = null;
-        end = null;
+        start = undefined;
+        end = undefined;
     }
 
     setIsCustomRange(false);
-    setDateRange({ start, end });
+    setDateRange({ from: start, to: end });
   };
 
   useEffect(() => {
@@ -79,8 +75,12 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
 
       const { data, error } = await supabase.rpc("get_craftsman_statistics", {
         craftsman_id_param: craftsmanId,
-        start_date: isCustomRange ? customDateRange.start?.toISOString() : dateRange.start?.toISOString(),
-        end_date: isCustomRange ? customDateRange.end?.toISOString() : dateRange.end?.toISOString(),
+        start_date: isCustomRange 
+          ? customDateRange?.from?.toISOString() 
+          : dateRange?.from?.toISOString(),
+        end_date: isCustomRange 
+          ? customDateRange?.to?.toISOString() 
+          : dateRange?.to?.toISOString(),
       });
 
       if (error) {
@@ -102,13 +102,13 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
     updateDateRange(value);
   };
 
-  const handleCustomRangeChange = (range: DateRange) => {
+  const handleCustomRangeChange = (range: DateRange | undefined) => {
     setCustomDateRange(range);
   };
 
   const formatCustomRange = () => {
-    if (customDateRange.start && customDateRange.end) {
-      return `${format(customDateRange.start, 'dd MMM yyyy', { locale: ro })} - ${format(customDateRange.end, 'dd MMM yyyy', { locale: ro })}`;
+    if (customDateRange?.from && customDateRange?.to) {
+      return `${format(customDateRange.from, 'dd MMM yyyy', { locale: ro })} - ${format(customDateRange.to, 'dd MMM yyyy', { locale: ro })}`;
     }
     return "Selectează perioada";
   };
@@ -150,7 +150,7 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
               <Calendar
                 initialFocus
                 mode="range"
-                defaultMonth={customDateRange?.start}
+                defaultMonth={customDateRange?.from}
                 selected={customDateRange}
                 onSelect={handleCustomRangeChange}
                 numberOfMonths={2}
