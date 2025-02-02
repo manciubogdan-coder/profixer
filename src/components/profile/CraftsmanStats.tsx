@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Users, Star, MessageSquare, Briefcase, Trophy } from "lucide-react";
+import { Users, Star, MessageSquare, Briefcase, Trophy, Eye, MapPin, Phone, UserCheck } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -24,6 +24,10 @@ interface CraftsmanStats {
   total_projects: number;
   total_messages: number;
   positive_reviews: number;
+  profile_views: number;
+  map_clicks: number;
+  phone_clicks: number;
+  unique_visitors: number;
 }
 
 export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
@@ -199,6 +203,39 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
             <Trophy className="w-8 h-8 mx-auto mb-2 text-primary" />
             <p className="text-2xl font-bold">{stats.positive_reviews}</p>
             <p className="text-sm text-muted-foreground">Recenzii Pozitive</p>
+          </CardContent>
+        </Card>
+
+        {/* Noile statistici de interacțiune */}
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <Eye className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl font-bold">{stats.profile_views}</p>
+            <p className="text-sm text-muted-foreground">Vizualizări Profil</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <MapPin className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl font-bold">{stats.map_clicks}</p>
+            <p className="text-sm text-muted-foreground">Click-uri pe Hartă</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <Phone className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl font-bold">{stats.phone_clicks}</p>
+            <p className="text-sm text-muted-foreground">Click-uri pe Telefon</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <UserCheck className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl font-bold">{stats.unique_visitors}</p>
+            <p className="text-sm text-muted-foreground">Vizitatori Unici</p>
           </CardContent>
         </Card>
       </div>
