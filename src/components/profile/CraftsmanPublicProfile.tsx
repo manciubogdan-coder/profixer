@@ -54,6 +54,8 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
         if (error) {
           console.error("Error tracking profile view:", error);
           toast.error("Nu am putut înregistra vizualizarea profilului");
+        } else {
+          console.log("Successfully tracked profile view");
         }
       } catch (error) {
         console.error("Error in trackProfileView:", error);
@@ -80,6 +82,8 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
       if (error) {
         console.error("Error tracking map click:", error);
         toast.error("Nu am putut înregistra click-ul pe hartă");
+      } else {
+        console.log("Successfully tracked map click");
       }
     } catch (error) {
       console.error("Error in handleMapClick:", error);
@@ -103,6 +107,8 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
       if (error) {
         console.error("Error tracking phone click:", error);
         toast.error("Nu am putut înregistra click-ul pe numărul de telefon");
+      } else {
+        console.log("Successfully tracked phone click");
       }
     } catch (error) {
       console.error("Error in handlePhoneClick:", error);
