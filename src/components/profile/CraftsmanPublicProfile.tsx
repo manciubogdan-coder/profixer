@@ -41,6 +41,7 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
       if (!user || user.id === craftsmanId) return;
       
       console.log("Tracking profile view for craftsman:", craftsmanId);
+      console.log("Visitor ID:", user.id);
       
       try {
         const { error } = await supabase
@@ -56,6 +57,8 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
           toast.error("Nu am putut înregistra vizualizarea profilului");
         } else {
           console.log("Successfully tracked profile view");
+          // Force refresh stats
+          await supabase.rpc('get_craftsman_statistics', { craftsman_id_param: craftsmanId });
         }
       } catch (error) {
         console.error("Error in trackProfileView:", error);
@@ -69,6 +72,7 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
     if (!user || user.id === craftsmanId) return;
     
     console.log("Tracking map click for craftsman:", craftsmanId);
+    console.log("Visitor ID:", user.id);
     
     try {
       const { error } = await supabase
@@ -84,6 +88,8 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
         toast.error("Nu am putut înregistra click-ul pe hartă");
       } else {
         console.log("Successfully tracked map click");
+        // Force refresh stats
+        await supabase.rpc('get_craftsman_statistics', { craftsman_id_param: craftsmanId });
       }
     } catch (error) {
       console.error("Error in handleMapClick:", error);
@@ -94,6 +100,7 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
     if (!user || user.id === craftsmanId) return;
     
     console.log("Tracking phone click for craftsman:", craftsmanId);
+    console.log("Visitor ID:", user.id);
     
     try {
       const { error } = await supabase
@@ -109,6 +116,8 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
         toast.error("Nu am putut înregistra click-ul pe numărul de telefon");
       } else {
         console.log("Successfully tracked phone click");
+        // Force refresh stats
+        await supabase.rpc('get_craftsman_statistics', { craftsman_id_param: craftsmanId });
       }
     } catch (error) {
       console.error("Error in handlePhoneClick:", error);

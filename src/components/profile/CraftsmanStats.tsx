@@ -72,34 +72,62 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
     setDateRange({ from: start, to: end });
   };
 
+  const fetchStats = async () => {
+    console.log("Fetching stats for craftsman:", craftsmanId);
+    console.log("Date range:", isCustomRange ? customDateRange : dateRange);
+
+    const { data, error } = await supabase.rpc("get_craftsman_statistics", {
+      craftsman_id_param: craftsmanId,
+      start_date: isCustomRange 
+        ? customDateRange?.from?.toISOString() 
+        : dateRange?.from?.toISOString(),
+      end_date: isCustomRange 
+        ? customDateRange?.to?.toISOString() 
+        : dateRange?.to?.toISOString(),
+    });
+
+    if (error) {
+      console.error("Error fetching craftsman stats:", error);
+      return;
+    }
+
+    console.log("Craftsman stats:", data[0]);
+    setStats(data[0]);
+  };
+
   useEffect(() => {
-    const fetchStats = async () => {
-      console.log("Fetching stats for craftsman:", craftsmanId);
-      console.log("Date range:", isCustomRange ? customDateRange : dateRange);
-
-      const { data, error } = await supabase.rpc("get_craftsman_statistics", {
-        craftsman_id_param: craftsmanId,
-        start_date: isCustomRange 
-          ? customDateRange?.from?.toISOString() 
-          : dateRange?.from?.toISOString(),
-        end_date: isCustomRange 
-          ? customDateRange?.to?.toISOString() 
-          : dateRange?.to?.toISOString(),
-      });
-
-      if (error) {
-        console.error("Error fetching craftsman stats:", error);
-        return;
-      }
-
-      console.log("Craftsman stats:", data[0]);
-      setStats(data[0]);
-    };
-
     if (craftsmanId) {
       fetchStats();
     }
   }, [craftsmanId, dateRange, customDateRange, isCustomRange]);
+
+  // Set up real-time subscription for profile interactions
+  useEffect(() => {
+    if (!craftsmanId) return;
+
+    const channel = supabase
+      .channel('profile_interactions')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'profile_interactions',
+          filter: `craftsman_id=eq.${craftsmanId}`,
+        },
+        (payload) => {
+          console.log('New profile interaction:', payload);
+          fetchStats();
+        }
+      )
+      .subscribe((status) => {
+        console.log("Profile interactions subscription status:", status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [craftsmanId]);
 
   const handlePeriodChange = (value: string) => {
     setSelectedPeriod(value);
