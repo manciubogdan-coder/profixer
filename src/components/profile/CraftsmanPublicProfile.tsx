@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Phone } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { CraftsmanStats } from "@/components/profile/CraftsmanStats";
 import { CraftsmanPortfolio } from "@/components/profile/CraftsmanPortfolio";
 import { CraftsmanReviews } from "@/components/profile/CraftsmanReviews";
@@ -14,6 +13,7 @@ import { CraftsmanMap } from "@/components/profile/CraftsmanMap";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string }) => {
   const { user } = useAuth();
@@ -42,16 +42,21 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
       
       console.log("Tracking profile view for craftsman:", craftsmanId);
       
-      const { error } = await supabase
-        .from('profile_interactions')
-        .insert({
-          craftsman_id: craftsmanId,
-          visitor_id: user?.id,
-          interaction_type: 'profile_view'
-        });
+      try {
+        const { error } = await supabase
+          .from('profile_interactions')
+          .insert({
+            craftsman_id: craftsmanId,
+            visitor_id: user.id,
+            interaction_type: 'profile_view'
+          });
 
-      if (error) {
-        console.error("Error tracking profile view:", error);
+        if (error) {
+          console.error("Error tracking profile view:", error);
+          toast.error("Nu am putut înregistra vizualizarea profilului");
+        }
+      } catch (error) {
+        console.error("Error in trackProfileView:", error);
       }
     };
 
@@ -63,16 +68,21 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
     
     console.log("Tracking map click for craftsman:", craftsmanId);
     
-    const { error } = await supabase
-      .from('profile_interactions')
-      .insert({
-        craftsman_id: craftsmanId,
-        visitor_id: user?.id,
-        interaction_type: 'map_click'
-      });
+    try {
+      const { error } = await supabase
+        .from('profile_interactions')
+        .insert({
+          craftsman_id: craftsmanId,
+          visitor_id: user.id,
+          interaction_type: 'map_click'
+        });
 
-    if (error) {
-      console.error("Error tracking map click:", error);
+      if (error) {
+        console.error("Error tracking map click:", error);
+        toast.error("Nu am putut înregistra click-ul pe hartă");
+      }
+    } catch (error) {
+      console.error("Error in handleMapClick:", error);
     }
   };
 
@@ -81,16 +91,21 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
     
     console.log("Tracking phone click for craftsman:", craftsmanId);
     
-    const { error } = await supabase
-      .from('profile_interactions')
-      .insert({
-        craftsman_id: craftsmanId,
-        visitor_id: user?.id,
-        interaction_type: 'phone_click'
-      });
+    try {
+      const { error } = await supabase
+        .from('profile_interactions')
+        .insert({
+          craftsman_id: craftsmanId,
+          visitor_id: user.id,
+          interaction_type: 'phone_click'
+        });
 
-    if (error) {
-      console.error("Error tracking phone click:", error);
+      if (error) {
+        console.error("Error tracking phone click:", error);
+        toast.error("Nu am putut înregistra click-ul pe numărul de telefon");
+      }
+    } catch (error) {
+      console.error("Error in handlePhoneClick:", error);
     }
   };
 
