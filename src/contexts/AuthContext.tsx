@@ -6,11 +6,13 @@ import { useNavigate } from "react-router-dom";
 type AuthContextType = {
   user: User | null;
   loading: boolean;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  signOut: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -18,8 +20,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      navigate("/auth");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   useEffect(() => {
-    // Check active sessions and sets the user
     const initializeAuth = async () => {
       try {
         console.log("Initializing auth state...");
@@ -31,8 +42,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else {
           console.log("No active session found");
           setUser(null);
-          // Redirect to auth page if no session exists
-          navigate("/auth");
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
@@ -44,7 +53,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     initializeAuth();
 
-    // Listen for changes on auth state (sign in, sign out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session?.user?.email);
       
@@ -67,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [navigate]);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

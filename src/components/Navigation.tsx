@@ -6,7 +6,7 @@ import { NotificationsDialog } from "@/components/notifications/NotificationsDia
 import { MessageSquare, Bell } from "lucide-react";
 
 export default function Navigation() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
 
   return (
     <nav className="border-b">
@@ -36,9 +36,9 @@ export default function Navigation() {
                   <Bell className="w-5 h-5" />
                 </Button>
               </NotificationsDialog>
-              <Button variant="ghost" onClick={signOut}>
-                Deconectare
-              </Button>
+              <Link to="/auth">
+                <Button variant="ghost">Deconectare</Button>
+              </Link>
             </>
           ) : (
             <Link to="/auth">

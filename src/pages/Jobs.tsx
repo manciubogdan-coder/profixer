@@ -21,6 +21,7 @@ export default function Jobs() {
         .select(`
           *,
           client:profiles!job_listings_client_id_fkey(
+            id,
             first_name,
             last_name,
             avatar_url
@@ -37,7 +38,10 @@ export default function Jobs() {
       }
 
       console.log("Fetched jobs:", data);
-      return data;
+      return data.map(job => ({
+        ...job,
+        images: Array.isArray(job.images) ? job.images : []
+      }));
     }
   });
 
