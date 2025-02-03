@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { NotificationsDialog } from "@/components/notifications/NotificationsDialog";
-import { MessageSquare, Bell } from "lucide-react";
+import { MessageSquare, Bell, Wrench } from "lucide-react";
 
 export default function Navigation() {
   const { user } = useAuth();
@@ -13,8 +13,8 @@ export default function Navigation() {
       <div className="container flex items-center justify-between h-16">
         <div className="flex items-center gap-6">
           <Link to="/" className="font-semibold flex items-center gap-2">
-            <img src="/favicon.ico" alt="Logo" className="w-6 h-6" />
-            MesterulTau
+            <Wrench className="w-6 h-6 text-primary" />
+            ProFixer
           </Link>
           <Link to="/search" className="text-muted-foreground hover:text-foreground">
             Caută meșteri
