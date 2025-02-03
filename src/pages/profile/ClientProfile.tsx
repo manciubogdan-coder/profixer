@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
-import Navigation from "@/components/Navigation";
+import { Navigation } from "@/components/Navigation";
 import {
   Select,
   SelectContent,

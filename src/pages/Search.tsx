@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Navigation } from "@/components/Navigation";
 import { SearchSidebar } from "@/components/search/SearchSidebar";
 import { Map } from "@/components/search/Map";
 import { useQuery } from "@tanstack/react-query";
@@ -163,6 +164,7 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navigation />
       <div className="flex flex-col md:flex-row h-[calc(100vh-3.5rem)]">
         <SearchSidebar
           searchTerm={searchTerm}
