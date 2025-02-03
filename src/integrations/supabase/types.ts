@@ -45,6 +45,73 @@ export type Database = {
           },
         ]
       }
+      job_listings: {
+        Row: {
+          budget: number | null
+          city: string
+          client_id: string | null
+          county: string
+          created_at: string
+          description: string
+          id: string
+          images: Json | null
+          start_date: string | null
+          status: string | null
+          title: string
+          trade_id: string | null
+        }
+        Insert: {
+          budget?: number | null
+          city: string
+          client_id?: string | null
+          county: string
+          created_at?: string
+          description: string
+          id?: string
+          images?: Json | null
+          start_date?: string | null
+          status?: string | null
+          title: string
+          trade_id?: string | null
+        }
+        Update: {
+          budget?: number | null
+          city?: string
+          client_id?: string | null
+          county?: string
+          created_at?: string
+          description?: string
+          id?: string
+          images?: Json | null
+          start_date?: string | null
+          status?: string | null
+          title?: string
+          trade_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_listings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "craftsman_profile_statistics"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "job_listings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_listings_trade_id_fkey"
+            columns: ["trade_id"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachments: Json | null

@@ -37,7 +37,10 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
   });
 
   const trackInteraction = async (interactionType: string) => {
-    if (!user || user.id === craftsmanId) return;
+    if (!user || user.id === craftsmanId) {
+      console.log("Not tracking interaction - user is craftsman or not logged in");
+      return;
+    }
     
     console.log(`Tracking ${interactionType} for craftsman:`, craftsmanId);
     console.log("Visitor ID:", user.id);
@@ -48,7 +51,8 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
         .insert({
           craftsman_id: craftsmanId,
           visitor_id: user.id,
-          interaction_type: interactionType
+          interaction_type: interactionType,
+          metadata: { timestamp: new Date().toISOString() }
         });
 
       if (error) {
@@ -56,8 +60,6 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
         toast.error(`Nu am putut înregistra ${interactionType}`);
       } else {
         console.log(`Successfully tracked ${interactionType}`);
-        // Force refresh stats
-        await supabase.rpc('get_craftsman_statistics', { craftsman_id_param: craftsmanId });
       }
     } catch (error) {
       console.error(`Error in track${interactionType}:`, error);
@@ -66,12 +68,20 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
 
   useEffect(() => {
     if (user && user.id !== craftsmanId) {
+      console.log("Tracking profile view");
       trackInteraction('profile_view');
     }
   }, [craftsmanId, user]);
 
-  const handleMapClick = () => trackInteraction('map_click');
-  const handlePhoneClick = () => trackInteraction('phone_click');
+  const handleMapClick = () => {
+    console.log("Map clicked");
+    trackInteraction('map_click');
+  };
+
+  const handlePhoneClick = () => {
+    console.log("Phone clicked");
+    trackInteraction('phone_click');
+  };
 
   if (isLoading) {
     return (
@@ -111,7 +121,7 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
             {profile.craftsman_type}
           </Badge>
           <div className="mt-4 space-y-2">
-            <div onClick={handleMapClick}>
+            <div onClick={handleMapClick} className="cursor-pointer">
               <CraftsmanMap
                 latitude={profile.latitude}
                 longitude={profile.longitude}
@@ -121,7 +131,7 @@ export const CraftsmanPublicProfile = ({ craftsmanId }: { craftsmanId: string })
             <a 
               href={`tel:${profile.phone}`} 
               onClick={handlePhoneClick}
-              className="flex items-center gap-2 text-primary hover:text-primary/80"
+              className="flex items-center gap-2 text-primary hover:text-primary/80 cursor-pointer"
             >
               <Phone className="w-4 h-4" />
               {profile.phone}
