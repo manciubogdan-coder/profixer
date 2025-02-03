@@ -12,15 +12,18 @@ export default function Navigation() {
     <nav className="border-b">
       <div className="container flex items-center justify-between h-16">
         <div className="flex items-center gap-6">
-          <Link to="/" className="font-semibold">
+          <Link to="/" className="font-semibold flex items-center gap-2">
+            <img src="/favicon.ico" alt="Logo" className="w-6 h-6" />
             MesterulTau
           </Link>
           <Link to="/search" className="text-muted-foreground hover:text-foreground">
             Caută meșteri
           </Link>
-          <Link to="/jobs" className="text-muted-foreground hover:text-foreground">
-            Lucrări
-          </Link>
+          {user?.role === 'professional' && (
+            <Link to="/jobs" className="text-muted-foreground hover:text-foreground">
+              Lucrări
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
