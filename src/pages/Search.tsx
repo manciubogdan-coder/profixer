@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Navigation } from "@/components/Navigation";
+import Navigation from "@/components/Navigation";
 import { SearchSidebar } from "@/components/search/SearchSidebar";
 import { Map } from "@/components/search/Map";
 import { useQuery } from "@tanstack/react-query";

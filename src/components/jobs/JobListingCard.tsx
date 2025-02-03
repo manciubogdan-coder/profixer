@@ -19,6 +19,7 @@ interface JobListingCardProps {
     start_date?: string;
     images?: string[];
     client: {
+      id: string;
       first_name: string;
       last_name: string;
       avatar_url?: string;

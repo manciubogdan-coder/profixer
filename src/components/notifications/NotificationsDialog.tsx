@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import React from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,85 +6,62 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Bell, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import { ro } from "date-fns/locale";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface NotificationsDialogProps {
+  children: React.ReactNode;
+}
 
 interface Notification {
   id: string;
-  type: string;
   title: string;
-  message: string;
+  content: string;
   created_at: string;
   read: boolean;
+  sender?: {
+    first_name: string;
+    last_name: string;
+    avatar_url?: string;
+  };
 }
 
-export function NotificationsDialog() {
-  const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+export function NotificationsDialog({ children }: NotificationsDialogProps) {
   const { user } = useAuth();
 
-  const fetchNotifications = async () => {
-    if (!user) return;
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      if (!user) return [];
 
-    try {
-      console.log("Fetching notifications for user:", user.id);
       const { data, error } = await supabase
         .from("notifications")
-        .select("*")
-        .eq("user_id", user.id)
+        .select(`
+          *,
+          sender:profiles(
+            first_name,
+            last_name,
+            avatar_url
+          )
+        `)
+        .eq("recipient_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching notifications:", error);
-        toast.error("Nu am putut încărca notificările");
-        return;
+        throw error;
       }
 
-      console.log("Fetched notifications:", data);
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.read).length || 0);
-    } catch (error) {
-      console.error("Error in fetchNotifications:", error);
-      toast.error("A apărut o eroare la încărcarea notificărilor");
-    }
-  };
-
-  useEffect(() => {
-    if (open) {
-      fetchNotifications();
-    }
-  }, [user, open]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    // Set up real-time subscription
-    const channel = supabase
-      .channel("notifications_channel")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          console.log("Notification change received:", payload);
-          fetchNotifications(); // Refresh notifications when changes occur
-        }
-      )
-      .subscribe((status) => {
-        console.log("Subscription status:", status);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
+      return data as Notification[];
+    },
+    enabled: !!user,
+  });
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -95,92 +70,76 @@ export function NotificationsDialog() {
         .update({ read: true })
         .eq("id", notificationId);
 
-      if (error) {
-        console.error("Error marking notification as read:", error);
-        toast.error("Nu am putut marca notificarea ca citită");
-        return;
-      }
-
-      setNotifications(prev =>
-        prev.map(n =>
-          n.id === notificationId ? { ...n, read: true } : n
-        )
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      if (error) throw error;
     } catch (error) {
-      console.error("Error in markAsRead:", error);
-      toast.error("A apărut o eroare la marcarea notificării");
-    }
-  };
-
-  const deleteNotification = async (notificationId: string) => {
-    try {
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("id", notificationId);
-
-      if (error) {
-        console.error("Error deleting notification:", error);
-        toast.error("Nu am putut șterge notificarea");
-        return;
-      }
-
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      toast.success("Notificarea a fost ștearsă");
-    } catch (error) {
-      console.error("Error in deleteNotification:", error);
-      toast.error("A apărut o eroare la ștergerea notificării");
+      console.error("Error marking notification as read:", error);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {unreadCount}
-            </span>
-          )}
-        </Button>
+        {children}
       </DialogTrigger>
-      <DialogContent className="max-w-[100dvw] h-[100dvh] p-0 md:max-w-[800px] md:h-[80vh] md:max-h-[700px] md:p-6">
-        <DialogHeader className="p-4 md:p-0">
+      <DialogContent>
+        <DialogHeader>
           <DialogTitle>Notificări</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="h-[500px]">
-          <div className="space-y-4 p-4">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`p-4 rounded-lg ${
-                  notification.read ? "bg-muted/50" : "bg-muted"
-                } relative group`}
-                onClick={() => !notification.read && markAsRead(notification.id)}
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteNotification(notification.id);
-                  }}
+        <ScrollArea className="h-[400px] pr-4">
+          {isLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : notifications && notifications.length > 0 ? (
+            <div className="space-y-4">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`p-4 rounded-lg ${
+                    notification.read ? "bg-muted/50" : "bg-muted"
+                  }`}
+                  onClick={() => !notification.read && markAsRead(notification.id)}
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-                <h4 className="font-medium">{notification.title}</h4>
-                <p className="text-sm text-muted-foreground">
-                  {notification.message}
-                </p>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(notification.created_at).toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
+                  <div className="flex items-start gap-4">
+                    {notification.sender && (
+                      <Avatar>
+                        <AvatarImage src={notification.sender.avatar_url} />
+                        <AvatarFallback>
+                          {notification.sender.first_name[0]}
+                          {notification.sender.last_name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                    <div className="flex-1">
+                      <h4 className="text-sm font-medium leading-none">
+                        {notification.title}
+                      </h4>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {notification.content}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {format(new Date(notification.created_at), "d MMMM yyyy, HH:mm", {
+                          locale: ro,
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">
+              Nu aveți notificări
+            </p>
+          )}
         </ScrollArea>
       </DialogContent>
     </Dialog>

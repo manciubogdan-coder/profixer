@@ -40,7 +40,7 @@ export default function Jobs() {
       console.log("Fetched jobs:", data);
       return data.map(job => ({
         ...job,
-        images: Array.isArray(job.images) ? job.images : []
+        images: Array.isArray(job.images) ? job.images.map(img => String(img)) : []
       }));
     }
   });
