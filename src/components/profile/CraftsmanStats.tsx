@@ -105,6 +105,8 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
   useEffect(() => {
     if (!craftsmanId) return;
 
+    console.log("Setting up profile interactions subscription for craftsman:", craftsmanId);
+
     const channel = supabase
       .channel('profile_interactions')
       .on(
@@ -125,6 +127,7 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
       });
 
     return () => {
+      console.log("Cleaning up profile interactions subscription");
       supabase.removeChannel(channel);
     };
   }, [craftsmanId]);
@@ -193,7 +196,39 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <Eye className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl font-bold">{stats.profile_views}</p>
+            <p className="text-sm text-muted-foreground">Vizualizări Profil</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <MapPin className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl font-bold">{stats.map_clicks}</p>
+            <p className="text-sm text-muted-foreground">Click-uri pe Hartă</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <Phone className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl font-bold">{stats.phone_clicks}</p>
+            <p className="text-sm text-muted-foreground">Click-uri pe Telefon</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <UserCheck className="w-8 h-8 mx-auto mb-2 text-primary" />
+            <p className="text-2xl font-bold">{stats.unique_visitors}</p>
+            <p className="text-sm text-muted-foreground">Vizitatori Unici</p>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardContent className="pt-6 text-center">
             <Users className="w-8 h-8 mx-auto mb-2 text-primary" />
@@ -231,39 +266,6 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
             <Trophy className="w-8 h-8 mx-auto mb-2 text-primary" />
             <p className="text-2xl font-bold">{stats.positive_reviews}</p>
             <p className="text-sm text-muted-foreground">Recenzii Pozitive</p>
-          </CardContent>
-        </Card>
-
-        {/* Noile statistici de interacțiune */}
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Eye className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <p className="text-2xl font-bold">{stats.profile_views}</p>
-            <p className="text-sm text-muted-foreground">Vizualizări Profil</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <MapPin className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <p className="text-2xl font-bold">{stats.map_clicks}</p>
-            <p className="text-sm text-muted-foreground">Click-uri pe Hartă</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <Phone className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <p className="text-2xl font-bold">{stats.phone_clicks}</p>
-            <p className="text-sm text-muted-foreground">Click-uri pe Telefon</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <UserCheck className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <p className="text-2xl font-bold">{stats.unique_visitors}</p>
-            <p className="text-sm text-muted-foreground">Vizitatori Unici</p>
           </CardContent>
         </Card>
       </div>
