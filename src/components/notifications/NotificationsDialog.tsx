@@ -19,12 +19,14 @@ interface NotificationsDialogProps {
   children: React.ReactNode;
 }
 
-interface Notification {
+interface NotificationType {
   id: string;
   title: string;
-  content: string;
+  message: string;
   created_at: string;
   read: boolean;
+  type: string;
+  user_id: string;
   sender?: {
     first_name: string;
     last_name: string;
@@ -58,7 +60,7 @@ export function NotificationsDialog({ children }: NotificationsDialogProps) {
         throw error;
       }
 
-      return data as Notification[];
+      return data as NotificationType[];
     },
     enabled: !!user,
   });
@@ -123,7 +125,7 @@ export function NotificationsDialog({ children }: NotificationsDialogProps) {
                         {notification.title}
                       </h4>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        {notification.content}
+                        {notification.message}
                       </p>
                       <p className="mt-2 text-xs text-muted-foreground">
                         {format(new Date(notification.created_at), "d MMMM yyyy, HH:mm", {
