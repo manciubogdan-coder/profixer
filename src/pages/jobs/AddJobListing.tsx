@@ -27,12 +27,34 @@ export function AddJobListing() {
     title: "",
     description: "",
     trade_id: "",
-    country: "",
+    country: "România",
     county: "",
     city: "",
     start_date: "",
     estimated_time: "",
     budget: "",
+  });
+
+  // Fetch user profile to verify role
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+      
+      return data;
+    },
+    enabled: !!user,
   });
 
   const { data: trades } = useQuery({
@@ -43,21 +65,35 @@ export function AddJobListing() {
         .select("id, name")
         .order("name");
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching trades:', error);
+        throw error;
+      }
       return data;
     },
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!user) {
       toast.error("Trebuie să fiți autentificat pentru a adăuga o lucrare");
+      return;
+    }
+
+    if (userProfile?.role !== 'client') {
+      toast.error("Doar clienții pot adăuga lucrări");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
+      console.log('Creating job listing with data:', {
+        ...formData,
+        client_id: user.id,
+      });
+
       // First create the job listing
       const { data: jobData, error: jobError } = await supabase
         .from("job_listings")
@@ -77,17 +113,24 @@ export function AddJobListing() {
         throw jobError;
       }
 
+      console.log('Job listing created successfully:', jobData);
+
       // Then upload images if any
       if (images?.length) {
         const imagePromises = Array.from(images).map(async (image) => {
           const fileExt = image.name.split('.').pop();
           const fileName = `${crypto.randomUUID()}.${fileExt}`;
 
+          console.log('Uploading image:', fileName);
+
           const { error: uploadError } = await supabase.storage
             .from('job-listings')
             .upload(fileName, image);
 
-          if (uploadError) throw uploadError;
+          if (uploadError) {
+            console.error('Error uploading image:', uploadError);
+            throw uploadError;
+          }
 
           const { data: { publicUrl } } = supabase.storage
             .from('job-listings')
@@ -97,6 +140,7 @@ export function AddJobListing() {
         });
 
         const uploadedUrls = await Promise.all(imagePromises);
+        console.log('Images uploaded successfully:', uploadedUrls);
 
         // Update job listing with image URLs
         const { error: updateError } = await supabase
@@ -104,7 +148,10 @@ export function AddJobListing() {
           .update({ images: uploadedUrls })
           .eq("id", jobData.id);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Error updating job with images:', updateError);
+          throw updateError;
+        }
       }
 
       toast.success("Lucrare adăugată cu succes");
@@ -163,15 +210,6 @@ export function AddJobListing() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="country">Țară</Label>
-              <Input
-                id="country"
-                value={formData.country}
-                onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
-                required
-              />
-            </div>
             <div>
               <Label htmlFor="county">Județ</Label>
               <Input
