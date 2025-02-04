@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChatDialog } from "./chat/ChatDialog";
 import { NotificationsDialog } from "./notifications/NotificationsDialog";
+import { useQuery } from "@tanstack/react-query";
 
 export const Navigation = () => {
   const { user } = useAuth();
@@ -20,23 +21,28 @@ export const Navigation = () => {
     }
   };
 
-  // Function to check if user is a client
-  const isClient = async () => {
-    if (!user) return false;
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-    
-    if (error) {
-      console.error('Error checking user role:', error);
-      return false;
-    }
-    
-    return data?.role === 'client';
-  };
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+      
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const isClient = userProfile?.role === 'client';
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -56,13 +62,22 @@ export const Navigation = () => {
             >
               Caută Meșteri
             </Link>
-            {user && isClient() && (
-              <Link
-                to="/jobs/add"
-                className="text-sm font-medium transition-colors hover:text-primary"
-              >
-                Adaugă Lucrare
-              </Link>
+            {user && (
+              isClient ? (
+                <Link
+                  to="/jobs/add"
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  Adaugă Lucrare
+                </Link>
+              ) : (
+                <Link
+                  to="/jobs"
+                  className="text-sm font-medium transition-colors hover:text-primary"
+                >
+                  Vezi Lucrări
+                </Link>
+              )
             )}
           </div>
 
