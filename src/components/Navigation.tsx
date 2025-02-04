@@ -20,6 +20,24 @@ export const Navigation = () => {
     }
   };
 
+  // Function to check if user is a client
+  const isClient = async () => {
+    if (!user) return false;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    
+    if (error) {
+      console.error('Error checking user role:', error);
+      return false;
+    }
+    
+    return data?.role === 'client';
+  };
+
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
@@ -38,7 +56,7 @@ export const Navigation = () => {
             >
               Caută Meșteri
             </Link>
-            {user && (
+            {user && isClient() && (
               <Link
                 to="/jobs/add"
                 className="text-sm font-medium transition-colors hover:text-primary"

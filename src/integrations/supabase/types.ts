@@ -53,6 +53,7 @@ export type Database = {
           county: string
           created_at: string
           description: string
+          estimated_time: string
           id: string
           images: Json | null
           start_date: string | null
@@ -67,6 +68,7 @@ export type Database = {
           county: string
           created_at?: string
           description: string
+          estimated_time?: string
           id?: string
           images?: Json | null
           start_date?: string | null
@@ -81,6 +83,7 @@ export type Database = {
           county?: string
           created_at?: string
           description?: string
+          estimated_time?: string
           id?: string
           images?: Json | null
           start_date?: string | null
