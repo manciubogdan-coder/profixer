@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { Navigation } from "@/components/Navigation";
 
 export function AddJobListing() {
   const { user } = useAuth();
@@ -71,7 +72,10 @@ export function AddJobListing() {
         .select()
         .single();
 
-      if (jobError) throw jobError;
+      if (jobError) {
+        console.error("Error creating job:", jobError);
+        throw jobError;
+      }
 
       // Then upload images if any
       if (images?.length) {
@@ -107,133 +111,136 @@ export function AddJobListing() {
       navigate("/jobs");
     } catch (error) {
       console.error("Error adding job listing:", error);
-      toast.error("Nu am putut adăuga lucrarea");
+      toast.error("Nu am putut adăuga lucrarea. Verificați dacă aveți rolul de client.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="container py-8">
-      <h1 className="text-2xl font-bold mb-6">Adaugă o lucrare nouă</h1>
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
-        <div>
-          <Label htmlFor="title">Titlu</Label>
-          <Input
-            id="title"
-            value={formData.title}
-            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-            required
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="description">Descriere</Label>
-          <Textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            required
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="trade">Categorie meșter</Label>
-          <Select
-            value={formData.trade_id}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, trade_id: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selectează categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {trades?.map((trade) => (
-                <SelectItem key={trade.id} value={trade.id}>
-                  {trade.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <>
+      <Navigation />
+      <div className="container py-8">
+        <h1 className="text-2xl font-bold mb-6">Adaugă o lucrare nouă</h1>
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
           <div>
-            <Label htmlFor="country">Țară</Label>
+            <Label htmlFor="title">Titlu</Label>
             <Input
-              id="country"
-              value={formData.country}
-              onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
+              id="title"
+              value={formData.title}
+              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
               required
             />
           </div>
-          <div>
-            <Label htmlFor="county">Județ</Label>
-            <Input
-              id="county"
-              value={formData.county}
-              onChange={(e) => setFormData(prev => ({ ...prev, county: e.target.value }))}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="city">Oraș</Label>
-            <Input
-              id="city"
-              value={formData.city}
-              onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-              required
-            />
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <Label htmlFor="start_date">Data începerii</Label>
-            <Input
-              id="start_date"
-              type="date"
-              value={formData.start_date}
-              onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+            <Label htmlFor="description">Descriere</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               required
             />
           </div>
-          <div>
-            <Label htmlFor="estimated_time">Timp estimat</Label>
-            <Input
-              id="estimated_time"
-              value={formData.estimated_time}
-              onChange={(e) => setFormData(prev => ({ ...prev, estimated_time: e.target.value }))}
-              placeholder="ex: 2-3 zile"
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="budget">Buget (RON)</Label>
-            <Input
-              id="budget"
-              type="number"
-              value={formData.budget}
-              onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
-              required
-            />
-          </div>
-        </div>
 
-        <div>
-          <Label htmlFor="images">Imagini</Label>
-          <Input
-            id="images"
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => setImages(e.target.files)}
-          />
-        </div>
+          <div>
+            <Label htmlFor="trade">Categorie meșter</Label>
+            <Select
+              value={formData.trade_id}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, trade_id: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selectează categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {trades?.map((trade) => (
+                  <SelectItem key={trade.id} value={trade.id}>
+                    {trade.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Se adaugă..." : "Adaugă lucrare"}
-        </Button>
-      </form>
-    </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="country">Țară</Label>
+              <Input
+                id="country"
+                value={formData.country}
+                onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="county">Județ</Label>
+              <Input
+                id="county"
+                value={formData.county}
+                onChange={(e) => setFormData(prev => ({ ...prev, county: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="city">Oraș</Label>
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="start_date">Data începerii</Label>
+              <Input
+                id="start_date"
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="estimated_time">Timp estimat</Label>
+              <Input
+                id="estimated_time"
+                value={formData.estimated_time}
+                onChange={(e) => setFormData(prev => ({ ...prev, estimated_time: e.target.value }))}
+                placeholder="ex: 2-3 zile"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="budget">Buget (RON)</Label>
+              <Input
+                id="budget"
+                type="number"
+                value={formData.budget}
+                onChange={(e) => setFormData(prev => ({ ...prev, budget: e.target.value }))}
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="images">Imagini</Label>
+            <Input
+              id="images"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => setImages(e.target.files)}
+            />
+          </div>
+
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Se adaugă..." : "Adaugă lucrare"}
+          </Button>
+        </form>
+      </div>
+    </>
   );
 }
