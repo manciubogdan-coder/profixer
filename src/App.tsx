@@ -6,9 +6,9 @@ import Auth from "@/pages/Auth";
 import Search from "@/pages/Search";
 import ClientProfile from "@/pages/profile/ClientProfile";
 import CraftsmanPublicProfile from "@/pages/profile/CraftsmanPublicProfile";
+import { AddJobListing } from "@/pages/jobs/AddJobListing";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -29,7 +29,7 @@ function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/profile/me" element={<ClientProfile />} />
             <Route path="/profile/:id" element={<CraftsmanPublicProfile />} />
-            {/* Redirect /profile to /profile/me */}
+            <Route path="/jobs/add" element={<AddJobListing />} />
             <Route path="/profile" element={<Navigate to="/profile/me" replace />} />
           </Routes>
           <Toaster />

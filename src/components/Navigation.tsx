@@ -26,17 +26,27 @@ export const Navigation = () => {
         <Link to="/" className="flex items-center gap-2 mr-8">
           <Wrench className="h-6 w-6 text-primary" />
           <span className="font-bold text-xl bg-gradient-to-r from-primary to-purple-400 text-transparent bg-clip-text">
-            Profixer
+            ProFixer
           </span>
         </Link>
 
         <div className="flex-1 flex items-center justify-between">
-          <Link
-            to="/search"
-            className="text-sm font-medium transition-colors hover:text-primary"
-          >
-            Caută Meșteri
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/search"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Caută Meșteri
+            </Link>
+            {user && (
+              <Link
+                to="/jobs/add"
+                className="text-sm font-medium transition-colors hover:text-primary"
+              >
+                Adaugă Lucrare
+              </Link>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             {user ? (
