@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const JobListings = () => {
   const { user } = useAuth();
@@ -107,6 +107,81 @@ const JobListings = () => {
     }
   };
 
+  const renderJobCard = (job: any) => (
+    <Card key={job.id} className="hover:shadow-lg transition-shadow">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
+            {job.trade?.name && (
+              <Badge variant="secondary" className="mb-2">
+                {job.trade.name}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-start gap-2">
+            <Badge 
+              variant={job.status === 'open' ? 'default' : 'secondary'}
+              className="capitalize"
+            >
+              {job.status === 'open' ? 'Activ' : 'Închis'}
+            </Badge>
+            {user.id === job.client_id && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem 
+                    onClick={() => handleStatusChange(job.id, job.status === 'open' ? 'closed' : 'open')}
+                  >
+                    {job.status === 'open' ? 'Marchează ca închis' : 'Redeschide lucrarea'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="text-destructive"
+                    onClick={() => setJobToDelete(job.id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Șterge lucrarea
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground line-clamp-3">
+          {job.description}
+        </p>
+        <div className="space-y-2">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <MapPin className="h-4 w-4 mr-2" />
+            <span>{job.city}, {job.county}</span>
+          </div>
+          {job.budget && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Wallet className="h-4 w-4 mr-2" />
+              <span>{job.budget} RON</span>
+            </div>
+          )}
+          {job.start_date && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <CalendarDays className="h-4 w-4 mr-2" />
+              <span>Data începerii: {new Date(job.start_date).toLocaleDateString()}</span>
+            </div>
+          )}
+          <div className="text-sm text-muted-foreground mt-4">
+            Postat de: {job.client?.first_name} {job.client?.last_name}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   if (!user) {
     return null;
   }
@@ -115,91 +190,44 @@ const JobListings = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8">
-        <h1 className="text-3xl font-bold mb-6">Lucrări Disponibile</h1>
-        {isLoading ? (
-          <div>Se încarcă...</div>
-        ) : jobListings.length === 0 ? (
-          <div className="text-center text-muted-foreground">
-            Nu există lucrări disponibile momentan.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {jobListings.map((job) => (
-              <Card key={job.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
-                      {job.trade?.name && (
-                        <Badge variant="secondary" className="mb-2">
-                          {job.trade.name}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Badge 
-                        variant={job.status === 'open' ? 'default' : 'secondary'}
-                        className="capitalize"
-                      >
-                        {job.status === 'open' ? 'Activ' : 'Închis'}
-                      </Badge>
-                      {user.id === job.client_id && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={() => handleStatusChange(job.id, job.status === 'open' ? 'closed' : 'open')}
-                            >
-                              {job.status === 'open' ? 'Marchează ca închis' : 'Redeschide lucrarea'}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onClick={() => setJobToDelete(job.id)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Șterge lucrarea
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {job.description}
-                  </p>
-                  <div className="space-y-2">
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      <span>{job.city}, {job.county}</span>
-                    </div>
-                    {job.budget && (
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Wallet className="h-4 w-4 mr-2" />
-                        <span>{job.budget} RON</span>
-                      </div>
-                    )}
-                    {job.start_date && (
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <CalendarDays className="h-4 w-4 mr-2" />
-                        <span>Data începerii: {new Date(job.start_date).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                    <div className="text-sm text-muted-foreground mt-4">
-                      Postat de: {job.client?.first_name} {job.client?.last_name}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        <h1 className="text-3xl font-bold mb-6">Lucrări</h1>
+
+        <Tabs defaultValue="all" className="w-full mb-6">
+          <TabsList>
+            <TabsTrigger value="all">Toate Lucrările</TabsTrigger>
+            <TabsTrigger value="my-jobs">Lucrările Mele</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all">
+            {isLoading ? (
+              <div>Se încarcă...</div>
+            ) : jobListings.length === 0 ? (
+              <div className="text-center text-muted-foreground">
+                Nu există lucrări disponibile momentan.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {jobListings.map(renderJobCard)}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="my-jobs">
+            {isLoading ? (
+              <div>Se încarcă...</div>
+            ) : jobListings.filter(job => job.client_id === user.id).length === 0 ? (
+              <div className="text-center text-muted-foreground">
+                Nu ai adăugat nicio lucrare încă.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {jobListings
+                  .filter(job => job.client_id === user.id)
+                  .map(renderJobCard)}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
 
         <AlertDialog open={!!jobToDelete} onOpenChange={() => setJobToDelete(null)}>
           <AlertDialogContent>
