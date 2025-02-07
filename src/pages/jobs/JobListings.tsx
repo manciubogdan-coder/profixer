@@ -27,19 +27,45 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const JobListings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
 
+  const { data: userProfile } = useQuery({
+    queryKey: ["userProfile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+      
+      return data;
+    },
+    enabled: !!user,
+  });
+
   useEffect(() => {
     if (!user) {
       toast.error("Trebuie să fii autentificat pentru a vedea lucrările");
       navigate("/auth");
+      return;
     }
-  }, [user, navigate]);
+
+    if (userProfile && userProfile.role !== 'craftsman') {
+      toast.error("Această pagină este disponibilă doar pentru meșteri");
+      navigate("/");
+    }
+  }, [user, userProfile, navigate]);
 
   const { data: jobListings = [], isLoading, refetch } = useQuery({
     queryKey: ["jobListings"],
@@ -67,7 +93,7 @@ const JobListings = () => {
       console.log("Job listings data:", data);
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && userProfile?.role === 'craftsman',
   });
 
   const handleStatusChange = async (jobId: string, newStatus: 'open' | 'closed') => {
@@ -182,7 +208,7 @@ const JobListings = () => {
     </Card>
   );
 
-  if (!user) {
+  if (!user || (userProfile && userProfile.role !== 'craftsman')) {
     return null;
   }
 
@@ -190,44 +216,19 @@ const JobListings = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8">
-        <h1 className="text-3xl font-bold mb-6">Lucrări</h1>
+        <h1 className="text-3xl font-bold mb-6">Lucrări Disponibile</h1>
 
-        <Tabs defaultValue="all" className="w-full mb-6">
-          <TabsList>
-            <TabsTrigger value="all">Toate Lucrările</TabsTrigger>
-            <TabsTrigger value="my-jobs">Lucrările Mele</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all">
-            {isLoading ? (
-              <div>Se încarcă...</div>
-            ) : jobListings.length === 0 ? (
-              <div className="text-center text-muted-foreground">
-                Nu există lucrări disponibile momentan.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {jobListings.map(renderJobCard)}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="my-jobs">
-            {isLoading ? (
-              <div>Se încarcă...</div>
-            ) : jobListings.filter(job => job.client_id === user.id).length === 0 ? (
-              <div className="text-center text-muted-foreground">
-                Nu ai adăugat nicio lucrare încă.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {jobListings
-                  .filter(job => job.client_id === user.id)
-                  .map(renderJobCard)}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+        {isLoading ? (
+          <div>Se încarcă...</div>
+        ) : jobListings.length === 0 ? (
+          <div className="text-center text-muted-foreground">
+            Nu există lucrări disponibile momentan.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {jobListings.map(renderJobCard)}
+          </div>
+        )}
 
         <AlertDialog open={!!jobToDelete} onOpenChange={() => setJobToDelete(null)}>
           <AlertDialogContent>

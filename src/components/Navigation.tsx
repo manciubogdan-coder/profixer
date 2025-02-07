@@ -1,7 +1,8 @@
+
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Wrench } from "lucide-react";
+import { User, LogOut, Wrench, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChatDialog } from "./chat/ChatDialog";
@@ -43,6 +44,7 @@ export const Navigation = () => {
   });
 
   const isClient = userProfile?.role === 'client';
+  const isCraftsman = userProfile?.role === 'craftsman';
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -63,21 +65,25 @@ export const Navigation = () => {
               Caută Meșteri
             </Link>
             {user && (
-              isClient ? (
-                <Link
-                  to="/jobs/add"
-                  className="text-sm font-medium transition-colors hover:text-primary"
-                >
-                  Adaugă Lucrare
-                </Link>
-              ) : (
-                <Link
-                  to="/jobs"
-                  className="text-sm font-medium transition-colors hover:text-primary"
-                >
-                  Vezi Lucrări
-                </Link>
-              )
+              <>
+                {isClient && (
+                  <Link
+                    to="/jobs/add"
+                    className="text-sm font-medium transition-colors hover:text-primary"
+                  >
+                    Adaugă Lucrare
+                  </Link>
+                )}
+                {isCraftsman && (
+                  <Link
+                    to="/jobs"
+                    className="text-sm font-medium transition-colors hover:text-primary flex items-center gap-2"
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    Vezi Lucrări
+                  </Link>
+                )}
+              </>
             )}
           </div>
 
