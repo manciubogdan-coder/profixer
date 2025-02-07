@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,11 +8,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CalendarDays, MapPin, Wallet } from "lucide-react";
+import { CalendarDays, MapPin, Wallet, MoreVertical, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const JobListings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -20,7 +41,7 @@ const JobListings = () => {
     }
   }, [user, navigate]);
 
-  const { data: jobListings = [], isLoading } = useQuery({
+  const { data: jobListings = [], isLoading, refetch } = useQuery({
     queryKey: ["jobListings"],
     queryFn: async () => {
       console.log("Fetching job listings...");
@@ -49,6 +70,43 @@ const JobListings = () => {
     enabled: !!user,
   });
 
+  const handleStatusChange = async (jobId: string, newStatus: 'open' | 'closed') => {
+    try {
+      const { error } = await supabase
+        .from('job_listings')
+        .update({ status: newStatus })
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      toast.success(`Starea lucrării a fost actualizată`);
+      refetch();
+    } catch (error) {
+      console.error('Error updating job status:', error);
+      toast.error("Nu s-a putut actualiza starea lucrării");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!jobToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('job_listings')
+        .delete()
+        .eq('id', jobToDelete);
+
+      if (error) throw error;
+
+      toast.success("Lucrarea a fost ștearsă");
+      refetch();
+      setJobToDelete(null);
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      toast.error("Nu s-a putut șterge lucrarea");
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -70,7 +128,7 @@ const JobListings = () => {
               <Card key={job.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
                       {job.trade?.name && (
                         <Badge variant="secondary" className="mb-2">
@@ -78,12 +136,38 @@ const JobListings = () => {
                         </Badge>
                       )}
                     </div>
-                    <Badge 
-                      variant={job.status === 'open' ? 'default' : 'secondary'}
-                      className="capitalize"
-                    >
-                      {job.status === 'open' ? 'Activ' : 'Închis'}
-                    </Badge>
+                    <div className="flex items-start gap-2">
+                      <Badge 
+                        variant={job.status === 'open' ? 'default' : 'secondary'}
+                        className="capitalize"
+                      >
+                        {job.status === 'open' ? 'Activ' : 'Închis'}
+                      </Badge>
+                      {user.id === job.client_id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusChange(job.id, job.status === 'open' ? 'closed' : 'open')}
+                            >
+                              {job.status === 'open' ? 'Marchează ca închis' : 'Redeschide lucrarea'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => setJobToDelete(job.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Șterge lucrarea
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -116,6 +200,21 @@ const JobListings = () => {
             ))}
           </div>
         )}
+
+        <AlertDialog open={!!jobToDelete} onOpenChange={() => setJobToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Ești sigur că vrei să ștergi această lucrare?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Această acțiune nu poate fi anulată. Lucrarea va fi ștearsă definitiv.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Anulează</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete}>Șterge</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
