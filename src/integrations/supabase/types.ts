@@ -50,6 +50,7 @@ export type Database = {
           budget: number | null
           city: string
           client_id: string | null
+          country: string
           county: string
           created_at: string
           description: string
@@ -65,6 +66,7 @@ export type Database = {
           budget?: number | null
           city: string
           client_id?: string | null
+          country?: string
           county: string
           created_at?: string
           description: string
@@ -80,6 +82,7 @@ export type Database = {
           budget?: number | null
           city?: string
           client_id?: string | null
+          country?: string
           county?: string
           created_at?: string
           description?: string
