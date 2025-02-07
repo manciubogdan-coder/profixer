@@ -37,10 +37,13 @@ export function AddJobListing() {
   });
 
   // Fetch user profile to verify role
-  const { data: userProfile } = useQuery({
+  const { data: userProfile, isLoading: isLoadingProfile } = useQuery({
     queryKey: ["userProfile", user?.id],
     queryFn: async () => {
-      if (!user) return null;
+      if (!user) {
+        navigate("/auth");
+        return null;
+      }
       
       const { data, error } = await supabase
         .from('profiles')
@@ -50,6 +53,14 @@ export function AddJobListing() {
       
       if (error) {
         console.error('Error fetching user profile:', error);
+        toast.error("Nu s-a putut verifica rolul utilizatorului");
+        navigate("/");
+        return null;
+      }
+      
+      if (data.role !== 'client') {
+        toast.error("Doar clienții pot adăuga lucrări");
+        navigate("/");
         return null;
       }
       
@@ -68,6 +79,7 @@ export function AddJobListing() {
       
       if (error) {
         console.error('Error fetching trades:', error);
+        toast.error("Nu s-au putut încărca categoriile");
         throw error;
       }
       return data;
@@ -79,10 +91,11 @@ export function AddJobListing() {
     
     if (!user) {
       toast.error("Trebuie să fiți autentificat pentru a adăuga o lucrare");
+      navigate("/auth");
       return;
     }
 
-    if (userProfile?.role !== 'client') {
+    if (!userProfile || userProfile.role !== 'client') {
       toast.error("Doar clienții pot adăuga lucrări");
       return;
     }
@@ -159,11 +172,28 @@ export function AddJobListing() {
       navigate("/jobs");
     } catch (error) {
       console.error("Error adding job listing:", error);
-      toast.error("Nu am putut adăuga lucrarea. Verificați dacă aveți rolul de client.");
+      toast.error("Nu am putut adăuga lucrarea. Vă rugăm să încercați din nou.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Show loading state while checking user role
+  if (isLoadingProfile) {
+    return (
+      <>
+        <Navigation />
+        <div className="container py-8">
+          <p>Se încarcă...</p>
+        </div>
+      </>
+    );
+  }
+
+  // If user is not a client, they shouldn't see this page
+  if (userProfile && userProfile.role !== 'client') {
+    return null;
+  }
 
   return (
     <>
