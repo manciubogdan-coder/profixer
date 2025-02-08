@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -8,6 +9,7 @@ import ClientProfile from "@/pages/profile/ClientProfile";
 import CraftsmanPublicProfile from "@/pages/profile/CraftsmanPublicProfile";
 import { AddJobListing } from "@/pages/jobs/AddJobListing";
 import JobListings from "@/pages/jobs/JobListings";
+import MyJobs from "@/pages/jobs/MyJobs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient({
@@ -32,6 +34,7 @@ function App() {
             <Route path="/profile/:id" element={<CraftsmanPublicProfile />} />
             <Route path="/jobs/add" element={<AddJobListing />} />
             <Route path="/jobs" element={<JobListings />} />
+            <Route path="/jobs/my" element={<MyJobs />} />
             <Route path="/profile" element={<Navigate to="/profile/me" replace />} />
           </Routes>
           <Toaster />
