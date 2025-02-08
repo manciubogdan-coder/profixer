@@ -8,7 +8,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CalendarDays, MapPin, Wallet } from "lucide-react";
+import { CalendarDays, MapPin, Wallet, Pencil, Trash2 } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 const MyJobs = () => {
   const { user } = useAuth();
@@ -48,7 +60,7 @@ const MyJobs = () => {
     }
   }, [user, userProfile, navigate]);
 
-  const { data: myJobs = [], isLoading } = useQuery({
+  const { data: myJobs = [], isLoading, refetch } = useQuery({
     queryKey: ["myJobs", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -74,6 +86,27 @@ const MyJobs = () => {
     enabled: !!user && userProfile?.role === 'client',
   });
 
+  const handleDelete = async (jobId: string) => {
+    try {
+      const { error } = await supabase
+        .from('job_listings')
+        .delete()
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      toast.success("Lucrarea a fost ștearsă cu succes");
+      refetch();
+    } catch (error) {
+      console.error('Error deleting job:', error);
+      toast.error("A apărut o eroare la ștergerea lucrării");
+    }
+  };
+
+  const handleEdit = (jobId: string) => {
+    navigate(`/jobs/edit/${jobId}`);
+  };
+
   const renderJobCard = (job: any) => (
     <Card key={job.id} className="hover:shadow-lg transition-shadow">
       <CardHeader>
@@ -94,27 +127,69 @@ const MyJobs = () => {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground line-clamp-3">
-          {job.description}
-        </p>
-        <div className="space-y-2">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-2" />
-            <span>{job.city}, {job.county}</span>
+      <CardContent>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {job.description}
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4 mr-2" />
+              <span>{job.city}, {job.county}</span>
+            </div>
+            {job.budget && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Wallet className="h-4 w-4 mr-2" />
+                <span>{job.budget} RON</span>
+              </div>
+            )}
+            {job.start_date && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <CalendarDays className="h-4 w-4 mr-2" />
+                <span>Data începerii: {new Date(job.start_date).toLocaleDateString()}</span>
+              </div>
+            )}
           </div>
-          {job.budget && (
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Wallet className="h-4 w-4 mr-2" />
-              <span>{job.budget} RON</span>
-            </div>
-          )}
-          {job.start_date && (
-            <div className="flex items-center text-sm text-muted-foreground">
-              <CalendarDays className="h-4 w-4 mr-2" />
-              <span>Data începerii: {new Date(job.start_date).toLocaleDateString()}</span>
-            </div>
-          )}
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleEdit(job.id)}
+              className="flex items-center gap-2"
+            >
+              <Pencil className="h-4 w-4" />
+              Editează
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Șterge
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Ești sigur?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Această acțiune nu poate fi anulată. Lucrarea va fi ștearsă definitiv.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Anulează</AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    onClick={() => handleDelete(job.id)}
+                  >
+                    Șterge
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </CardContent>
     </Card>
