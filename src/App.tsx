@@ -8,6 +8,7 @@ import Search from "@/pages/Search";
 import ClientProfile from "@/pages/profile/ClientProfile";
 import CraftsmanPublicProfile from "@/pages/profile/CraftsmanPublicProfile";
 import { AddJobListing } from "@/pages/jobs/AddJobListing";
+import { EditJobListing } from "@/pages/jobs/EditJobListing";
 import JobListings from "@/pages/jobs/JobListings";
 import MyJobs from "@/pages/jobs/MyJobs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -33,6 +34,7 @@ function App() {
             <Route path="/profile/me" element={<ClientProfile />} />
             <Route path="/profile/:id" element={<CraftsmanPublicProfile />} />
             <Route path="/jobs/add" element={<AddJobListing />} />
+            <Route path="/jobs/edit/:id" element={<EditJobListing />} />
             <Route path="/jobs" element={<JobListings />} />
             <Route path="/jobs/my" element={<MyJobs />} />
             <Route path="/profile" element={<Navigate to="/profile/me" replace />} />
