@@ -180,8 +180,8 @@ const MyJobs = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Anulează</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
+                  <AlertDialogAction 
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => handleDelete(job.id)}
                   >
                     Șterge
@@ -222,3 +222,4 @@ const MyJobs = () => {
 };
 
 export default MyJobs;
+
