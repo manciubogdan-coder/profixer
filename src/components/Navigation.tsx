@@ -44,7 +44,7 @@ export const Navigation = () => {
   });
 
   const isClient = userProfile?.role === 'client';
-  const isCraftsman = userProfile?.role === 'craftsman';
+  const isProfessional = userProfile?.role === 'professional';
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -74,7 +74,7 @@ export const Navigation = () => {
                     Adaugă Lucrare
                   </Link>
                 )}
-                {isCraftsman && (
+                {isProfessional && (
                   <Link
                     to="/jobs"
                     className="text-sm font-medium transition-colors hover:text-primary flex items-center gap-2"

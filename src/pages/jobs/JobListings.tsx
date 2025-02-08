@@ -61,7 +61,7 @@ const JobListings = () => {
       return;
     }
 
-    if (userProfile && userProfile.role !== 'craftsman') {
+    if (userProfile && userProfile.role !== 'professional') {
       toast.error("Această pagină este disponibilă doar pentru meșteri");
       navigate("/");
     }
@@ -93,7 +93,7 @@ const JobListings = () => {
       console.log("Job listings data:", data);
       return data;
     },
-    enabled: !!user && userProfile?.role === 'craftsman',
+    enabled: !!user && userProfile?.role === 'professional',
   });
 
   const handleStatusChange = async (jobId: string, newStatus: 'open' | 'closed') => {
@@ -208,7 +208,7 @@ const JobListings = () => {
     </Card>
   );
 
-  if (!user || (userProfile && userProfile.role !== 'craftsman')) {
+  if (!user || (userProfile && userProfile.role !== 'professional')) {
     return null;
   }
 
