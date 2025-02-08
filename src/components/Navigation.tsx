@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { User, LogOut, Wrench, Briefcase } from "lucide-react";
+import { User, LogOut, Wrench, Briefcase, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChatDialog } from "./chat/ChatDialog";
@@ -67,12 +67,21 @@ export const Navigation = () => {
             {user && (
               <>
                 {isClient && (
-                  <Link
-                    to="/jobs/add"
-                    className="text-sm font-medium transition-colors hover:text-primary"
-                  >
-                    Adaugă Lucrare
-                  </Link>
+                  <>
+                    <Link
+                      to="/jobs/add"
+                      className="text-sm font-medium transition-colors hover:text-primary"
+                    >
+                      Adaugă Lucrare
+                    </Link>
+                    <Link
+                      to="/jobs/my"
+                      className="text-sm font-medium transition-colors hover:text-primary flex items-center gap-2"
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      Lucrările Mele
+                    </Link>
+                  </>
                 )}
                 {isProfessional && (
                   <Link
