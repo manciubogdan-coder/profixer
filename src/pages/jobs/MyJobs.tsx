@@ -107,6 +107,24 @@ const MyJobs = () => {
     navigate(`/jobs/edit/${jobId}`);
   };
 
+  const handleStatusToggle = async (jobId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+    try {
+      const { error } = await supabase
+        .from('job_listings')
+        .update({ status: newStatus })
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      toast.success(`Statusul lucrării a fost schimbat în ${newStatus === 'open' ? 'Activ' : 'Închis'}`);
+      refetch();
+    } catch (error) {
+      console.error('Error updating job status:', error);
+      toast.error("A apărut o eroare la actualizarea statusului");
+    }
+  };
+
   const renderJobCard = (job: any) => (
     <Card key={job.id} className="hover:shadow-lg transition-shadow">
       <CardHeader>
@@ -119,12 +137,14 @@ const MyJobs = () => {
               </Badge>
             )}
           </div>
-          <Badge 
+          <Button
             variant={job.status === 'open' ? 'default' : 'secondary'}
+            size="sm"
+            onClick={() => handleStatusToggle(job.id, job.status)}
             className="capitalize"
           >
             {job.status === 'open' ? 'Activ' : 'Închis'}
-          </Badge>
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -181,8 +201,8 @@ const MyJobs = () => {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Anulează</AlertDialogCancel>
                   <AlertDialogAction 
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => handleDelete(job.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     Șterge
                   </AlertDialogAction>
@@ -222,4 +242,3 @@ const MyJobs = () => {
 };
 
 export default MyJobs;
-
