@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -162,9 +161,9 @@ const JobListings = () => {
       <CardHeader>
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
+            <CardTitle className="text-xl mb-2 break-words">{job.title}</CardTitle>
             {job.trade?.name && (
-              <Badge variant="secondary" className="mb-2">
+              <Badge variant="secondary" className="mb-2 break-words">
                 {job.trade.name}
               </Badge>
             )}
@@ -172,7 +171,7 @@ const JobListings = () => {
           <div className="flex items-start gap-2">
             <Badge 
               variant={job.status === 'open' ? 'default' : 'secondary'}
-              className="capitalize"
+              className="capitalize whitespace-nowrap"
             >
               {job.status === 'open' ? 'Activ' : 'Închis'}
             </Badge>
@@ -204,34 +203,33 @@ const JobListings = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground line-clamp-3">
+        <p className="text-sm text-muted-foreground line-clamp-3 break-words">
           {job.description}
         </p>
         <div className="space-y-2">
           <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-2" />
-            <span>{job.city}, {job.county}</span>
+            <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span className="break-words">{job.city}, {job.county}</span>
           </div>
           {job.budget && (
             <div className="flex items-center text-sm text-muted-foreground">
-              <Wallet className="h-4 w-4 mr-2" />
+              <Wallet className="h-4 w-4 mr-2 flex-shrink-0" />
               <span>{job.budget} RON</span>
             </div>
           )}
           {job.start_date && (
             <div className="flex items-center text-sm text-muted-foreground">
-              <CalendarDays className="h-4 w-4 mr-2" />
-              <span>Data începerii: {new Date(job.start_date).toLocaleDateString()}</span>
+              <CalendarDays className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="break-words">Data începerii: {new Date(job.start_date).toLocaleDateString()}</span>
             </div>
           )}
           <div className="text-sm text-muted-foreground mt-4">
-            <p className="font-medium">Client: {job.client?.first_name} {job.client?.last_name}</p>
+            <p className="font-medium break-words">Client: {job.client?.first_name} {job.client?.last_name}</p>
           </div>
         </div>
 
-        {/* Contact buttons and images */}
         <div className="pt-4 flex flex-col gap-4">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <ChatDialog recipientId={job.client_id} recipientName={`${job.client?.first_name} ${job.client?.last_name}`}>
               <Button 
                 variant="outline" 
@@ -239,7 +237,7 @@ const JobListings = () => {
                 className="flex items-center gap-2"
               >
                 <MessageSquare className="h-4 w-4" />
-                Trimite mesaj
+                <span className="whitespace-nowrap">Trimite mesaj</span>
               </Button>
             </ChatDialog>
             {job.client?.phone && (
@@ -250,7 +248,7 @@ const JobListings = () => {
                 onClick={() => handlePhoneClick(job.client.phone)}
               >
                 <Phone className="h-4 w-4" />
-                Sună clientul
+                <span className="whitespace-nowrap">Sună clientul</span>
               </Button>
             )}
             {job.images && job.images.length > 0 && (
@@ -262,10 +260,10 @@ const JobListings = () => {
                     className="flex items-center gap-2"
                   >
                     <Image className="h-4 w-4" />
-                    Vezi poze ({job.images.length})
+                    <span className="whitespace-nowrap">Vezi poze ({job.images.length})</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-[95vw] max-h-[80vh] overflow-y-auto mx-4">
                   <DialogHeader>
                     <DialogTitle>Poze atașate lucrării</DialogTitle>
                     <DialogDescription>
@@ -298,8 +296,8 @@ const JobListings = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container py-8">
-        <h1 className="text-3xl font-bold mb-6">Lucrări Disponibile</h1>
+      <div className="container py-8 px-4 sm:px-6 lg:px-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Lucrări Disponibile</h1>
 
         {isLoading ? (
           <div>Se încarcă...</div>
@@ -308,20 +306,20 @@ const JobListings = () => {
             Nu există lucrări disponibile momentan.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {jobListings.map(renderJobCard)}
           </div>
         )}
 
         <AlertDialog open={!!jobToDelete} onOpenChange={() => setJobToDelete(null)}>
-          <AlertDialogContent>
+          <AlertDialogContent className="max-w-[95vw] mx-4">
             <AlertDialogHeader>
               <AlertDialogTitle>Ești sigur că vrei să ștergi această lucrare?</AlertDialogTitle>
               <AlertDialogDescription>
                 Această acțiune nu poate fi anulată. Lucrarea va fi ștearsă definitiv.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
               <AlertDialogCancel>Anulează</AlertDialogCancel>
               <AlertDialogAction onClick={handleDelete}>Șterge</AlertDialogAction>
             </AlertDialogFooter>
@@ -333,4 +331,3 @@ const JobListings = () => {
 };
 
 export default JobListings;
-
