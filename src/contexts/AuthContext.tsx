@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 type AuthContextType = {
   user: User | null;
@@ -20,23 +21,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check active sessions and sets the user
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log("Current session:", session);
         
         if (session?.user) {
           setUser(session.user);
+          // If we're on the auth page and have a valid session, redirect to home
+          if (window.location.pathname === "/auth") {
+            navigate("/");
+          }
         } else {
           setUser(null);
-          // Redirect to auth page if no session exists
-          navigate("/auth");
+          // Only redirect to auth if we're not already there
+          if (window.location.pathname !== "/auth") {
+            navigate("/auth");
+          }
         }
       } catch (error) {
         console.error("Error checking auth session:", error);
         setUser(null);
-        navigate("/auth");
+        toast.error("A apărut o eroare la verificarea sesiunii");
+        if (window.location.pathname !== "/auth") {
+          navigate("/auth");
+        }
       } finally {
         setLoading(false);
       }
@@ -44,7 +52,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     initializeAuth();
 
-    // Listen for changes on auth state (sign in, sign out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
       
@@ -55,7 +62,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } else {
         setUser(null);
-        navigate("/auth");
+        if (window.location.pathname !== "/auth") {
+          navigate("/auth");
+        }
       }
       setLoading(false);
     });

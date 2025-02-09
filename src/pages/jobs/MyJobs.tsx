@@ -108,14 +108,20 @@ const MyJobs = () => {
   };
 
   const handleStatusToggle = async (jobId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'open' ? 'closed' : 'open';
     try {
+      // Ensure we only use valid status values
+      const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+      
       const { error } = await supabase
         .from('job_listings')
         .update({ status: newStatus })
         .eq('id', jobId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating job status:', error);
+        toast.error("A apărut o eroare la actualizarea statusului");
+        return;
+      }
 
       toast.success(`Statusul lucrării a fost schimbat în ${newStatus === 'open' ? 'Activ' : 'Închis'}`);
       refetch();
