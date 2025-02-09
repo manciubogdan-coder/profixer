@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ChatDialog } from "@/components/chat/ChatDialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   CalendarDays, 
   MapPin, 
@@ -16,7 +18,9 @@ import {
   Trash2, 
   MessageSquare,
   Phone,
-  Image
+  Image,
+  Search,
+  Filter
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -44,10 +48,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const JobListings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+  const [filters, setFilters] = useState({
+    title: "",
+    county: "",
+    city: "",
+    tradeId: "",
+    status: "",
+    startDate: null as Date | null,
+  });
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", user?.id],
@@ -70,6 +102,19 @@ const JobListings = () => {
     enabled: !!user,
   });
 
+  const { data: trades = [] } = useQuery({
+    queryKey: ["trades"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("trades")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   useEffect(() => {
     if (!user) {
       toast.error("Trebuie să fii autentificat pentru a vedea lucrările");
@@ -84,10 +129,10 @@ const JobListings = () => {
   }, [user, userProfile, navigate]);
 
   const { data: jobListings = [], isLoading, refetch } = useQuery({
-    queryKey: ["jobListings"],
+    queryKey: ["jobListings", filters],
     queryFn: async () => {
-      console.log("Fetching job listings...");
-      const { data, error } = await supabase
+      console.log("Fetching job listings with filters:", filters);
+      let query = supabase
         .from("job_listings")
         .select(`
           *,
@@ -102,6 +147,27 @@ const JobListings = () => {
         `)
         .order('created_at', { ascending: false });
 
+      if (filters.title) {
+        query = query.ilike('title', `%${filters.title}%`);
+      }
+      if (filters.county) {
+        query = query.ilike('county', `%${filters.county}%`);
+      }
+      if (filters.city) {
+        query = query.ilike('city', `%${filters.city}%`);
+      }
+      if (filters.tradeId) {
+        query = query.eq('trade_id', filters.tradeId);
+      }
+      if (filters.status) {
+        query = query.eq('status', filters.status);
+      }
+      if (filters.startDate) {
+        query = query.eq('start_date', format(filters.startDate, 'yyyy-MM-dd'));
+      }
+
+      const { data, error } = await query;
+
       if (error) {
         console.error("Error fetching job listings:", error);
         throw error;
@@ -110,7 +176,6 @@ const JobListings = () => {
       console.log("Job listings data:", data);
       return data;
     },
-    enabled: !!user && userProfile?.role === 'professional',
   });
 
   const handleStatusChange = async (jobId: string, newStatus: 'open' | 'closed') => {
@@ -154,7 +219,117 @@ const JobListings = () => {
     window.location.href = `tel:${phone}`;
   };
 
-  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+  const FiltersContent = () => (
+    <div className="space-y-4 p-2">
+      <div className="space-y-2">
+        <Label htmlFor="title">Numele lucrării</Label>
+        <Input
+          id="title"
+          placeholder="Caută după nume..."
+          value={filters.title}
+          onChange={(e) => setFilters(prev => ({ ...prev, title: e.target.value }))}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="county">Județ</Label>
+        <Input
+          id="county"
+          placeholder="Ex: Cluj"
+          value={filters.county}
+          onChange={(e) => setFilters(prev => ({ ...prev, county: e.target.value }))}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="city">Oraș</Label>
+        <Input
+          id="city"
+          placeholder="Ex: Cluj-Napoca"
+          value={filters.city}
+          onChange={(e) => setFilters(prev => ({ ...prev, city: e.target.value }))}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="trade">Tip de meșter</Label>
+        <Select
+          value={filters.tradeId}
+          onValueChange={(value) => setFilters(prev => ({ ...prev, tradeId: value }))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Alege tipul de meșter" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Toate</SelectItem>
+            {trades.map((trade) => (
+              <SelectItem key={trade.id} value={trade.id}>
+                {trade.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="status">Status</Label>
+        <Select
+          value={filters.status}
+          onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Alege status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Toate</SelectItem>
+            <SelectItem value="open">Active</SelectItem>
+            <SelectItem value="closed">Închise</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Data începerii</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !filters.startDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarDays className="mr-2 h-4 w-4" />
+              {filters.startDate ? format(filters.startDate, "PPP") : "Alege data"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={filters.startDate}
+              onSelect={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {(filters.title || filters.county || filters.city || filters.tradeId || filters.status || filters.startDate) && (
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={() => setFilters({
+            title: "",
+            county: "",
+            city: "",
+            tradeId: "",
+            status: "",
+            startDate: null,
+          })}
+        >
+          Resetează filtrele
+        </Button>
+      )}
+    </div>
+  );
 
   const renderJobCard = (job: any) => (
     <Card key={job.id} className="hover:shadow-lg transition-shadow">
@@ -297,13 +472,37 @@ const JobListings = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Lucrări Disponibile</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">Lucrări Disponibile</h1>
+          
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="sm:hidden">
+                <Filter className="h-4 w-4 mr-2" />
+                Filtrează
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <SheetHeader>
+                <SheetTitle>Filtrează lucrările</SheetTitle>
+                <SheetDescription>
+                  Ajustează filtrele pentru a găsi lucrările care te interesează
+                </SheetDescription>
+              </SheetHeader>
+              <FiltersContent />
+            </SheetContent>
+          </Sheet>
+
+          <div className="hidden sm:block w-full max-w-xs">
+            <FiltersContent />
+          </div>
+        </div>
 
         {isLoading ? (
           <div>Se încarcă...</div>
         ) : jobListings.length === 0 ? (
           <div className="text-center text-muted-foreground">
-            Nu există lucrări disponibile momentan.
+            Nu există lucrări disponibile care să corespundă criteriilor tale.
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
