@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { CalendarDays, MapPin, Wallet, MoreVertical, Trash2 } from "lucide-react";
+import { 
+  CalendarDays, 
+  MapPin, 
+  Wallet, 
+  MoreVertical, 
+  Trash2, 
+  MessageSquare,
+  Phone,
+  Image
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,6 +25,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +47,6 @@ import {
 const JobListings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
 
   const { data: userProfile } = useQuery({
     queryKey: ["userProfile", user?.id],
@@ -77,7 +92,8 @@ const JobListings = () => {
           *,
           client:profiles!job_listings_client_id_fkey(
             first_name,
-            last_name
+            last_name,
+            phone
           ),
           trade:trades(
             name
@@ -132,6 +148,17 @@ const JobListings = () => {
       toast.error("Nu s-a putut șterge lucrarea");
     }
   };
+
+  const handleSendMessage = (clientId: string) => {
+    // For now just navigate to messages - you can implement a direct message feature later
+    navigate(`/messages/${clientId}`);
+  };
+
+  const handlePhoneClick = (phone: string) => {
+    window.location.href = `tel:${phone}`;
+  };
+
+  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
 
   const renderJobCard = (job: any) => (
     <Card key={job.id} className="hover:shadow-lg transition-shadow">
@@ -201,7 +228,65 @@ const JobListings = () => {
             </div>
           )}
           <div className="text-sm text-muted-foreground mt-4">
-            Postat de: {job.client?.first_name} {job.client?.last_name}
+            <p className="font-medium">Client: {job.client?.first_name} {job.client?.last_name}</p>
+          </div>
+        </div>
+
+        {/* Contact buttons and images */}
+        <div className="pt-4 flex flex-col gap-4">
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={() => handleSendMessage(job.client_id)}
+            >
+              <MessageSquare className="h-4 w-4" />
+              Trimite mesaj
+            </Button>
+            {job.client?.phone && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2"
+                onClick={() => handlePhoneClick(job.client.phone)}
+              >
+                <Phone className="h-4 w-4" />
+                Sună clientul
+              </Button>
+            )}
+            {job.images && job.images.length > 0 && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex items-center gap-2"
+                  >
+                    <Image className="h-4 w-4" />
+                    Vezi poze ({job.images.length})
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Poze atașate lucrării</DialogTitle>
+                    <DialogDescription>
+                      {job.title}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    {job.images.map((image: string, index: number) => (
+                      <img
+                        key={index}
+                        src={image}
+                        alt={`Imagine ${index + 1}`}
+                        className="w-full h-auto rounded-lg"
+                      />
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
       </CardContent>
