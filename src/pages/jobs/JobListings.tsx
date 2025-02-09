@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { ChatDialog } from "@/components/chat/ChatDialog";
 import { 
   CalendarDays, 
   MapPin, 
@@ -150,11 +151,6 @@ const JobListings = () => {
     }
   };
 
-  const handleSendMessage = (clientId: string) => {
-    // For now just navigate to messages - you can implement a direct message feature later
-    navigate(`/messages/${clientId}`);
-  };
-
   const handlePhoneClick = (phone: string) => {
     window.location.href = `tel:${phone}`;
   };
@@ -236,15 +232,16 @@ const JobListings = () => {
         {/* Contact buttons and images */}
         <div className="pt-4 flex flex-col gap-4">
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-2"
-              onClick={() => handleSendMessage(job.client_id)}
-            >
-              <MessageSquare className="h-4 w-4" />
-              Trimite mesaj
-            </Button>
+            <ChatDialog recipientId={job.client_id} recipientName={`${job.client?.first_name} ${job.client?.last_name}`}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-2"
+              >
+                <MessageSquare className="h-4 w-4" />
+                Trimite mesaj
+              </Button>
+            </ChatDialog>
             {job.client?.phone && (
               <Button 
                 variant="outline" 
@@ -336,3 +333,4 @@ const JobListings = () => {
 };
 
 export default JobListings;
+
