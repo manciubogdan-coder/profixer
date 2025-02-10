@@ -218,7 +218,6 @@ const JobListings = () => {
           placeholder="Caută după nume..."
           value={filters.title}
           onChange={(e) => setFilters(prev => ({ ...prev, title: e.target.value }))}
-          className="bg-white"
         />
       </div>
 
@@ -229,7 +228,6 @@ const JobListings = () => {
           placeholder="Ex: Cluj"
           value={filters.county}
           onChange={(e) => setFilters(prev => ({ ...prev, county: e.target.value }))}
-          className="bg-white"
         />
       </div>
 
@@ -240,7 +238,6 @@ const JobListings = () => {
           placeholder="Ex: Cluj-Napoca"
           value={filters.city}
           onChange={(e) => setFilters(prev => ({ ...prev, city: e.target.value }))}
-          className="bg-white"
         />
       </div>
 
@@ -249,7 +246,7 @@ const JobListings = () => {
         <Select
           value={filters.tradeId}
           onValueChange={(value) => setFilters(prev => ({ ...prev, tradeId: value }))}>
-          <SelectTrigger className="bg-white">
+          <SelectTrigger>
             <SelectValue placeholder="Alege tipul de meșter" />
           </SelectTrigger>
           <SelectContent>
@@ -268,7 +265,7 @@ const JobListings = () => {
         <Select
           value={filters.status}
           onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-          <SelectTrigger className="bg-white">
+          <SelectTrigger>
             <SelectValue placeholder="Alege status" />
           </SelectTrigger>
           <SelectContent>
@@ -297,145 +294,16 @@ const JobListings = () => {
     </div>
   );
 
-  const renderJobCard = (job: any) => (
-    <Card key={job.id} className="hover:shadow-lg transition-shadow bg-white">
-      <CardHeader className="space-y-2">
-        <div className="flex justify-between items-start gap-4">
-          <div className="flex-1 space-y-1">
-            <CardTitle className="text-xl font-bold break-words leading-tight">
-              {job.title}
-            </CardTitle>
-            {job.trade?.name && (
-              <Badge variant="secondary" className="inline-block">
-                {job.trade.name}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-start gap-2">
-            <Badge 
-              variant={job.status === 'open' ? 'default' : 'secondary'}
-              className="capitalize whitespace-nowrap"
-            >
-              {job.status === 'open' ? 'Activ' : 'Închis'}
-            </Badge>
-            {user.id === job.client_id && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem 
-                    onClick={() => handleStatusChange(job.id, job.status === 'open' ? 'closed' : 'open')}
-                  >
-                    {job.status === 'open' ? 'Marchează ca închis' : 'Redeschide lucrarea'}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="text-destructive"
-                    onClick={() => setJobToDelete(job.id)}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Șterge lucrarea
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground line-clamp-3 break-words">
-          {job.description}
-        </p>
-        <div className="space-y-2">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
-            <span className="break-words">{job.city}, {job.county}</span>
-          </div>
-          {job.budget && (
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Wallet className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span>{job.budget} RON</span>
-            </div>
-          )}
-          <div className="text-sm text-muted-foreground mt-4">
-            <p className="font-medium break-words">
-              Client: {job.client?.first_name} {job.client?.last_name}
-            </p>
-          </div>
-        </div>
-
-        <div className="pt-4 flex flex-wrap gap-2">
-          <ChatDialog recipientId={job.client_id} recipientName={`${job.client?.first_name} ${job.client?.last_name}`}>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-2"
-            >
-              <MessageSquare className="h-4 w-4" />
-              <span className="whitespace-nowrap">Trimite mesaj</span>
-            </Button>
-          </ChatDialog>
-          {job.client?.phone && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex items-center gap-2"
-              onClick={() => handlePhoneClick(job.client.phone)}
-            >
-              <Phone className="h-4 w-4" />
-              <span className="whitespace-nowrap">Sună clientul</span>
-            </Button>
-          )}
-          {job.images && job.images.length > 0 && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center gap-2"
-                >
-                  <Image className="h-4 w-4" />
-                  <span className="whitespace-nowrap">Vezi poze ({job.images.length})</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-[95vw] max-h-[80vh] overflow-y-auto mx-4">
-                <DialogHeader>
-                  <DialogTitle>Poze atașate lucrării</DialogTitle>
-                  <DialogDescription>
-                    {job.title}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  {job.images.map((image: string, index: number) => (
-                    <img
-                      key={index}
-                      src={image}
-                      alt={`Imagine ${index + 1}`}
-                      className="w-full h-auto rounded-lg"
-                    />
-                  ))}
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   if (!user || (userProfile && userProfile.role !== 'professional')) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Lucrări Disponibile</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Lucrări Disponibile</h1>
           
           <Sheet>
             <SheetTrigger asChild>
@@ -455,20 +323,147 @@ const JobListings = () => {
             </SheetContent>
           </Sheet>
 
-          <div className="hidden sm:block w-full max-w-xs bg-white rounded-lg shadow-sm p-4">
+          <div className="hidden sm:block w-full max-w-xs bg-card rounded-lg border border-border shadow-sm p-4">
             <FiltersContent />
           </div>
         </div>
 
         {isLoading ? (
-          <div className="text-center text-gray-600">Se încarcă...</div>
+          <div className="text-center text-muted-foreground">Se încarcă...</div>
         ) : jobListings.length === 0 ? (
-          <div className="text-center text-gray-600">
+          <div className="text-center text-muted-foreground">
             Nu există lucrări disponibile care să corespundă criteriilor tale.
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {jobListings.map(renderJobCard)}
+            {jobListings.map((job) => (
+              <Card key={job.id} className="bg-card border-border">
+                <CardHeader className="space-y-2">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1 space-y-1">
+                      <CardTitle className="text-xl font-bold break-words leading-tight">
+                        {job.title}
+                      </CardTitle>
+                      {job.trade?.name && (
+                        <Badge variant="secondary" className="inline-block">
+                          {job.trade.name}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Badge 
+                        variant={job.status === 'open' ? 'default' : 'secondary'}
+                        className="capitalize whitespace-nowrap"
+                      >
+                        {job.status === 'open' ? 'Activ' : 'Închis'}
+                      </Badge>
+                      {user.id === job.client_id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => handleStatusChange(job.id, job.status === 'open' ? 'closed' : 'open')}
+                            >
+                              {job.status === 'open' ? 'Marchează ca închis' : 'Redeschide lucrarea'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => setJobToDelete(job.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Șterge lucrarea
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground line-clamp-3 break-words">
+                    {job.description}
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span className="break-words">{job.city}, {job.county}</span>
+                    </div>
+                    {job.budget && (
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Wallet className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span>{job.budget} RON</span>
+                      </div>
+                    )}
+                    <div className="text-sm text-muted-foreground mt-4">
+                      <p className="font-medium break-words">
+                        Client: {job.client?.first_name} {job.client?.last_name}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 flex flex-wrap gap-2">
+                    <ChatDialog recipientId={job.client_id} recipientName={`${job.client?.first_name} ${job.client?.last_name}`}>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-2"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <span className="whitespace-nowrap">Trimite mesaj</span>
+                      </Button>
+                    </ChatDialog>
+                    {job.client?.phone && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-2"
+                        onClick={() => handlePhoneClick(job.client.phone)}
+                      >
+                        <Phone className="h-4 w-4" />
+                        <span className="whitespace-nowrap">Sună clientul</span>
+                      </Button>
+                    )}
+                    {job.images && job.images.length > 0 && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex items-center gap-2"
+                          >
+                            <Image className="h-4 w-4" />
+                            <span className="whitespace-nowrap">Vezi poze ({job.images.length})</span>
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-[95vw] max-h-[80vh] overflow-y-auto mx-4">
+                          <DialogHeader>
+                            <DialogTitle>Poze atașate lucrării</DialogTitle>
+                            <DialogDescription>
+                              {job.title}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            {job.images.map((image: string, index: number) => (
+                              <img
+                                key={index}
+                                src={image}
+                                alt={`Imagine ${index + 1}`}
+                                className="w-full h-auto rounded-lg"
+                              />
+                            ))}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
 
