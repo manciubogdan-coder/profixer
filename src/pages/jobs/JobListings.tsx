@@ -11,7 +11,6 @@ import { ChatDialog } from "@/components/chat/ChatDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
-  CalendarDays, 
   MapPin, 
   Wallet, 
   MoreVertical, 
@@ -19,7 +18,6 @@ import {
   MessageSquare,
   Phone,
   Image,
-  Search,
   Filter
 } from "lucide-react";
 import {
@@ -63,10 +61,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 
 const JobListings = () => {
   const { user } = useAuth();
@@ -78,7 +72,6 @@ const JobListings = () => {
     city: "",
     tradeId: "",
     status: "",
-    startDate: null as Date | null,
   });
 
   const { data: userProfile } = useQuery({
@@ -156,14 +149,11 @@ const JobListings = () => {
       if (filters.city) {
         query = query.ilike('city', `%${filters.city}%`);
       }
-      if (filters.tradeId) {
+      if (filters.tradeId && filters.tradeId !== 'all') {
         query = query.eq('trade_id', filters.tradeId);
       }
-      if (filters.status) {
+      if (filters.status && filters.status !== 'all') {
         query = query.eq('status', filters.status);
-      }
-      if (filters.startDate) {
-        query = query.eq('start_date', format(filters.startDate, 'yyyy-MM-dd'));
       }
 
       const { data, error } = await query;
@@ -220,7 +210,7 @@ const JobListings = () => {
   };
 
   const FiltersContent = () => (
-    <div className="space-y-4 p-2">
+    <div className="space-y-4 p-4">
       <div className="space-y-2">
         <Label htmlFor="title">Numele lucrării</Label>
         <Input
@@ -228,6 +218,7 @@ const JobListings = () => {
           placeholder="Caută după nume..."
           value={filters.title}
           onChange={(e) => setFilters(prev => ({ ...prev, title: e.target.value }))}
+          className="bg-white"
         />
       </div>
 
@@ -238,6 +229,7 @@ const JobListings = () => {
           placeholder="Ex: Cluj"
           value={filters.county}
           onChange={(e) => setFilters(prev => ({ ...prev, county: e.target.value }))}
+          className="bg-white"
         />
       </div>
 
@@ -248,6 +240,7 @@ const JobListings = () => {
           placeholder="Ex: Cluj-Napoca"
           value={filters.city}
           onChange={(e) => setFilters(prev => ({ ...prev, city: e.target.value }))}
+          className="bg-white"
         />
       </div>
 
@@ -256,7 +249,7 @@ const JobListings = () => {
         <Select
           value={filters.tradeId}
           onValueChange={(value) => setFilters(prev => ({ ...prev, tradeId: value }))}>
-          <SelectTrigger>
+          <SelectTrigger className="bg-white">
             <SelectValue placeholder="Alege tipul de meșter" />
           </SelectTrigger>
           <SelectContent>
@@ -275,7 +268,7 @@ const JobListings = () => {
         <Select
           value={filters.status}
           onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-          <SelectTrigger>
+          <SelectTrigger className="bg-white">
             <SelectValue placeholder="Alege status" />
           </SelectTrigger>
           <SelectContent>
@@ -286,43 +279,16 @@ const JobListings = () => {
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label>Data începerii</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !filters.startDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarDays className="mr-2 h-4 w-4" />
-              {filters.startDate ? format(filters.startDate, "PPP") : "Alege data"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={filters.startDate}
-              onSelect={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-
-      {(filters.title || filters.county || filters.city || filters.tradeId || filters.status || filters.startDate) && (
+      {(filters.title || filters.county || filters.city || filters.tradeId !== "" || filters.status !== "") && (
         <Button 
           variant="outline" 
-          className="w-full"
+          className="w-full mt-4"
           onClick={() => setFilters({
             title: "",
             county: "",
             city: "",
             tradeId: "",
             status: "",
-            startDate: null,
           })}
         >
           Resetează filtrele
@@ -332,13 +298,15 @@ const JobListings = () => {
   );
 
   const renderJobCard = (job: any) => (
-    <Card key={job.id} className="hover:shadow-lg transition-shadow">
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <CardTitle className="text-xl mb-2 break-words">{job.title}</CardTitle>
+    <Card key={job.id} className="hover:shadow-lg transition-shadow bg-white">
+      <CardHeader className="space-y-2">
+        <div className="flex justify-between items-start gap-4">
+          <div className="flex-1 space-y-1">
+            <CardTitle className="text-xl font-bold break-words leading-tight">
+              {job.title}
+            </CardTitle>
             {job.trade?.name && (
-              <Badge variant="secondary" className="mb-2 break-words">
+              <Badge variant="secondary" className="inline-block">
                 {job.trade.name}
               </Badge>
             )}
@@ -392,73 +360,67 @@ const JobListings = () => {
               <span>{job.budget} RON</span>
             </div>
           )}
-          {job.start_date && (
-            <div className="flex items-center text-sm text-muted-foreground">
-              <CalendarDays className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="break-words">Data începerii: {new Date(job.start_date).toLocaleDateString()}</span>
-            </div>
-          )}
           <div className="text-sm text-muted-foreground mt-4">
-            <p className="font-medium break-words">Client: {job.client?.first_name} {job.client?.last_name}</p>
+            <p className="font-medium break-words">
+              Client: {job.client?.first_name} {job.client?.last_name}
+            </p>
           </div>
         </div>
 
-        <div className="pt-4 flex flex-col gap-4">
-          <div className="flex flex-wrap gap-2">
-            <ChatDialog recipientId={job.client_id} recipientName={`${job.client?.first_name} ${job.client?.last_name}`}>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex items-center gap-2"
-              >
-                <MessageSquare className="h-4 w-4" />
-                <span className="whitespace-nowrap">Trimite mesaj</span>
-              </Button>
-            </ChatDialog>
-            {job.client?.phone && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex items-center gap-2"
-                onClick={() => handlePhoneClick(job.client.phone)}
-              >
-                <Phone className="h-4 w-4" />
-                <span className="whitespace-nowrap">Sună clientul</span>
-              </Button>
-            )}
-            {job.images && job.images.length > 0 && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center gap-2"
-                  >
-                    <Image className="h-4 w-4" />
-                    <span className="whitespace-nowrap">Vezi poze ({job.images.length})</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-[95vw] max-h-[80vh] overflow-y-auto mx-4">
-                  <DialogHeader>
-                    <DialogTitle>Poze atașate lucrării</DialogTitle>
-                    <DialogDescription>
-                      {job.title}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    {job.images.map((image: string, index: number) => (
-                      <img
-                        key={index}
-                        src={image}
-                        alt={`Imagine ${index + 1}`}
-                        className="w-full h-auto rounded-lg"
-                      />
-                    ))}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
+        <div className="pt-4 flex flex-wrap gap-2">
+          <ChatDialog recipientId={job.client_id} recipientName={`${job.client?.first_name} ${job.client?.last_name}`}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span className="whitespace-nowrap">Trimite mesaj</span>
+            </Button>
+          </ChatDialog>
+          {job.client?.phone && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={() => handlePhoneClick(job.client.phone)}
+            >
+              <Phone className="h-4 w-4" />
+              <span className="whitespace-nowrap">Sună clientul</span>
+            </Button>
+          )}
+          {job.images && job.images.length > 0 && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-2"
+                >
+                  <Image className="h-4 w-4" />
+                  <span className="whitespace-nowrap">Vezi poze ({job.images.length})</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[95vw] max-h-[80vh] overflow-y-auto mx-4">
+                <DialogHeader>
+                  <DialogTitle>Poze atașate lucrării</DialogTitle>
+                  <DialogDescription>
+                    {job.title}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {job.images.map((image: string, index: number) => (
+                    <img
+                      key={index}
+                      src={image}
+                      alt={`Imagine ${index + 1}`}
+                      className="w-full h-auto rounded-lg"
+                    />
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -469,11 +431,11 @@ const JobListings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Navigation />
       <div className="container py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold">Lucrări Disponibile</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Lucrări Disponibile</h1>
           
           <Sheet>
             <SheetTrigger asChild>
@@ -493,15 +455,15 @@ const JobListings = () => {
             </SheetContent>
           </Sheet>
 
-          <div className="hidden sm:block w-full max-w-xs">
+          <div className="hidden sm:block w-full max-w-xs bg-white rounded-lg shadow-sm p-4">
             <FiltersContent />
           </div>
         </div>
 
         {isLoading ? (
-          <div>Se încarcă...</div>
+          <div className="text-center text-gray-600">Se încarcă...</div>
         ) : jobListings.length === 0 ? (
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-gray-600">
             Nu există lucrări disponibile care să corespundă criteriilor tale.
           </div>
         ) : (
