@@ -260,7 +260,7 @@ const JobListings = () => {
             <SelectValue placeholder="Alege tipul de meșter" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Toate</SelectItem>
+            <SelectItem value="all">Toate</SelectItem>
             {trades.map((trade) => (
               <SelectItem key={trade.id} value={trade.id}>
                 {trade.name}
@@ -279,7 +279,7 @@ const JobListings = () => {
             <SelectValue placeholder="Alege status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Toate</SelectItem>
+            <SelectItem value="all">Toate</SelectItem>
             <SelectItem value="open">Active</SelectItem>
             <SelectItem value="closed">Închise</SelectItem>
           </SelectContent>

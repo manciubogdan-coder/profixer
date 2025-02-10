@@ -21,38 +21,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          setUser(session.user);
-          // If we're on the auth page and have a valid session, redirect to home
-          if (window.location.pathname === "/auth") {
-            navigate("/");
-          }
-        } else {
-          setUser(null);
-          // Only redirect to auth if we're not already there
-          if (window.location.pathname !== "/auth") {
-            navigate("/auth");
-          }
-        }
-      } catch (error) {
-        console.error("Error checking auth session:", error);
-        setUser(null);
-        toast.error("A apărut o eroare la verificarea sesiunii");
-        if (window.location.pathname !== "/auth") {
-          navigate("/auth");
-        }
-      } finally {
-        setLoading(false);
+    // Set up initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+      
+      if (!session?.user && window.location.pathname !== "/auth") {
+        navigate("/auth");
       }
-    };
+    });
 
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session);
       
       if (session?.user) {
