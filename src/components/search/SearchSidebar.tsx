@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -66,75 +67,79 @@ export const SearchSidebar = ({
 
   const filters = (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="search">Caută după nume</Label>
-        <Input
-          id="search"
-          placeholder="ex: instalator, electrician..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="search">Caută după nume</Label>
+          <Input
+            id="search"
+            placeholder="ex: instalator, electrician..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label>Meserie</Label>
-        <Select
-          value={selectedType || "all"}
-          onValueChange={(value) => setSelectedType(value === "all" ? null : value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Alege meseria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toate meseriile</SelectItem>
-            {trades.map((trade) => (
-              <SelectItem key={trade.id} value={trade.id}>
-                {trade.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+        <div className="space-y-2">
+          <Label>Meserie</Label>
+          <Select
+            value={selectedType || "all"}
+            onValueChange={(value) => setSelectedType(value === "all" ? null : value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Alege meseria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toate meseriile</SelectItem>
+              {trades.map((trade) => (
+                <SelectItem key={trade.id} value={trade.id}>
+                  {trade.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="space-y-2">
-        <Label>Distanța maximă ({maxDistance} km)</Label>
-        <Slider
-          value={[maxDistance]}
-          onValueChange={(value) => setMaxDistance(value[0])}
-          max={400}
-          step={10}
-        />
-      </div>
+        <div className="space-y-2">
+          <Label>Distanța maximă ({maxDistance} km)</Label>
+          <Slider
+            value={[maxDistance]}
+            onValueChange={(value) => setMaxDistance(value[0])}
+            max={400}
+            step={10}
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label>Rating minim ({minRating})</Label>
-        <Slider
-          value={[minRating]}
-          onValueChange={(value) => setMinRating(value[0])}
-          max={5}
-          step={0.5}
-          min={0}
-        />
+        <div className="space-y-2">
+          <Label>Rating minim ({minRating})</Label>
+          <Slider
+            value={[minRating]}
+            onValueChange={(value) => setMinRating(value[0])}
+            max={5}
+            step={0.5}
+            min={0}
+          />
+        </div>
       </div>
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h3 className="font-medium">Rezultate</h3>
-          {selectedType && (
-            <Badge variant="secondary" className="ml-2">
-              {trades.find(t => t.id === selectedType)?.name || 'Toate meseriile'}
-            </Badge>
-          )}
-          {maxDistance < 400 && (
-            <Badge variant="secondary" className="ml-2">
-              {maxDistance}km
-            </Badge>
-          )}
-          {minRating > 0 && (
-            <Badge variant="secondary" className="ml-2">
-              ≥{minRating}★
-            </Badge>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {selectedType && (
+              <Badge variant="secondary">
+                {trades.find(t => t.id === selectedType)?.name || 'Toate meseriile'}
+              </Badge>
+            )}
+            {maxDistance < 400 && (
+              <Badge variant="secondary">
+                {maxDistance}km
+              </Badge>
+            )}
+            {minRating > 0 && (
+              <Badge variant="secondary">
+                ≥{minRating}★
+              </Badge>
+            )}
+          </div>
         </div>
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
@@ -149,7 +154,7 @@ export const SearchSidebar = ({
             {craftsmen.map((craftsman) => (
               <div
                 key={craftsman.id}
-                className="rounded-lg border p-4 hover:border-primary transition-colors cursor-pointer"
+                className="rounded-lg border p-4 hover:border-primary transition-colors cursor-pointer bg-white"
                 onClick={() => onCraftsmanClick(craftsman)}
               >
                 <div className="flex justify-between items-start">
