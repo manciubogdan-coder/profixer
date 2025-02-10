@@ -154,26 +154,28 @@ export const SearchSidebar = ({
             {craftsmen.map((craftsman) => (
               <div
                 key={craftsman.id}
-                className="rounded-lg border p-4 hover:border-primary transition-colors cursor-pointer bg-white"
+                className="rounded-lg border border-border hover:border-primary transition-colors cursor-pointer bg-card"
                 onClick={() => onCraftsmanClick(craftsman)}
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">
-                      {craftsman.first_name} {craftsman.last_name}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      {craftsman.city}, {craftsman.county}
-                    </p>
-                    {craftsman.trade && (
-                      <p className="text-sm text-primary">
-                        {craftsman.trade.name}
+                <div className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">
+                        {craftsman.first_name} {craftsman.last_name}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        {craftsman.city}, {craftsman.county}
                       </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm">{craftsman.average_rating?.toFixed(1) || "N/A"}</span>
+                      {craftsman.trade && (
+                        <p className="text-sm text-primary">
+                          {craftsman.trade.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm">{craftsman.average_rating?.toFixed(1) || "N/A"}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -188,7 +190,7 @@ export const SearchSidebar = ({
     <TooltipProvider>
       <>
         {/* Desktop sidebar */}
-        <div className="hidden md:block w-96 border-r bg-background p-6 overflow-y-auto">
+        <div className="hidden md:block w-96 border-r border-border bg-background p-6 overflow-y-auto">
           {filters}
         </div>
 
@@ -198,7 +200,7 @@ export const SearchSidebar = ({
             <TooltipTrigger asChild>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button size="lg" className="bg-primary hover:bg-primary/90 shadow-lg">
+                  <Button size="lg" className="shadow-lg">
                     <Filter className="h-4 w-4 mr-2" />
                     Filtrează ({craftsmen.length})
                   </Button>
