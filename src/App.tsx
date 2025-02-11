@@ -14,6 +14,7 @@ import MyJobs from "@/pages/jobs/MyJobs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminDashboard } from "@/pages/admin/Dashboard";
+import { Users } from "@/pages/admin/Users";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,6 +45,7 @@ function App() {
             {/* Admin routes */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<Users />} />
             </Route>
           </Routes>
           <Toaster />
@@ -54,4 +56,3 @@ function App() {
 }
 
 export default App;
-
