@@ -18,6 +18,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export const Users = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -31,18 +36,25 @@ export const Users = () => {
     try {
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("*, auth_users: id(email)")
+        .select("*, auth_users!inner(email)")
         .returns<(Omit<UserProfile, 'email'> & { auth_users: { email: string } })[]>();
 
       if (error) throw error;
+
+      if (!profiles) {
+        console.log("No profiles found");
+        setUsers([]);
+        return;
+      }
 
       // Transform the data to match UserProfile type
       const transformedUsers: UserProfile[] = profiles.map(profile => ({
         ...profile,
         email: profile.auth_users.email,
-        role: profile.role as UserRole // Ensure role is properly typed
+        role: profile.role as UserRole
       }));
 
+      console.log("Transformed users:", transformedUsers);
       setUsers(transformedUsers);
     } catch (error) {
       console.error("Eroare la încărcarea utilizatorilor:", error);
@@ -82,6 +94,68 @@ export const Users = () => {
     }
   };
 
+  const exportToExcel = () => {
+    const exportData = users.map(user => ({
+      'Nume': `${user.first_name} ${user.last_name}`,
+      'Email': user.email,
+      'Rol': user.role,
+      'Telefon': user.phone,
+      'Locație': `${user.city}, ${user.county}`,
+      'Țară': user.country,
+      'Adresă': user.address,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Users");
+    XLSX.writeFile(wb, "users.xlsx");
+  };
+
+  const exportToCSV = () => {
+    const exportData = users.map(user => ({
+      'Nume': `${user.first_name} ${user.last_name}`,
+      'Email': user.email,
+      'Rol': user.role,
+      'Telefon': user.phone,
+      'Locație': `${user.city}, ${user.county}`,
+      'Țară': user.country,
+      'Adresă': user.address,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "users.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    const exportData = users.map(user => [
+      `${user.first_name} ${user.last_name}`,
+      user.email,
+      user.role,
+      user.phone,
+      `${user.city}, ${user.county}`,
+      user.country,
+      user.address,
+    ]);
+
+    autoTable(doc, {
+      head: [['Nume', 'Email', 'Rol', 'Telefon', 'Locație', 'Țară', 'Adresă']],
+      body: exportData,
+    });
+
+    doc.save('users.pdf');
+  };
+
   if (loading) {
     return <div>Se încarcă...</div>;
   }
@@ -90,48 +164,68 @@ export const Users = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Managementul Utilizatorilor</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={exportToExcel}>
+            <Download className="h-4 w-4 mr-2" />
+            Excel
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportToCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportToPDF}>
+            <Download className="h-4 w-4 mr-2" />
+            PDF
+          </Button>
+        </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nume</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Rol</TableHead>
-            <TableHead>Telefon</TableHead>
-            <TableHead>Locație</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell>
-                {user.first_name} {user.last_name}
-              </TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>
-                <Select
-                  defaultValue={user.role}
-                  onValueChange={(value: UserRole) => updateUserRole(user.id, value)}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Selectează rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="client">Client</SelectItem>
-                    <SelectItem value="professional">Profesionist</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell>{user.phone}</TableCell>
-              <TableCell>
-                {user.city}, {user.county}
-              </TableCell>
+      {users.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          Nu există utilizatori în sistem.
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nume</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Rol</TableHead>
+              <TableHead>Telefon</TableHead>
+              <TableHead>Locație</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>
+                  {user.first_name} {user.last_name}
+                </TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <Select
+                    defaultValue={user.role}
+                    onValueChange={(value: UserRole) => updateUserRole(user.id, value)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Selectează rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="client">Client</SelectItem>
+                      <SelectItem value="professional">Profesionist</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>{user.phone}</TableCell>
+                <TableCell>
+                  {user.city}, {user.county}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 };
