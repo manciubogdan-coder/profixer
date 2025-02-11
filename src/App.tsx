@@ -12,6 +12,8 @@ import { EditJobListing } from "@/pages/jobs/EditJobListing";
 import JobListings from "@/pages/jobs/JobListings";
 import MyJobs from "@/pages/jobs/MyJobs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminDashboard } from "@/pages/admin/Dashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +40,11 @@ function App() {
             <Route path="/jobs" element={<JobListings />} />
             <Route path="/jobs/my" element={<MyJobs />} />
             <Route path="/profile" element={<Navigate to="/profile/me" replace />} />
+            
+            {/* Admin routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+            </Route>
           </Routes>
           <Toaster />
         </AuthProvider>
@@ -47,3 +54,4 @@ function App() {
 }
 
 export default App;
+
