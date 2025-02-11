@@ -97,6 +97,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "craftsman_statistics_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
         ]
       }
       job_listings: {
@@ -164,6 +171,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "job_listings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "job_listings_trade_id_fkey"
             columns: ["trade_id"]
             isOneToOne: false
@@ -219,6 +233,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
@@ -230,6 +251,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
             referencedColumns: ["id"]
           },
         ]
@@ -275,6 +303,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
             referencedColumns: ["id"]
           },
         ]
@@ -348,6 +383,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "portfolios_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profile_interactions: {
@@ -391,6 +433,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profile_interactions_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profile_interactions_visitor_id_fkey"
             columns: ["visitor_id"]
             isOneToOne: false
@@ -402,6 +451,13 @@ export type Database = {
             columns: ["visitor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_interactions_visitor_id_fkey"
+            columns: ["visitor_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
             referencedColumns: ["id"]
           },
         ]
@@ -511,6 +567,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "qualifications_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
         ]
       }
       reviews: {
@@ -560,6 +623,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_craftsman_id_fkey"
             columns: ["craftsman_id"]
             isOneToOne: false
@@ -571,6 +641,13 @@ export type Database = {
             columns: ["craftsman_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
             referencedColumns: ["id"]
           },
         ]
@@ -610,6 +687,13 @@ export type Database = {
             columns: ["craftsman_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "specializations_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
             referencedColumns: ["id"]
           },
         ]
@@ -655,6 +739,36 @@ export type Database = {
           total_craftsmen: number | null
         }
         Relationships: []
+      }
+      user_profiles_with_email: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          city: string | null
+          country: string | null
+          county: string | null
+          craftsman_type: string | null
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          id: string | null
+          last_location_update: string | null
+          last_name: string | null
+          latitude: number | null
+          longitude: number | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_craftsman_type_fkey"
+            columns: ["craftsman_type"]
+            isOneToOne: false
+            referencedRelation: "trades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

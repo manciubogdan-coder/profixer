@@ -35,9 +35,8 @@ export const Users = () => {
   const fetchUsers = async () => {
     try {
       const { data: profiles, error } = await supabase
-        .from("profiles")
-        .select("*, auth_users!inner(email)")
-        .returns<(Omit<UserProfile, 'email'> & { auth_users: { email: string } })[]>();
+        .from("user_profiles_with_email")
+        .select("*");
 
       if (error) throw error;
 
@@ -47,15 +46,7 @@ export const Users = () => {
         return;
       }
 
-      // Transform the data to match UserProfile type
-      const transformedUsers: UserProfile[] = profiles.map(profile => ({
-        ...profile,
-        email: profile.auth_users.email,
-        role: profile.role as UserRole
-      }));
-
-      console.log("Transformed users:", transformedUsers);
-      setUsers(transformedUsers);
+      setUsers(profiles);
     } catch (error) {
       console.error("Eroare la încărcarea utilizatorilor:", error);
       toast.error("Nu am putut încărca lista utilizatorilor");
