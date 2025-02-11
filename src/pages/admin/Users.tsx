@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { UserProfile } from "@/types/auth";
+import { UserProfile, UserRole } from "@/types/auth";
 import {
   Select,
   SelectContent,
@@ -29,13 +29,21 @@ export const Users = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("*, auth_users: id(email)")
+        .returns<(Omit<UserProfile, 'email'> & { auth_users: { email: string } })[]>();
 
       if (error) throw error;
-      setUsers(data || []);
+
+      // Transform the data to match UserProfile type
+      const transformedUsers: UserProfile[] = profiles.map(profile => ({
+        ...profile,
+        email: profile.auth_users.email,
+        role: profile.role as UserRole // Ensure role is properly typed
+      }));
+
+      setUsers(transformedUsers);
     } catch (error) {
       console.error("Eroare la încărcarea utilizatorilor:", error);
       toast.error("Nu am putut încărca lista utilizatorilor");
@@ -44,7 +52,7 @@ export const Users = () => {
     }
   };
 
-  const updateUserRole = async (userId: string, newRole: string) => {
+  const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
       const { error } = await supabase
         .from("profiles")
@@ -55,7 +63,7 @@ export const Users = () => {
       
       // Actualizăm starea locală
       setUsers(users.map(user => 
-        user.id === userId ? { ...user, role: newRole as UserProfile["role"] } : user
+        user.id === userId ? { ...user, role: newRole } : user
       ));
       
       toast.success("Rolul utilizatorului a fost actualizat");
@@ -104,7 +112,7 @@ export const Users = () => {
               <TableCell>
                 <Select
                   defaultValue={user.role}
-                  onValueChange={(value) => updateUserRole(user.id, value)}
+                  onValueChange={(value: UserRole) => updateUserRole(user.id, value)}
                 >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Selectează rol" />
