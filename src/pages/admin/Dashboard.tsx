@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -113,17 +114,20 @@ export const AdminDashboard = () => {
           `)
           .order('end_date', { ascending: false });
 
-        if (subsError) throw subsError;
+        if (subsError) {
+          console.error("Eroare la încărcarea abonamentelor:", subsError);
+          throw subsError;
+        }
 
         if (professionalSubs) {
           setProfessionals(professionalSubs.map(sub => ({
             id: sub.id,
             craftsman_id: sub.craftsman_id,
-            status: sub.status,
+            status: sub.status || 'inactive',
             end_date: sub.end_date,
-            first_name: sub.user.first_name,
-            last_name: sub.user.last_name,
-            email: sub.user.email
+            first_name: sub.user?.first_name || '',
+            last_name: sub.user?.last_name || '',
+            email: sub.user?.email || ''
           })));
         }
       } catch (error) {
