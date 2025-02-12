@@ -120,10 +120,10 @@ export const Messages = () => {
         .from("messages")
         .select(`
           *,
-          sender:user_profiles_with_email(
+          sender:user_profiles_with_email!messages_sender_id_fkey(
             first_name, last_name, email, county, city, role
           ),
-          receiver:user_profiles_with_email(
+          receiver:user_profiles_with_email!messages_receiver_id_fkey(
             first_name, last_name, email, county, city, role
           )
         `)
@@ -137,11 +137,16 @@ export const Messages = () => {
 
       if (error) throw error;
 
-      setMessages(data?.map(message => ({
-        ...message,
+      const formattedMessages: MessageWithUsers[] = (data || []).map(message => ({
+        id: message.id,
+        content: message.content,
+        created_at: message.created_at,
+        read: message.read || false,
         sender: message.sender[0],
         receiver: message.receiver[0]
-      })) || []);
+      }));
+
+      setMessages(formattedMessages);
     } catch (error) {
       console.error("Eroare la încărcarea mesajelor:", error);
       toast.error("Nu am putut încărca lista mesajelor");
