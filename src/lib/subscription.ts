@@ -4,7 +4,6 @@ import type { SubscriptionPlan } from "@/types/subscription";
 
 export const SUBSCRIPTION_PRICES = {
   lunar: 99,
-  anual: 990,
 } as const;
 
 export async function createPaymentIntent(plan: SubscriptionPlan) {
@@ -13,6 +12,7 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
       },
       body: JSON.stringify({
         plan,

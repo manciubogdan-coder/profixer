@@ -1,6 +1,6 @@
 
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
-export type SubscriptionPlan = 'lunar' | 'anual';
+export type SubscriptionPlan = 'lunar';
 
 export interface Payment {
   id: string;

@@ -64,35 +64,8 @@ const ActivateSubscription = () => {
     },
   ];
 
-  const plans = [
-    {
-      name: "Lunar",
-      price: "99",
-      description: "Perfect pentru a începe",
-      features: [
-        "Toate funcționalitățile incluse",
-        "Suport prioritar",
-        "Profil verificat",
-        "Fără limită de mesaje",
-      ],
-    },
-    {
-      name: "Anual",
-      price: "990",
-      description: "2 luni gratuite",
-      features: [
-        "Toate funcționalitățile incluse",
-        "Suport prioritar",
-        "Profil verificat",
-        "Fără limită de mesaje",
-        "Economisești 198 RON",
-      ],
-      recommended: true,
-    },
-  ];
-
-  const handleSubscribe = (planType: "lunar" | "anual") => {
-    navigate(`/subscription/checkout?plan=${planType}`);
+  const handleSubscribe = () => {
+    navigate(`/subscription/checkout?plan=lunar`);
   };
 
   return (
@@ -122,50 +95,49 @@ const ActivateSubscription = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {plans.map((plan, index) => (
-            <Card 
-              key={index}
-              className={`relative ${plan.recommended ? 'border-primary shadow-lg' : ''}`}
-            >
-              {plan.recommended && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm font-medium">
-                  Recomandat
-                </div>
-              )}
-              <CardHeader>
-                <CardTitle className="text-2xl">
-                  {plan.name}
-                </CardTitle>
-                <CardDescription>
-                  {plan.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground"> RON/lună</span>
-                </div>
-                <ul className="space-y-2">
-                  {plan.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center gap-2">
-                      <ChevronRight className="h-4 w-4 text-primary" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full"
-                  onClick={() => handleSubscribe(plan.name.toLowerCase() as "lunar" | "anual")}
-                  variant={plan.recommended ? "default" : "outline"}
-                >
-                  Activează Abonament {plan.name}
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+        <div className="max-w-lg mx-auto">
+          <Card className="relative border-primary shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-2xl">
+                Abonament Lunar
+              </CardTitle>
+              <CardDescription>
+                Acces la toate funcționalitățile
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <span className="text-4xl font-bold">99</span>
+                <span className="text-muted-foreground"> RON/lună</span>
+              </div>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4 text-primary" />
+                  <span>Toate funcționalitățile incluse</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4 text-primary" />
+                  <span>Suport prioritar</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4 text-primary" />
+                  <span>Profil verificat</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <ChevronRight className="h-4 w-4 text-primary" />
+                  <span>Fără limită de mesaje</span>
+                </li>
+              </ul>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                className="w-full"
+                onClick={handleSubscribe}
+              >
+                Activează Abonament
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       </div>
     </div>
