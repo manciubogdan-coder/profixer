@@ -185,7 +185,7 @@ export const Messages = () => {
     }
 
     // Filtrare după rol
-    if (filters.role) {
+    if (filters.role && filters.role !== "all") {
       filtered = filtered.filter(
         (message) =>
           message.sender.role === filters.role ||
@@ -313,7 +313,7 @@ export const Messages = () => {
               <SelectValue placeholder="Filtrează după rol" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Toate rolurile</SelectItem>
+              <SelectItem value="all">Toate rolurile</SelectItem>
               <SelectItem value="client">Client</SelectItem>
               <SelectItem value="professional">Meșter</SelectItem>
             </SelectContent>
