@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { SearchSidebar } from "@/components/search/SearchSidebar";
@@ -16,6 +17,7 @@ export type Craftsman = Tables<"profiles"> & {
   trade?: {
     name: string;
   } | null;
+  subscription_status?: string;
 };
 
 const Search = () => {
@@ -61,7 +63,11 @@ const Search = () => {
         .select(`
           *,
           reviews!reviews_craftsman_id_fkey(rating),
-          trade:craftsman_type(name)
+          trade:craftsman_type(name),
+          subscriptions!subscriptions_craftsman_id_fkey(
+            status,
+            end_date
+          )
         `)
         .eq("role", "professional");
 
@@ -84,33 +90,43 @@ const Search = () => {
 
       console.log("Raw craftsmen data:", craftsmenData);
 
-      const processedCraftsmen = craftsmenData.map((craftsman): Craftsman => {
-        const reviews = Array.isArray(craftsman.reviews) ? craftsman.reviews : [];
-        const avgRating = reviews.length > 0
-          ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
-          : 0;
+      const processedCraftsmen = craftsmenData
+        .map((craftsman): Craftsman => {
+          const reviews = Array.isArray(craftsman.reviews) ? craftsman.reviews : [];
+          const avgRating = reviews.length > 0
+            ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
+            : 0;
 
-        return {
-          id: craftsman.id,
-          first_name: craftsman.first_name,
-          last_name: craftsman.last_name,
-          phone: craftsman.phone,
-          country: craftsman.country,
-          county: craftsman.county,
-          city: craftsman.city,
-          address: craftsman.address,
-          role: craftsman.role,
-          created_at: craftsman.created_at,
-          updated_at: craftsman.updated_at,
-          avatar_url: craftsman.avatar_url,
-          craftsman_type: craftsman.craftsman_type,
-          latitude: craftsman.latitude,
-          longitude: craftsman.longitude,
-          last_location_update: craftsman.last_location_update,
-          average_rating: avgRating,
-          trade: craftsman.trade ? { name: craftsman.trade.name } : null
-        };
-      });
+          // Check if craftsman has an active subscription
+          const subscriptions = Array.isArray(craftsman.subscriptions) ? craftsman.subscriptions : [];
+          const activeSubscription = subscriptions.find(sub => 
+            sub.status === 'active' && new Date(sub.end_date) > new Date()
+          );
+
+          return {
+            id: craftsman.id,
+            first_name: craftsman.first_name,
+            last_name: craftsman.last_name,
+            phone: craftsman.phone,
+            country: craftsman.country,
+            county: craftsman.county,
+            city: craftsman.city,
+            address: craftsman.address,
+            role: craftsman.role,
+            created_at: craftsman.created_at,
+            updated_at: craftsman.updated_at,
+            avatar_url: craftsman.avatar_url,
+            craftsman_type: craftsman.craftsman_type,
+            latitude: craftsman.latitude,
+            longitude: craftsman.longitude,
+            last_location_update: craftsman.last_location_update,
+            average_rating: avgRating,
+            trade: craftsman.trade ? { name: craftsman.trade.name } : null,
+            subscription_status: activeSubscription ? 'active' : 'inactive'
+          };
+        })
+        // Filter out craftsmen without active subscriptions
+        .filter(craftsman => craftsman.subscription_status === 'active');
 
       return processedCraftsmen.filter((craftsman) => {
         if ((craftsman.average_rating || 0) < minRating) return false;
@@ -183,3 +199,4 @@ const Search = () => {
 };
 
 export default Search;
+
