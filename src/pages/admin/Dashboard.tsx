@@ -266,7 +266,7 @@ export const AdminDashboard = () => {
                             setSelectedEndDate(date);
                             setSelectedProfessionalId(professional.id);
                           }}
-                          disabled={(date) => date < new Date()}
+                          className="bg-white border rounded-md shadow-md"
                           initialFocus
                         />
                         <div className="p-3 border-t">
