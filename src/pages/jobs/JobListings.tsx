@@ -61,10 +61,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
 
 const JobListings = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { isProfessional } = useSubscriptionCheck();
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     title: "",

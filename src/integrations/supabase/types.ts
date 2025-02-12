@@ -958,6 +958,12 @@ export type Database = {
         }
         Returns: number
       }
+      can_access_craftsman_features: {
+        Args: {
+          user_uuid: string
+        }
+        Returns: boolean
+      }
       get_craftsman_statistics: {
         Args: {
           craftsman_id_param: string

@@ -16,11 +16,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
 import { SubscriptionStatus } from "@/components/subscription/SubscriptionStatus";
+import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
 
-const CraftsmanPublicProfile = () => {
+const CraftsmanProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isProfessional } = useSubscriptionCheck();
 
   useEffect(() => {
     if (!user) {
@@ -363,4 +365,4 @@ const CraftsmanPublicProfile = () => {
   );
 };
 
-export default CraftsmanPublicProfile;
+export default CraftsmanProfile;

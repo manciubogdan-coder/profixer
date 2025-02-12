@@ -34,51 +34,6 @@ interface MapProps {
   onCraftsmanClick: (craftsman: Craftsman) => void;
 }
 
-const getCraftsmanIcon = (tradeName: string | null) => {
-  console.log("Trade name:", tradeName);
-  switch (tradeName?.toLowerCase()) {
-    case "tâmplar":
-      return Ruler;
-    case "zidar":
-      return Blocks;
-    case "constructor":
-      return Construction;
-    case "instalator":
-      return Wrench;
-    case "tehnician hvac":
-      return Wind;
-    case "zugrav":
-      return Paintbrush;
-    case "electrician":
-      return Plug;
-    case "lăcătuș":
-      return Lock;
-    case "sudor":
-      return Construction;
-    case "acoperișar":
-      return Home;
-    case "amenajări interioare":
-      return Warehouse;
-    case "amenajări exterioare":
-      return Shovel;
-    case "gresie și faianță":
-      return Blocks;
-    case "parchetar":
-      return Scissors;
-    case "rigipsar":
-      return Construction;
-    case "termotehnist":
-      return Lightbulb;
-    case "transport":
-      return Truck;
-    case "demolări":
-      return HardHat;
-    default:
-      console.log("Using default icon for trade:", tradeName);
-      return User;
-  }
-};
-
 export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
