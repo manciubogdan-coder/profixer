@@ -104,24 +104,8 @@ const Search = () => {
           );
 
           return {
-            id: craftsman.id,
-            first_name: craftsman.first_name,
-            last_name: craftsman.last_name,
-            phone: craftsman.phone,
-            country: craftsman.country,
-            county: craftsman.county,
-            city: craftsman.city,
-            address: craftsman.address,
-            role: craftsman.role,
-            created_at: craftsman.created_at,
-            updated_at: craftsman.updated_at,
-            avatar_url: craftsman.avatar_url,
-            craftsman_type: craftsman.craftsman_type,
-            latitude: craftsman.latitude,
-            longitude: craftsman.longitude,
-            last_location_update: craftsman.last_location_update,
+            ...craftsman,
             average_rating: avgRating,
-            trade: craftsman.trade ? { name: craftsman.trade.name } : null,
             subscription_status: activeSubscription ? 'active' : 'inactive'
           };
         })
@@ -199,4 +183,3 @@ const Search = () => {
 };
 
 export default Search;
-
