@@ -94,6 +94,13 @@ export type Database = {
             foreignKeyName: "craftsman_statistics_craftsman_id_fkey"
             columns: ["craftsman_id"]
             isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "craftsman_statistics_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -167,6 +174,13 @@ export type Database = {
             foreignKeyName: "job_listings_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "job_listings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -229,6 +243,13 @@ export type Database = {
             foreignKeyName: "messages_receiver_id_fkey"
             columns: ["receiver_id"]
             isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -244,6 +265,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "craftsman_profile_statistics"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
             referencedColumns: ["craftsman_id"]
           },
           {
@@ -296,6 +324,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "craftsman_profile_statistics"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
             referencedColumns: ["craftsman_id"]
           },
           {
@@ -380,6 +415,13 @@ export type Database = {
             foreignKeyName: "portfolios_craftsman_id_fkey"
             columns: ["craftsman_id"]
             isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "portfolios_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -429,6 +471,13 @@ export type Database = {
             foreignKeyName: "profile_interactions_craftsman_id_fkey"
             columns: ["craftsman_id"]
             isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "profile_interactions_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -444,6 +493,13 @@ export type Database = {
             columns: ["visitor_id"]
             isOneToOne: false
             referencedRelation: "craftsman_profile_statistics"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "profile_interactions_visitor_id_fkey"
+            columns: ["visitor_id"]
+            isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
             referencedColumns: ["craftsman_id"]
           },
           {
@@ -564,6 +620,13 @@ export type Database = {
             foreignKeyName: "qualifications_craftsman_id_fkey"
             columns: ["craftsman_id"]
             isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "qualifications_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -619,6 +682,13 @@ export type Database = {
             foreignKeyName: "reviews_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "reviews_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -634,6 +704,13 @@ export type Database = {
             columns: ["craftsman_id"]
             isOneToOne: false
             referencedRelation: "craftsman_profile_statistics"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "reviews_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
             referencedColumns: ["craftsman_id"]
           },
           {
@@ -680,6 +757,13 @@ export type Database = {
             columns: ["craftsman_id"]
             isOneToOne: false
             referencedRelation: "craftsman_profile_statistics"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "specializations_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
             referencedColumns: ["craftsman_id"]
           },
           {
@@ -738,6 +822,13 @@ export type Database = {
             foreignKeyName: "subscriptions_craftsman_id_fkey"
             columns: ["craftsman_id"]
             isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "subscriptions_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -781,6 +872,19 @@ export type Database = {
           total_clients: number | null
           total_messages: number | null
           total_projects: number | null
+        }
+        Relationships: []
+      }
+      craftsman_subscription_status: {
+        Row: {
+          craftsman_id: string | null
+          first_name: string | null
+          is_subscription_active: boolean | null
+          last_name: string | null
+          subscription_end_date: string | null
+          subscription_status:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
         }
         Relationships: []
       }
@@ -872,6 +976,12 @@ export type Database = {
           phone_clicks: number
           unique_visitors: number
         }[]
+      }
+      has_active_subscription: {
+        Args: {
+          craftsman_uuid: string
+        }
+        Returns: boolean
       }
       is_admin: {
         Args: {

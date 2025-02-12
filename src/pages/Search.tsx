@@ -84,16 +84,13 @@ const Search = () => {
 
       console.log("Raw craftsmen data:", craftsmenData);
 
-      // Process the data to ensure it's serializable
       const processedCraftsmen = craftsmenData.map((craftsman): Craftsman => {
-        // Safely handle reviews array
         const reviews = Array.isArray(craftsman.reviews) ? craftsman.reviews : [];
         const avgRating = reviews.length > 0
           ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
           : 0;
 
-        // Create a plain serializable object
-        const serializedCraftsman: Craftsman = {
+        return {
           id: craftsman.id,
           first_name: craftsman.first_name,
           last_name: craftsman.last_name,
@@ -113,12 +110,8 @@ const Search = () => {
           average_rating: avgRating,
           trade: craftsman.trade ? { name: craftsman.trade.name } : null
         };
-
-        console.log("Processed craftsman:", serializedCraftsman);
-        return serializedCraftsman;
       });
 
-      // Filter based on rating and distance
       return processedCraftsmen.filter((craftsman) => {
         if ((craftsman.average_rating || 0) < minRating) return false;
 
