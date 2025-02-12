@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from "react-day-picker";
@@ -84,8 +85,8 @@ export const Messages = () => {
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const [filters, setFilters] = useState({
     search: "",
-    county: "",
-    city: "",
+    sender: "",
+    receiver: "",
     role: "all",
     dateRange: undefined as DateRange | undefined
   });
@@ -149,36 +150,33 @@ export const Messages = () => {
   const applyFilters = () => {
     let filtered = [...messages];
 
-    // Filtrare după text (căutare în conținut și nume)
+    // Filtrare după text (căutare în conținut)
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(
-        (message) =>
-          message.content.toLowerCase().includes(searchLower) ||
-          `${message.sender.first_name} ${message.sender.last_name}`
-            .toLowerCase()
-            .includes(searchLower) ||
-          `${message.receiver.first_name} ${message.receiver.last_name}`
-            .toLowerCase()
-            .includes(searchLower)
+      filtered = filtered.filter((message) =>
+        message.content.toLowerCase().includes(searchLower)
       );
     }
 
-    // Filtrare după județ
-    if (filters.county) {
-      filtered = filtered.filter(
-        (message) =>
-          message.sender.county?.toLowerCase() === filters.county.toLowerCase() ||
-          message.receiver.county?.toLowerCase() === filters.county.toLowerCase()
+    // Filtrare după expeditor
+    if (filters.sender) {
+      const senderLower = filters.sender.toLowerCase();
+      filtered = filtered.filter((message) =>
+        `${message.sender.first_name} ${message.sender.last_name}`
+          .toLowerCase()
+          .includes(senderLower) ||
+        message.sender.email.toLowerCase().includes(senderLower)
       );
     }
 
-    // Filtrare după oraș
-    if (filters.city) {
-      filtered = filtered.filter(
-        (message) =>
-          message.sender.city?.toLowerCase() === filters.city.toLowerCase() ||
-          message.receiver.city?.toLowerCase() === filters.city.toLowerCase()
+    // Filtrare după destinatar
+    if (filters.receiver) {
+      const receiverLower = filters.receiver.toLowerCase();
+      filtered = filtered.filter((message) =>
+        `${message.receiver.first_name} ${message.receiver.last_name}`
+          .toLowerCase()
+          .includes(receiverLower) ||
+        message.receiver.email.toLowerCase().includes(receiverLower)
       );
     }
 
@@ -278,7 +276,7 @@ export const Messages = () => {
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <Input
-            placeholder="Caută în mesaje..."
+            placeholder="Caută în conținutul mesajului..."
             value={filters.search}
             onChange={(e) =>
               setFilters({ ...filters, search: e.target.value })
@@ -286,17 +284,19 @@ export const Messages = () => {
             className="max-w-sm"
           />
           <Input
-            placeholder="Filtrează după județ"
-            value={filters.county}
+            placeholder="Caută după expeditor..."
+            value={filters.sender}
             onChange={(e) =>
-              setFilters({ ...filters, county: e.target.value })
+              setFilters({ ...filters, sender: e.target.value })
             }
             className="max-w-sm"
           />
           <Input
-            placeholder="Filtrează după oraș"
-            value={filters.city}
-            onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+            placeholder="Caută după destinatar..."
+            value={filters.receiver}
+            onChange={(e) =>
+              setFilters({ ...filters, receiver: e.target.value })
+            }
             className="max-w-sm"
           />
           <Select
@@ -314,11 +314,13 @@ export const Messages = () => {
               <SelectItem value="professional">Meșter</SelectItem>
             </SelectContent>
           </Select>
-          <DatePickerWithRange
-            onChange={(dateRange) =>
-              setFilters({ ...filters, dateRange })
-            }
-          />
+          <div className="bg-black/80 rounded-md">
+            <DatePickerWithRange
+              onChange={(dateRange) =>
+                setFilters({ ...filters, dateRange })
+              }
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Doar necitite</span>
