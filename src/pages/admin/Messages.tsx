@@ -44,8 +44,8 @@ export const Messages = () => {
         .from("messages")
         .select(`
           *,
-          sender:profiles!messages_sender_id_fkey(first_name, last_name, email),
-          receiver:profiles!messages_receiver_id_fkey(first_name, last_name, email)
+          sender:user_profiles_with_email!messages_sender_id_fkey(first_name, last_name, email),
+          receiver:user_profiles_with_email!messages_receiver_id_fkey(first_name, last_name, email)
         `)
         .order("created_at", { ascending: false });
 
