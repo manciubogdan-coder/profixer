@@ -349,6 +349,71 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          craftsman_id: string
+          created_at: string
+          currency: string
+          id: string
+          status: Database["public"]["Enums"]["payment_status"]
+          stripe_customer_id: string | null
+          stripe_payment_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          craftsman_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          stripe_customer_id?: string | null
+          stripe_payment_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          craftsman_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          stripe_customer_id?: string | null
+          stripe_payment_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "craftsman_profile_statistics"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "payments_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "craftsman_subscription_status"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "payments_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       portfolio_images: {
         Row: {
           created_at: string
@@ -788,8 +853,11 @@ export type Database = {
           created_at: string | null
           end_date: string | null
           id: string
+          payment_id: string | null
+          plan: Database["public"]["Enums"]["subscription_plan"]
           start_date: string | null
           status: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_subscription_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -797,8 +865,11 @@ export type Database = {
           created_at?: string | null
           end_date?: string | null
           id?: string
+          payment_id?: string | null
+          plan?: Database["public"]["Enums"]["subscription_plan"]
           start_date?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_subscription_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -806,8 +877,11 @@ export type Database = {
           created_at?: string | null
           end_date?: string | null
           id?: string
+          payment_id?: string | null
+          plan?: Database["public"]["Enums"]["subscription_plan"]
           start_date?: string | null
           status?: Database["public"]["Enums"]["subscription_status"] | null
+          stripe_subscription_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -837,6 +911,13 @@ export type Database = {
             columns: ["craftsman_id"]
             isOneToOne: false
             referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
             referencedColumns: ["id"]
           },
         ]
@@ -1008,6 +1089,8 @@ export type Database = {
         | "roofer"
         | "hvac_technician"
         | "general_contractor"
+      payment_status: "pending" | "completed" | "failed" | "refunded"
+      subscription_plan: "lunar" | "anual"
       subscription_status: "active" | "inactive" | "canceled"
       user_role: "client" | "professional" | "admin"
     }
