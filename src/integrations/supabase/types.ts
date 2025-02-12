@@ -698,6 +698,58 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          craftsman_id: string | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["subscription_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          craftsman_id?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          craftsman_id?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "craftsman_profile_statistics"
+            referencedColumns: ["craftsman_id"]
+          },
+          {
+            foreignKeyName: "subscriptions_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_craftsman_id_fkey"
+            columns: ["craftsman_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles_with_email"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trades: {
         Row: {
           created_at: string
@@ -748,6 +800,16 @@ export type Database = {
           avg_rating: number | null
           total_clients: number | null
           total_craftsmen: number | null
+        }
+        Relationships: []
+      }
+      subscription_statistics: {
+        Row: {
+          active_subscriptions: number | null
+          expired_subscriptions: number | null
+          inactive_subscriptions: number | null
+          total_subscribers: number | null
+          valid_subscriptions: number | null
         }
         Relationships: []
       }
@@ -830,6 +892,7 @@ export type Database = {
         | "roofer"
         | "hvac_technician"
         | "general_contractor"
+      subscription_status: "active" | "inactive" | "canceled"
       user_role: "client" | "professional" | "admin"
     }
     CompositeTypes: {
