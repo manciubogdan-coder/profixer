@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -25,6 +26,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface PlatformStats {
   total_users: number;
@@ -52,88 +54,86 @@ interface ProfessionalSubscription {
 }
 
 export const AdminDashboard = () => {
-  const [stats, setStats] = useState<PlatformStats | null>(null);
-  const [subStats, setSubStats] = useState<SubscriptionStats | null>(null);
-  const [professionals, setProfessionals] = useState<ProfessionalSubscription[]>([]);
+  const queryClient = useQueryClient();
   const [selectedEndDate, setSelectedEndDate] = useState<Date>();
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string | null>(null);
   
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const { count: totalUsers } = await supabase
-          .from("profiles")
-          .select("*", { count: "exact", head: true });
-          
-        const { count: totalJobs } = await supabase
-          .from("job_listings")
-          .select("*", { count: "exact", head: true });
-          
-        const { count: totalProfessionals } = await supabase
-          .from("profiles")
-          .select("*", { count: "exact", head: true })
-          .eq("role", "professional");
-          
-        const { count: totalClients } = await supabase
-          .from("profiles")
-          .select("*", { count: "exact", head: true })
-          .eq("role", "client");
-          
-        setStats({
-          total_users: totalUsers || 0,
-          total_jobs: totalJobs || 0,
-          total_professionals: totalProfessionals || 0,
-          total_clients: totalClients || 0,
-        });
-
-        const { data: subscriptionStats } = await supabase
-          .from('subscription_statistics')
-          .select('*')
-          .single();
+  const { data: stats } = useQuery({
+    queryKey: ["platform-stats"],
+    queryFn: async () => {
+      const { count: totalUsers } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true });
         
-        if (subscriptionStats) {
-          setSubStats(subscriptionStats);
-        }
+      const { count: totalJobs } = await supabase
+        .from("job_listings")
+        .select("*", { count: "exact", head: true });
+        
+      const { count: totalProfessionals } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "professional");
+        
+      const { count: totalClients } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "client");
+        
+      return {
+        total_users: totalUsers || 0,
+        total_jobs: totalJobs || 0,
+        total_professionals: totalProfessionals || 0,
+        total_clients: totalClients || 0,
+      } as PlatformStats;
+    }
+  });
 
-        const { data: professionalSubs, error: subsError } = await supabase
-          .from('subscriptions')
-          .select(`
-            id,
-            craftsman_id,
-            status,
-            end_date,
-            user:user_profiles_with_email!subscriptions_craftsman_id_fkey (
-              first_name,
-              last_name,
-              email
-            )
-          `)
-          .order('end_date', { ascending: false });
+  const { data: subStats } = useQuery({
+    queryKey: ["subscription-stats"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('subscription_statistics')
+        .select('*')
+        .single();
+      
+      return data as SubscriptionStats;
+    }
+  });
 
-        if (subsError) {
-          console.error("Eroare la încărcarea abonamentelor:", subsError);
-          throw subsError;
-        }
+  const { data: professionals = [] } = useQuery({
+    queryKey: ["professionals-subscriptions"],
+    queryFn: async () => {
+      const { data: professionalSubs, error: subsError } = await supabase
+        .from('subscriptions')
+        .select(`
+          id,
+          craftsman_id,
+          status,
+          end_date,
+          user:user_profiles_with_email!subscriptions_craftsman_id_fkey (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .order('end_date', { ascending: false });
 
-        if (professionalSubs) {
-          setProfessionals(professionalSubs.map(sub => ({
-            id: sub.id,
-            craftsman_id: sub.craftsman_id,
-            status: sub.status || 'inactive',
-            end_date: sub.end_date,
-            first_name: sub.user?.first_name || '',
-            last_name: sub.user?.last_name || '',
-            email: sub.user?.email || ''
-          })));
-        }
-      } catch (error) {
-        console.error("Eroare la încărcarea statisticilor:", error);
-        toast.error("Nu am putut încărca statisticile");
+      if (subsError) {
+        console.error("Eroare la încărcarea abonamentelor:", subsError);
+        throw subsError;
       }
-    };
-    
-    fetchStats();
-  }, []);
+
+      return professionalSubs.map(sub => ({
+        id: sub.id,
+        craftsman_id: sub.craftsman_id,
+        status: sub.status || 'inactive',
+        end_date: sub.end_date,
+        first_name: sub.user?.first_name || '',
+        last_name: sub.user?.last_name || '',
+        email: sub.user?.email || ''
+      })) as ProfessionalSubscription[];
+    }
+  });
 
   const updateSubscriptionEndDate = async (subscriptionId: string) => {
     if (!selectedEndDate) return;
@@ -153,7 +153,9 @@ export const AdminDashboard = () => {
       setSelectedEndDate(undefined);
       setSelectedProfessionalId(null);
       
-      window.location.reload();
+      // Reîncărcăm datele folosind React Query
+      await queryClient.invalidateQueries({ queryKey: ["professionals-subscriptions"] });
+      await queryClient.invalidateQueries({ queryKey: ["subscription-stats"] });
     } catch (error) {
       console.error("Eroare la actualizarea abonamentului:", error);
       toast.error("Nu am putut actualiza abonamentul");
