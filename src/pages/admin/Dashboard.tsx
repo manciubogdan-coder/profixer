@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -106,7 +105,7 @@ export const AdminDashboard = () => {
             craftsman_id,
             status,
             end_date,
-            profiles!subscriptions_craftsman_id_fkey (
+            user:user_profiles_with_email!subscriptions_craftsman_id_fkey (
               first_name,
               last_name,
               email
@@ -122,9 +121,9 @@ export const AdminDashboard = () => {
             craftsman_id: sub.craftsman_id,
             status: sub.status,
             end_date: sub.end_date,
-            first_name: sub.profiles.first_name,
-            last_name: sub.profiles.last_name,
-            email: sub.profiles.email
+            first_name: sub.user.first_name,
+            last_name: sub.user.last_name,
+            email: sub.user.email
           })));
         }
       } catch (error) {

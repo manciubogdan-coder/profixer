@@ -83,9 +83,9 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
           ...message,
           sender: Array.isArray(message.sender) ? message.sender[0] : message.sender,
           attachments: Array.isArray(message.attachments) 
-            ? message.attachments as MessageAttachment[]
+            ? (message.attachments as unknown as MessageAttachment[])
             : []
-        })) as Message[];
+        }));
 
         setMessages(formattedMessages);
       } catch (error) {
