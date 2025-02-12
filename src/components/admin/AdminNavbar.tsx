@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Settings, Users } from "lucide-react";
+import { Settings, Users, MessageSquare } from "lucide-react";
 
 export const AdminNavbar = () => {
   const location = useLocation();
@@ -16,6 +16,11 @@ export const AdminNavbar = () => {
       title: "Utilizatori",
       path: "/admin/users",
       icon: Users
+    },
+    {
+      title: "Mesaje",
+      path: "/admin/messages",
+      icon: MessageSquare
     }
   ];
   
