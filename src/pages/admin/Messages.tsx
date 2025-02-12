@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from "react-day-picker";
@@ -35,7 +36,7 @@ import {
 } from "@/components/ui/select";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { format } from "date-fns";
-import { ro } from "date-fns/locale";
+import { addDays } from "date-fns";
 import {
   Card,
   CardContent,
@@ -43,7 +44,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { addDays } from "date-fns";
 
 interface MessageWithUsers {
   id: string;
@@ -120,10 +120,10 @@ export const Messages = () => {
         .from("messages")
         .select(`
           *,
-          sender:user_profiles_with_email!messages_sender_id_fkey(
+          sender:user_profiles_with_email(
             first_name, last_name, email, county, city, role
           ),
-          receiver:user_profiles_with_email!messages_receiver_id_fkey(
+          receiver:user_profiles_with_email(
             first_name, last_name, email, county, city, role
           )
         `)
@@ -137,7 +137,11 @@ export const Messages = () => {
 
       if (error) throw error;
 
-      setMessages(data || []);
+      setMessages(data?.map(message => ({
+        ...message,
+        sender: message.sender[0],
+        receiver: message.receiver[0]
+      })) || []);
     } catch (error) {
       console.error("Eroare la încărcarea mesajelor:", error);
       toast.error("Nu am putut încărca lista mesajelor");
