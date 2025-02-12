@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -62,7 +61,6 @@ export const AdminDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Statistici generale
         const { count: totalUsers } = await supabase
           .from("profiles")
           .select("*", { count: "exact", head: true });
@@ -88,7 +86,6 @@ export const AdminDashboard = () => {
           total_clients: totalClients || 0,
         });
 
-        // Statistici abonamente
         const { data: subscriptionStats } = await supabase
           .from('subscription_statistics')
           .select('*')
@@ -98,7 +95,6 @@ export const AdminDashboard = () => {
           setSubStats(subscriptionStats);
         }
 
-        // Lista profesioniști cu abonamente
         const { data: professionalSubs, error: subsError } = await supabase
           .from('subscriptions')
           .select(`
@@ -157,7 +153,6 @@ export const AdminDashboard = () => {
       setSelectedEndDate(undefined);
       setSelectedProfessionalId(null);
       
-      // Reîncărcăm datele
       window.location.reload();
     } catch (error) {
       console.error("Eroare la actualizarea abonamentului:", error);
@@ -258,7 +253,7 @@ export const AdminDashboard = () => {
                             : 'Selectează data expirării'}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0 !bg-black border-white/20" align="start">
                         <Calendar
                           mode="single"
                           selected={selectedEndDate}
@@ -266,10 +261,9 @@ export const AdminDashboard = () => {
                             setSelectedEndDate(date);
                             setSelectedProfessionalId(professional.id);
                           }}
-                          className="bg-white border rounded-md shadow-md"
                           initialFocus
                         />
-                        <div className="p-3 border-t">
+                        <div className="p-3 border-t border-white/20">
                           <Button
                             onClick={() => updateSubscriptionEndDate(professional.id)}
                             disabled={!selectedEndDate || selectedProfessionalId !== professional.id}
