@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ChatDialog } from "@/components/chat/ChatDialog";
-import { MessageSquare, Trash2, CheckCircle } from "lucide-react";
+import { MessageSquare, Trash2, CheckCircle, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -25,6 +25,25 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { format } from "date-fns";
+import { ro } from "date-fns/locale";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { addDays } from "date-fns";
 
 interface MessageWithUsers {
   id: string;
@@ -35,22 +54,68 @@ interface MessageWithUsers {
     first_name: string;
     last_name: string;
     email: string;
+    county: string;
+    city: string;
+    role: string;
   };
   receiver: {
     first_name: string;
     last_name: string;
     email: string;
+    county: string;
+    city: string;
+    role: string;
   };
+}
+
+interface MessageStatistics {
+  month: string;
+  total_messages: number;
+  unique_senders: number;
+  unique_receivers: number;
+  messages_from_clients: number;
+  messages_from_craftsmen: number;
 }
 
 export const Messages = () => {
   const [messages, setMessages] = useState<MessageWithUsers[]>([]);
+  const [filteredMessages, setFilteredMessages] = useState<MessageWithUsers[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [filters, setFilters] = useState({
+    search: "",
+    county: "",
+    city: "",
+    role: "",
+    dateRange: {
+      from: undefined,
+      to: undefined,
+    },
+  });
+  const [statistics, setStatistics] = useState<MessageStatistics[]>([]);
+
+  const fetchStatistics = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("messages_statistics")
+        .select("*");
+
+      if (error) throw error;
+      setStatistics(data || []);
+    } catch (error) {
+      console.error("Eroare la încărcarea statisticilor:", error);
+      toast.error("Nu am putut încărca statisticile");
+    }
+  };
 
   useEffect(() => {
     fetchMessages();
+    fetchStatistics();
   }, [showUnreadOnly]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [messages, filters, showUnreadOnly]);
 
   const fetchMessages = async () => {
     try {
@@ -58,8 +123,12 @@ export const Messages = () => {
         .from("messages")
         .select(`
           *,
-          sender:user_profiles_with_email!messages_sender_id_fkey(first_name, last_name, email),
-          receiver:user_profiles_with_email!messages_receiver_id_fkey(first_name, last_name, email)
+          sender:user_profiles_with_email!messages_sender_id_fkey(
+            first_name, last_name, email, county, city, role
+          ),
+          receiver:user_profiles_with_email!messages_receiver_id_fkey(
+            first_name, last_name, email, county, city, role
+          )
         `)
         .order("created_at", { ascending: false });
 
@@ -78,6 +147,65 @@ export const Messages = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...messages];
+
+    // Filtrare după text (căutare în conținut și nume)
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(
+        (message) =>
+          message.content.toLowerCase().includes(searchLower) ||
+          `${message.sender.first_name} ${message.sender.last_name}`
+            .toLowerCase()
+            .includes(searchLower) ||
+          `${message.receiver.first_name} ${message.receiver.last_name}`
+            .toLowerCase()
+            .includes(searchLower)
+      );
+    }
+
+    // Filtrare după județ
+    if (filters.county) {
+      filtered = filtered.filter(
+        (message) =>
+          message.sender.county?.toLowerCase() === filters.county.toLowerCase() ||
+          message.receiver.county?.toLowerCase() === filters.county.toLowerCase()
+      );
+    }
+
+    // Filtrare după oraș
+    if (filters.city) {
+      filtered = filtered.filter(
+        (message) =>
+          message.sender.city?.toLowerCase() === filters.city.toLowerCase() ||
+          message.receiver.city?.toLowerCase() === filters.city.toLowerCase()
+      );
+    }
+
+    // Filtrare după rol
+    if (filters.role) {
+      filtered = filtered.filter(
+        (message) =>
+          message.sender.role === filters.role ||
+          message.receiver.role === filters.role
+      );
+    }
+
+    // Filtrare după interval de date
+    if (filters.dateRange.from && filters.dateRange.to) {
+      filtered = filtered.filter((message) => {
+        const messageDate = new Date(message.created_at);
+        return (
+          messageDate >= filters.dateRange.from! &&
+          messageDate <= addDays(filters.dateRange.to!, 1)
+        );
+      });
+    }
+
+    setFilteredMessages(filtered);
   };
 
   const toggleMessageRead = async (messageId: string, currentReadState: boolean) => {
@@ -129,8 +257,71 @@ export const Messages = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Mesaje</h2>
+      {/* Statistici */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Luna curentă</CardTitle>
+            <CardDescription>Statistici pentru luna în curs</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {statistics[0] && (
+              <div className="space-y-2">
+                <p>Total mesaje: {statistics[0].total_messages}</p>
+                <p>De la clienți: {statistics[0].messages_from_clients}</p>
+                <p>De la meșteri: {statistics[0].messages_from_craftsmen}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtre */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <Input
+            placeholder="Caută în mesaje..."
+            value={filters.search}
+            onChange={(e) =>
+              setFilters({ ...filters, search: e.target.value })
+            }
+            className="max-w-sm"
+          />
+          <Input
+            placeholder="Filtrează după județ"
+            value={filters.county}
+            onChange={(e) =>
+              setFilters({ ...filters, county: e.target.value })
+            }
+            className="max-w-sm"
+          />
+          <Input
+            placeholder="Filtrează după oraș"
+            value={filters.city}
+            onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+            className="max-w-sm"
+          />
+          <Select
+            value={filters.role}
+            onValueChange={(value) =>
+              setFilters({ ...filters, role: value })
+            }
+          >
+            <SelectTrigger className="max-w-sm">
+              <SelectValue placeholder="Filtrează după rol" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Toate rolurile</SelectItem>
+              <SelectItem value="client">Client</SelectItem>
+              <SelectItem value="professional">Meșter</SelectItem>
+            </SelectContent>
+          </Select>
+          <DatePickerWithRange
+            onChange={(dateRange) =>
+              setFilters({ ...filters, dateRange })
+            }
+          />
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Doar necitite</span>
           <Switch
@@ -140,9 +331,10 @@ export const Messages = () => {
         </div>
       </div>
 
-      {messages.length === 0 ? (
+      {/* Lista de mesaje */}
+      {filteredMessages.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          Nu există mesaje în sistem.
+          Nu există mesaje care să corespundă criteriilor de filtrare.
         </div>
       ) : (
         <Table>
@@ -157,7 +349,7 @@ export const Messages = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {messages.map((message) => (
+            {filteredMessages.map((message) => (
               <TableRow key={message.id} className={!message.read ? "bg-muted/50" : undefined}>
                 <TableCell>
                   {message.sender.first_name} {message.sender.last_name}
@@ -165,12 +357,20 @@ export const Messages = () => {
                   <span className="text-sm text-muted-foreground">
                     {message.sender.email}
                   </span>
+                  <br />
+                  <span className="text-xs text-muted-foreground">
+                    {message.sender.county}, {message.sender.city}
+                  </span>
                 </TableCell>
                 <TableCell>
                   {message.receiver.first_name} {message.receiver.last_name}
                   <br />
                   <span className="text-sm text-muted-foreground">
                     {message.receiver.email}
+                  </span>
+                  <br />
+                  <span className="text-xs text-muted-foreground">
+                    {message.receiver.county}, {message.receiver.city}
                   </span>
                 </TableCell>
                 <TableCell>{message.content}</TableCell>

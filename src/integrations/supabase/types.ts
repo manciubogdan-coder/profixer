@@ -732,6 +732,17 @@ export type Database = {
         }
         Relationships: []
       }
+      messages_statistics: {
+        Row: {
+          messages_from_clients: number | null
+          messages_from_craftsmen: number | null
+          month: string | null
+          total_messages: number | null
+          unique_receivers: number | null
+          unique_senders: number | null
+        }
+        Relationships: []
+      }
       platform_statistics: {
         Row: {
           avg_rating: number | null
