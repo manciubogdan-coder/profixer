@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,7 +54,6 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
 
     const fetchMessages = async () => {
       try {
-        // Mai întâi găsim ID-ul utilizatorului după email
         const { data: recipientData, error: recipientError } = await supabase
           .from('user_profiles_with_email')
           .select('id')
@@ -67,7 +65,6 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
           throw new Error('Recipient not found');
         }
 
-        // Apoi folosim ID-ul pentru a căuta mesajele
         const { data, error } = await supabase
           .from("messages")
           .select(`
@@ -82,12 +79,13 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
 
         if (error) throw error;
 
-        console.log("Messages data:", data);
-
-        const formattedMessages = data?.map(message => ({
+        const formattedMessages = (data || []).map(message => ({
           ...message,
-          sender: Array.isArray(message.sender) ? message.sender[0] : message.sender
-        })) || [];
+          sender: Array.isArray(message.sender) ? message.sender[0] : message.sender,
+          attachments: Array.isArray(message.attachments) 
+            ? message.attachments as MessageAttachment[]
+            : []
+        })) as Message[];
 
         setMessages(formattedMessages);
       } catch (error) {
@@ -98,7 +96,6 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
 
     fetchMessages();
 
-    // Set up real-time subscription for new messages
     const channel = supabase
       .channel("messages_channel")
       .on(
@@ -172,6 +169,17 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
 
     setIsLoading(true);
     try {
+      const { data: recipientData, error: recipientError } = await supabase
+        .from('user_profiles_with_email')
+        .select('id')
+        .eq('email', recipientId)
+        .single();
+
+      if (recipientError) throw recipientError;
+      if (!recipientData?.id) {
+        throw new Error('Recipient not found');
+      }
+
       let uploadedFiles = [];
       if (files.length > 0) {
         uploadedFiles = await uploadFiles(files);
@@ -180,7 +188,7 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
       const { error } = await supabase.from("messages").insert([
         {
           sender_id: user.id,
-          receiver_id: recipientId,
+          receiver_id: recipientData.id,
           content: newMessage.trim(),
           attachments: uploadedFiles
         },
