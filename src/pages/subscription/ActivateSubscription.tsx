@@ -4,8 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -18,7 +16,6 @@ import {
   Bell,
   Star,
   Phone,
-  ChevronRight,
 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 
@@ -96,48 +93,13 @@ const ActivateSubscription = () => {
         </div>
 
         <div className="max-w-lg mx-auto">
-          <Card className="relative border-primary shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-2xl">
-                Abonament Lunar
-              </CardTitle>
-              <CardDescription>
-                Acces la toate funcționalitățile
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">
-                <span className="text-4xl font-bold">99</span>
-                <span className="text-muted-foreground"> RON/lună</span>
-              </div>
-              <ul className="space-y-2">
-                <li className="flex items-center gap-2">
-                  <ChevronRight className="h-4 w-4 text-primary" />
-                  <span>Toate funcționalitățile incluse</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <ChevronRight className="h-4 w-4 text-primary" />
-                  <span>Suport prioritar</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <ChevronRight className="h-4 w-4 text-primary" />
-                  <span>Profil verificat</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <ChevronRight className="h-4 w-4 text-primary" />
-                  <span>Fără limită de mesaje</span>
-                </li>
-              </ul>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                className="w-full"
-                onClick={handleSubscribe}
-              >
-                Activează Abonament
-              </Button>
-            </CardFooter>
-          </Card>
+          <Button 
+            size="lg"
+            className="w-full text-lg py-6"
+            onClick={handleSubscribe}
+          >
+            Activează Abonament
+          </Button>
         </div>
       </div>
     </div>
