@@ -963,9 +963,7 @@ export type Database = {
           is_subscription_active: boolean | null
           last_name: string | null
           subscription_end_date: string | null
-          subscription_status:
-            | Database["public"]["Enums"]["subscription_status"]
-            | null
+          subscription_status: string | null
         }
         Relationships: []
       }
