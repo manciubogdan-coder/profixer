@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { DateRange } from "react-day-picker";
 import {
   Table,
   TableBody,
@@ -85,11 +86,8 @@ export const Messages = () => {
     search: "",
     county: "",
     city: "",
-    role: "",
-    dateRange: {
-      from: undefined as Date | undefined,
-      to: undefined as Date | undefined,
-    },
+    role: "all",
+    dateRange: undefined as DateRange | undefined
   });
   const [statistics, setStatistics] = useState<MessageStatistics[]>([]);
 
@@ -194,14 +192,14 @@ export const Messages = () => {
     }
 
     // Filtrare după interval de date
-    if (filters.dateRange.from) {
+    if (filters.dateRange?.from) {
       filtered = filtered.filter((message) => {
         const messageDate = new Date(message.created_at);
-        if (!filters.dateRange.to) {
-          return messageDate >= filters.dateRange.from!;
+        if (!filters.dateRange?.to) {
+          return messageDate >= filters.dateRange.from;
         }
         return (
-          messageDate >= filters.dateRange.from! &&
+          messageDate >= filters.dateRange.from &&
           messageDate <= addDays(filters.dateRange.to, 1)
         );
       });
@@ -259,7 +257,6 @@ export const Messages = () => {
 
   return (
     <div className="space-y-6">
-      {/* Statistici */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
@@ -278,7 +275,6 @@ export const Messages = () => {
         </Card>
       </div>
 
-      {/* Filtre */}
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <Input
@@ -333,7 +329,6 @@ export const Messages = () => {
         </div>
       </div>
 
-      {/* Lista de mesaje */}
       {filteredMessages.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           Nu există mesaje care să corespundă criteriilor de filtrare.
