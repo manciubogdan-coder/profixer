@@ -16,6 +16,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminDashboard } from "@/pages/admin/Dashboard";
 import { Users } from "@/pages/admin/Users";
 import { Messages } from "@/pages/admin/Messages";
+import ActivateSubscription from "@/pages/subscription/ActivateSubscription";
+import Checkout from "@/pages/subscription/Checkout";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +44,8 @@ function App() {
             <Route path="/jobs" element={<JobListings />} />
             <Route path="/jobs/my" element={<MyJobs />} />
             <Route path="/profile" element={<Navigate to="/profile/me" replace />} />
+            <Route path="/subscription/activate" element={<ActivateSubscription />} />
+            <Route path="/subscription/checkout" element={<Checkout />} />
             
             {/* Admin routes */}
             <Route path="/admin" element={<AdminLayout />}>

@@ -20,9 +20,11 @@ import {
   Phone,
   ChevronRight,
 } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 
 const ActivateSubscription = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const features = [
     {
@@ -90,8 +92,7 @@ const ActivateSubscription = () => {
   ];
 
   const handleSubscribe = (planType: "lunar" | "anual") => {
-    // TODO: Implementare Stripe
-    console.log("Subscribing to", planType, "plan");
+    navigate(`/subscription/checkout?plan=${planType}`);
   };
 
   return (
