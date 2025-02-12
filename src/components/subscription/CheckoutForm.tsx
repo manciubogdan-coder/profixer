@@ -1,6 +1,5 @@
 
 import { useState } from 'react';
-import type { Stripe, StripeElements } from '@stripe/stripe-js';
 import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -47,9 +46,6 @@ export const CheckoutForm = ({ clientSecret, amount }: CheckoutFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement />
-      <div className="text-sm text-muted-foreground mb-4">
-        Vei fi taxat cu {amount} RON
-      </div>
       <Button 
         type="submit" 
         disabled={!stripe || isProcessing}
@@ -61,7 +57,7 @@ export const CheckoutForm = ({ clientSecret, amount }: CheckoutFormProps) => {
             Se procesează...
           </>
         ) : (
-          `Plătește ${amount} RON`
+          'Plătește'
         )}
       </Button>
     </form>

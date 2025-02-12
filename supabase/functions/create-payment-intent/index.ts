@@ -57,17 +57,19 @@ serve(async (req) => {
       )
     }
 
-    // Crează customer în Stripe dacă nu există
-    const { data: profiles } = await supabaseClient
-      .from('profiles')
+    // Verifică dacă utilizatorul are deja un abonament activ
+    const { data: activeSubscription } = await supabaseClient
+      .from('subscriptions')
       .select('*')
-      .eq('id', user.id)
-      .single()
+      .eq('craftsman_id', user.id)
+      .eq('status', 'active')
+      .gt('end_date', new Date().toISOString())
+      .maybeSingle()
 
-    if (!profiles) {
+    if (activeSubscription) {
       return new Response(
-        JSON.stringify({ error: 'Profilul nu a fost găsit' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Ai deja un abonament activ' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -84,6 +86,7 @@ serve(async (req) => {
       .single()
 
     if (paymentError || !payment) {
+      console.error('Error creating payment:', paymentError)
       return new Response(
         JSON.stringify({ error: 'Eroare la crearea plății' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -98,10 +101,12 @@ serve(async (req) => {
         status: 'inactive',
         plan,
         payment_id: payment.id,
-        end_date: new Date(new Date().setMonth(new Date().getMonth() + (plan === 'anual' ? 12 : 1)))
+        start_date: new Date().toISOString(),
+        end_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
       })
 
     if (subscriptionError) {
+      console.error('Error creating subscription:', subscriptionError)
       return new Response(
         JSON.stringify({ error: 'Eroare la crearea abonamentului' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

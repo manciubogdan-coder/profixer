@@ -20,7 +20,7 @@ const Checkout = () => {
 
   const searchParams = new URLSearchParams(location.search);
   const plan = searchParams.get('plan') as SubscriptionPlan;
-  const amount = plan === 'lunar' ? 99 : 990;
+  const amount = 99; // Preț fix pentru abonamentul lunar
 
   useEffect(() => {
     if (!plan) {
@@ -32,9 +32,9 @@ const Checkout = () => {
       try {
         const secret = await createPaymentIntent(plan);
         setClientSecret(secret);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error initializing payment:', error);
-        toast.error('A apărut o eroare la inițializarea plății.');
+        toast.error(error.message || 'A apărut o eroare la inițializarea plății.');
         navigate('/subscription/activate');
       } finally {
         setIsLoading(false);
