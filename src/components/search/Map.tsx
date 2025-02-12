@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -33,6 +34,46 @@ interface MapProps {
   userLocation: { lat: number; lng: number } | null;
   onCraftsmanClick: (craftsman: Craftsman) => void;
 }
+
+// Add the getCraftsmanIcon function
+const getCraftsmanIcon = (tradeName: string | null) => {
+  switch (tradeName?.toLowerCase()) {
+    case "tâmplar":
+      return Hammer;
+    case "instalator":
+      return Wrench;
+    case "zugrav":
+      return Paintbrush;
+    case "electrician":
+      return Plug;
+    case "arhitect":
+      return Ruler;
+    case "lăcătuș":
+      return Lock;
+    case "constructor":
+      return Construction;
+    case "dulgher":
+      return Home;
+    case "climatizare":
+      return Wind;
+    case "zidar":
+      return Blocks;
+    case "hidroizolator":
+      return Warehouse;
+    case "peisagist":
+      return Shovel;
+    case "amenajări interioare":
+      return Home;
+    case "amenajări exterioare":
+      return Truck;
+    case "electricitate":
+      return Lightbulb;
+    case "frizerie":
+      return Scissors;
+    default:
+      return HardHat;
+  }
+};
 
 export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
