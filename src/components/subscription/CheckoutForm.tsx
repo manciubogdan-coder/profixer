@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import type { Stripe, StripeElements } from '@stripe/stripe-js';
 import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
