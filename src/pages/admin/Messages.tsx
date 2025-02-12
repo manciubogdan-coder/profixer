@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -88,8 +87,8 @@ export const Messages = () => {
     city: "",
     role: "",
     dateRange: {
-      from: undefined,
-      to: undefined,
+      from: undefined as Date | undefined,
+      to: undefined as Date | undefined,
     },
   });
   const [statistics, setStatistics] = useState<MessageStatistics[]>([]);
@@ -195,12 +194,15 @@ export const Messages = () => {
     }
 
     // Filtrare după interval de date
-    if (filters.dateRange.from && filters.dateRange.to) {
+    if (filters.dateRange.from) {
       filtered = filtered.filter((message) => {
         const messageDate = new Date(message.created_at);
+        if (!filters.dateRange.to) {
+          return messageDate >= filters.dateRange.from!;
+        }
         return (
           messageDate >= filters.dateRange.from! &&
-          messageDate <= addDays(filters.dateRange.to!, 1)
+          messageDate <= addDays(filters.dateRange.to, 1)
         );
       });
     }
