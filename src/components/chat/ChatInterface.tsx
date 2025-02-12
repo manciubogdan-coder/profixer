@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,43 +54,51 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
     if (!user) return;
 
     const fetchMessages = async () => {
-      console.log("Fetching messages for conversation between", user.id, "and", recipientId);
-      const { data, error } = await supabase
-        .from("messages")
-        .select(`
-          *,
-          sender:profiles!messages_sender_id_fkey (
-            first_name,
-            last_name,
-            avatar_url
-          )
-        `)
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .or(`sender_id.eq.${recipientId},receiver_id.eq.${recipientId}`)
-        .order("created_at", { ascending: true });
+      try {
+        // Mai întâi găsim ID-ul utilizatorului după email
+        const { data: recipientData, error: recipientError } = await supabase
+          .from('user_profiles_with_email')
+          .select('id')
+          .eq('email', recipientId)
+          .single();
 
-      if (error) {
+        if (recipientError) throw recipientError;
+        if (!recipientData?.id) {
+          throw new Error('Recipient not found');
+        }
+
+        // Apoi folosim ID-ul pentru a căuta mesajele
+        const { data, error } = await supabase
+          .from("messages")
+          .select(`
+            *,
+            sender:user_profiles_with_email!messages_sender_id_fkey(
+              first_name, last_name, avatar_url
+            )
+          `)
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+          .or(`sender_id.eq.${recipientData.id},receiver_id.eq.${recipientData.id}`)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        console.log("Messages data:", data);
+
+        const formattedMessages = data?.map(message => ({
+          ...message,
+          sender: Array.isArray(message.sender) ? message.sender[0] : message.sender
+        })) || [];
+
+        setMessages(formattedMessages);
+      } catch (error) {
         console.error("Error fetching messages:", error);
         toast.error("Nu am putut încărca mesajele");
-        return;
       }
-
-      console.log("Fetched messages:", data);
-      
-      // Transform the attachments from Json type to MessageAttachment[]
-      const transformedMessages = data.map(message => ({
-        ...message,
-        attachments: Array.isArray(message.attachments) 
-          ? (message.attachments as unknown as MessageAttachment[])
-          : []
-      }));
-      
-      setMessages(transformedMessages);
     };
 
     fetchMessages();
 
-    // Set up real-time subscription
+    // Set up real-time subscription for new messages
     const channel = supabase
       .channel("messages_channel")
       .on(
@@ -98,17 +107,11 @@ export const ChatInterface = ({ recipientId, recipientName, onBack }: ChatInterf
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `sender_id=eq.${user.id},receiver_id=eq.${recipientId}`,
+          filter: `receiver_id=eq.${user.id}`,
         },
         (payload) => {
           console.log("New message received:", payload);
-          const newMessage = {
-            ...payload.new,
-            attachments: Array.isArray(payload.new.attachments)
-              ? (payload.new.attachments as unknown as MessageAttachment[])
-              : []
-          } as Message;
-          setMessages((prev) => [...prev, newMessage]);
+          fetchMessages(); // Refresh messages when new message arrives
         }
       )
       .subscribe();
