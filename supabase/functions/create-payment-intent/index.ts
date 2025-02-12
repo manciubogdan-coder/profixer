@@ -13,6 +13,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('Request received:', req.method);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -26,12 +28,20 @@ serve(async (req) => {
 
     // Verifică autorizarea
     const authHeader = req.headers.get('Authorization')
+    console.log('Auth header:', authHeader);
     const token = authHeader?.replace('Bearer ', '')
 
     if (!token) {
+      console.log('No token provided');
       return new Response(
         JSON.stringify({ error: 'Nu ești autentificat' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 401, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       )
     }
 
@@ -41,19 +51,37 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser(token)
 
     if (userError || !user) {
+      console.log('User error:', userError);
       return new Response(
         JSON.stringify({ error: 'Nu ești autentificat' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 401, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       )
     }
 
+    console.log('User authenticated:', user.id);
+
     // Obține datele din request
-    const { plan, amount } = await req.json()
+    const requestData = await req.json()
+    console.log('Request data:', requestData);
+    const { plan, amount } = requestData
 
     if (!plan || !amount) {
+      console.log('Missing required data:', { plan, amount });
       return new Response(
         JSON.stringify({ error: 'Datele sunt incomplete' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       )
     }
 
@@ -67,9 +95,16 @@ serve(async (req) => {
       .maybeSingle()
 
     if (activeSubscription) {
+      console.log('User already has active subscription');
       return new Response(
         JSON.stringify({ error: 'Ai deja un abonament activ' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       )
     }
 
@@ -89,9 +124,17 @@ serve(async (req) => {
       console.error('Error creating payment:', paymentError)
       return new Response(
         JSON.stringify({ error: 'Eroare la crearea plății' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 500, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       )
     }
+
+    console.log('Payment created:', payment.id);
 
     // Crează abonamentul în status pending
     const { error: subscriptionError } = await supabaseClient
@@ -109,9 +152,17 @@ serve(async (req) => {
       console.error('Error creating subscription:', subscriptionError)
       return new Response(
         JSON.stringify({ error: 'Eroare la crearea abonamentului' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 500, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       )
     }
+
+    console.log('Subscription created');
 
     // Crează payment intent în Stripe
     const paymentIntent = await stripe.paymentIntents.create({
@@ -125,6 +176,8 @@ serve(async (req) => {
       }
     })
 
+    console.log('Stripe payment intent created:', paymentIntent.id);
+
     // Actualizează payment cu ID-ul de la Stripe
     await supabaseClient
       .from('payments')
@@ -133,15 +186,28 @@ serve(async (req) => {
       })
       .eq('id', payment.id)
 
+    console.log('Payment updated with Stripe ID');
+
     return new Response(
       JSON.stringify({ clientSecret: paymentIntent.client_secret }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     )
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal Server Error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: error.message || 'Internal Server Error' }),
+      { 
+        status: 500, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     )
   }
 })

@@ -8,11 +8,19 @@ export const SUBSCRIPTION_PRICES = {
 
 export async function createPaymentIntent(plan: SubscriptionPlan) {
   try {
+    console.log('Creating payment intent for plan:', plan);
+    const session = await supabase.auth.getSession();
+    const accessToken = session.data.session?.access_token;
+    
+    if (!accessToken) {
+      throw new Error('Nu ești autentificat');
+    }
+
     const response = await fetch('/api/create-payment-intent', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        'Authorization': `Bearer ${accessToken}`
       },
       body: JSON.stringify({
         plan,
@@ -21,10 +29,12 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
     });
 
     if (!response.ok) {
-      throw new Error('Network response was not ok');
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'A apărut o eroare la crearea plății');
     }
 
     const data = await response.json();
+    console.log('Payment intent created successfully');
     return data.clientSecret;
   } catch (error) {
     console.error('Error creating payment intent:', error);
