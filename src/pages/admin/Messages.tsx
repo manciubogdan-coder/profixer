@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DateRange } from "react-day-picker";
@@ -137,14 +136,18 @@ export const Messages = () => {
 
       if (error) throw error;
 
-      const formattedMessages: MessageWithUsers[] = (data || []).map(message => ({
-        id: message.id,
-        content: message.content,
-        created_at: message.created_at,
-        read: message.read || false,
-        sender: message.sender[0],
-        receiver: message.receiver[0]
-      }));
+      console.log("Messages data:", data); // Pentru debugging
+
+      const formattedMessages: MessageWithUsers[] = (data || [])
+        .filter(message => message.sender && message.receiver) // Filtrăm mesajele care nu au sender sau receiver
+        .map(message => ({
+          id: message.id,
+          content: message.content,
+          created_at: message.created_at,
+          read: message.read || false,
+          sender: Array.isArray(message.sender) ? message.sender[0] : message.sender,
+          receiver: Array.isArray(message.receiver) ? message.receiver[0] : message.receiver
+        }));
 
       setMessages(formattedMessages);
     } catch (error) {
@@ -170,10 +173,12 @@ export const Messages = () => {
     if (filters.sender) {
       const senderLower = filters.sender.toLowerCase();
       filtered = filtered.filter((message) =>
-        `${message.sender.first_name} ${message.sender.last_name}`
-          .toLowerCase()
-          .includes(senderLower) ||
-        message.sender.email.toLowerCase().includes(senderLower)
+        message.sender && (
+          `${message.sender.first_name} ${message.sender.last_name}`
+            .toLowerCase()
+            .includes(senderLower) ||
+          message.sender.email.toLowerCase().includes(senderLower)
+        )
       );
     }
 
@@ -181,10 +186,12 @@ export const Messages = () => {
     if (filters.receiver) {
       const receiverLower = filters.receiver.toLowerCase();
       filtered = filtered.filter((message) =>
-        `${message.receiver.first_name} ${message.receiver.last_name}`
-          .toLowerCase()
-          .includes(receiverLower) ||
-        message.receiver.email.toLowerCase().includes(receiverLower)
+        message.receiver && (
+          `${message.receiver.first_name} ${message.receiver.last_name}`
+            .toLowerCase()
+            .includes(receiverLower) ||
+          message.receiver.email.toLowerCase().includes(receiverLower)
+        )
       );
     }
 
@@ -192,8 +199,8 @@ export const Messages = () => {
     if (filters.role && filters.role !== "all") {
       filtered = filtered.filter(
         (message) =>
-          message.sender.role === filters.role ||
-          message.receiver.role === filters.role
+          (message.sender && message.sender.role === filters.role) ||
+          (message.receiver && message.receiver.role === filters.role)
       );
     }
 
