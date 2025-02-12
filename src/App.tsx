@@ -18,6 +18,7 @@ import { Users } from "@/pages/admin/Users";
 import { Messages } from "@/pages/admin/Messages";
 import ActivateSubscription from "@/pages/subscription/ActivateSubscription";
 import Checkout from "@/pages/subscription/Checkout";
+import SubscriptionSuccess from "@/pages/subscription/SubscriptionSuccess";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ function App() {
             <Route path="/profile" element={<Navigate to="/profile/me" replace />} />
             <Route path="/subscription/activate" element={<ActivateSubscription />} />
             <Route path="/subscription/checkout" element={<Checkout />} />
+            <Route path="/subscription/success" element={<SubscriptionSuccess />} />
             
             {/* Admin routes */}
             <Route path="/admin" element={<AdminLayout />}>
