@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import type { SubscriptionPlan } from "@/types/subscription";
+import type { SubscriptionPlan, SubscriptionWithPayment } from "@/types/subscription";
 import { toast } from "sonner";
 
 export const SUBSCRIPTION_PRICES = {
@@ -16,6 +16,24 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
     if (!accessToken) {
       toast.error("Sesiunea a expirat. Te rugăm să te autentifici din nou.");
       throw new Error('Nu ești autentificat');
+    }
+
+    // Verifică doar abonamentele cu status activ și plată completată
+    const { data: activeSubscription } = await supabase
+      .from('subscriptions')
+      .select(`
+        *,
+        payment:payments(*)
+      `)
+      .eq('craftsman_id', session.data.session?.user.id)
+      .eq('status', 'active')
+      .eq('payments.status', 'completed')
+      .gt('end_date', new Date().toISOString())
+      .maybeSingle();
+
+    if (activeSubscription) {
+      toast.error('Ai deja un abonament activ');
+      throw new Error('Ai deja un abonament activ');
     }
 
     const response = await supabase.functions.invoke('create-payment-intent', {
@@ -46,6 +64,7 @@ export async function getActiveSubscription(craftsmanId: string) {
     `)
     .eq('craftsman_id', craftsmanId)
     .eq('status', 'active')
+    .eq('payments.status', 'completed')
     .gt('end_date', new Date().toISOString())
     .order('created_at', { ascending: false })
     .limit(1)
