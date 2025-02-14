@@ -29,22 +29,23 @@ const CraftsmanProfile = () => {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["craftsman", id],
     queryFn: async () => {
+      // Folosim view-ul user_profiles_with_email pentru a include și email-ul
       const { data: profile, error } = await supabase
-        .from("profiles")
+        .from("user_profiles_with_email")
         .select(`
           *,
-          specializations(
+          specializations!specializations_craftsman_id_fkey(
             id,
             name,
             description
           ),
-          qualifications(
+          qualifications!qualifications_craftsman_id_fkey(
             id,
             title,
             document_url,
             issue_date
           ),
-          portfolios(
+          portfolios!portfolios_craftsman_id_fkey(
             id,
             title,
             description,
@@ -106,7 +107,7 @@ const CraftsmanProfile = () => {
           <CardHeader>
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={profile.avatar_url} />
+                <AvatarImage src={profile.avatar_url || undefined} />
                 <AvatarFallback>
                   <User className="h-10 w-10" />
                 </AvatarFallback>
