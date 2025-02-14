@@ -10,6 +10,7 @@ import { SubscriptionPlan } from '@/types/subscription';
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const stripePromise = loadStripe('pk_test_51OqWcLBhVBCT5VBK15MoNrBnuoZ51O2uKYjbXLFtaLmDm6rRBfhMnvWPBfVGV7Y3L6kICEbqPz5nIFiTDM7r4OgR00w6Ny4Ecy');
 
@@ -73,15 +74,21 @@ const Checkout = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container max-w-md mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold mb-6">Finalizează Plata</h1>
-        {clientSecret && (
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
-            <CheckoutForm 
-              clientSecret={clientSecret}
-              amount={amount}
-            />
-          </Elements>
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Finalizează Plata</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {clientSecret && (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <CheckoutForm 
+                  clientSecret={clientSecret}
+                  amount={amount}
+                />
+              </Elements>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

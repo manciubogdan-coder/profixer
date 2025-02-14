@@ -33,14 +33,12 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
       if (!user?.id) return null;
 
       const { data, error } = await supabase
-        .from('subscriptions')
+        .from('craftsman_subscription_status')
         .select('*')
         .eq('craftsman_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       return data;
     },
     enabled: !!user && profile?.role === 'professional',
@@ -50,9 +48,7 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
     if (!shouldCheck || !profile) return;
 
     if (profile.role === 'professional') {
-      const isActive = subscription && 
-        subscription.status === 'active' && 
-        new Date(subscription.end_date) > new Date();
+      const isActive = subscription?.is_subscription_active;
 
       if (!isActive) {
         toast.error('Abonamentul tău a expirat. Te rugăm să îl reînnoiești pentru a continua.');
@@ -64,6 +60,8 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
   return {
     isLoading: !profile,
     isProfessional: profile?.role === 'professional',
-    hasActiveSubscription: subscription?.status === 'active' && new Date(subscription?.end_date) > new Date(),
+    hasActiveSubscription: subscription?.is_subscription_active || false,
+    subscriptionStatus: subscription?.subscription_status || 'inactive',
+    subscriptionEndDate: subscription?.subscription_end_date || null,
   };
 };
