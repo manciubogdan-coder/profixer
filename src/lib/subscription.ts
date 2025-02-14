@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { SubscriptionPlan } from "@/types/subscription";
+import { toast } from "sonner";
 
 export const SUBSCRIPTION_PRICES = {
   lunar: 99,
@@ -13,6 +14,7 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
     const accessToken = session.data.session?.access_token;
     
     if (!accessToken) {
+      toast.error("Sesiunea a expirat. Te rugăm să te autentifici din nou.");
       throw new Error('Nu ești autentificat');
     }
 
