@@ -16,26 +16,19 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
       throw new Error('Nu ești autentificat');
     }
 
-    const response = await fetch('/api/create-payment-intent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
-      },
-      body: JSON.stringify({
+    const response = await supabase.functions.invoke('create-payment-intent', {
+      body: {
         plan,
         amount: SUBSCRIPTION_PRICES[plan],
-      }),
+      }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'A apărut o eroare la crearea plății');
+    if (response.error) {
+      throw new Error(response.error.message || 'A apărut o eroare la crearea plății');
     }
 
-    const data = await response.json();
     console.log('Payment intent created successfully');
-    return data.clientSecret;
+    return response.data.clientSecret;
   } catch (error) {
     console.error('Error creating payment intent:', error);
     throw error;
