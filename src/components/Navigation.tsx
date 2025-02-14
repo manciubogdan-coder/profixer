@@ -8,9 +8,11 @@ import { toast } from "sonner";
 import { ChatDialog } from "./chat/ChatDialog";
 import { NotificationsDialog } from "./notifications/NotificationsDialog";
 import { useQuery } from "@tanstack/react-query";
+import { useSubscriptionCheck } from "@/hooks/useSubscriptionCheck";
 
 export const Navigation = () => {
   const { user } = useAuth();
+  const { hasActiveSubscription } = useSubscriptionCheck();
 
   const handleLogout = async () => {
     try {
@@ -45,6 +47,7 @@ export const Navigation = () => {
 
   const isClient = userProfile?.role === 'client';
   const isProfessional = userProfile?.role === 'professional';
+  const canAccessSearch = isClient || (isProfessional && hasActiveSubscription);
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -58,12 +61,14 @@ export const Navigation = () => {
 
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link
-              to="/search"
-              className="text-sm font-medium transition-colors hover:text-primary"
-            >
-              Caută Meșteri
-            </Link>
+            {canAccessSearch && (
+              <Link
+                to="/search"
+                className="text-sm font-medium transition-colors hover:text-primary"
+              >
+                Caută Meșteri
+              </Link>
+            )}
             {user && (
               <>
                 {isClient && (
@@ -83,7 +88,7 @@ export const Navigation = () => {
                     </Link>
                   </>
                 )}
-                {isProfessional && (
+                {isProfessional && hasActiveSubscription && (
                   <Link
                     to="/jobs"
                     className="text-sm font-medium transition-colors hover:text-primary flex items-center gap-2"
