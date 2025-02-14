@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -137,7 +136,7 @@ const CraftsmanProfile = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
-        {/* Adăugăm SubscriptionStatus și verificăm dacă este meșter */}
+        {/* Adăugăm SubscriptionStatus doar pentru profilul propriu al meșterului */}
         {user?.id === profile?.id && profile.role === 'professional' && (
           <SubscriptionStatus />
         )}

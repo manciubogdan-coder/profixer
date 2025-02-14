@@ -21,55 +21,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Inițializăm sesiunea
-    const initSession = async () => {
-      try {
-        // Verificăm sesiunea curentă
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error fetching session:", error);
-          setLoading(false);
-          return;
-        }
-
-        // Actualizăm starea cu utilizatorul din sesiune (dacă există)
-        setUser(session?.user ?? null);
-        
-        // Redirecționăm către autentificare dacă nu există sesiune
-        if (!session?.user && window.location.pathname !== "/auth") {
-          navigate("/auth");
-        }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error("Error initializing session:", error);
-        setLoading(false);
+    // Set up initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+      
+      if (!session?.user && window.location.pathname !== "/auth") {
+        navigate("/auth");
       }
-    };
+    });
 
-    initSession();
-
-    // Setăm listener-ul pentru schimbările de autentificare
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session);
       
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        setUser(session?.user ?? null);
+      if (session?.user) {
+        setUser(session.user);
         if (window.location.pathname === "/auth") {
           navigate("/");
         }
-      } else if (event === 'SIGNED_OUT') {
+      } else {
         setUser(null);
-        navigate("/auth");
-      } else if (event === 'USER_UPDATED') {
-        setUser(session?.user ?? null);
+        if (window.location.pathname !== "/auth") {
+          toast.error("Sesiunea a expirat. Te rugăm să te autentifici din nou.");
+          navigate("/auth");
+        }
       }
-
       setLoading(false);
     });
 
-    // Curățăm subscription-ul când componentul este demontat
     return () => {
       subscription.unsubscribe();
     };
