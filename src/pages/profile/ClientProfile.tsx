@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ const ClientProfile = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [editMode, setEditMode] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", user?.id],
@@ -66,6 +67,10 @@ const ClientProfile = () => {
     },
     enabled: !!user,
   });
+
+  const handleDataUpdated = () => {
+    queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+  };
 
   useEffect(() => {
     if (!user) {
@@ -114,7 +119,6 @@ const ClientProfile = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
-        {/* Adăugăm SubscriptionStatus pentru meșteri */}
         {profile.role === 'professional' && <SubscriptionStatus />}
         
         <div className="flex flex-col md:flex-row md:items-start gap-8">
@@ -195,9 +199,9 @@ const ClientProfile = () => {
 
               {editMode && (
                 <div className="flex gap-2">
-                  <AddSpecializationDialog />
-                  <AddQualificationDialog />
-                  <AddPortfolioDialog />
+                  <AddSpecializationDialog onSpecializationAdded={handleDataUpdated} />
+                  <AddQualificationDialog onQualificationAdded={handleDataUpdated} />
+                  <AddPortfolioDialog onPortfolioAdded={handleDataUpdated} />
                 </div>
               )}
             </div>
