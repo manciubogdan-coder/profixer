@@ -48,6 +48,7 @@ export const Navigation = () => {
   const isClient = userProfile?.role === 'client';
   const isProfessional = userProfile?.role === 'professional';
   const canAccessSearch = isClient || (isProfessional && hasActiveSubscription);
+  const canAccessPremiumFeatures = !isProfessional || (isProfessional && hasActiveSubscription);
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -104,8 +105,12 @@ export const Navigation = () => {
           <div className="flex items-center gap-2">
             {user ? (
               <>
-                <ChatDialog />
-                <NotificationsDialog />
+                {canAccessPremiumFeatures && (
+                  <>
+                    <ChatDialog />
+                    <NotificationsDialog />
+                  </>
+                )}
                 <Link to="/profile/me">
                   <Button variant="ghost" size="icon">
                     <User className="h-5 w-5" />
