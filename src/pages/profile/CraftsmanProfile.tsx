@@ -137,8 +137,10 @@ const CraftsmanProfile = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
-        {/* Adăugăm SubscriptionStatus doar pentru proprietarul profilului */}
-        {user?.id === profile?.id && <SubscriptionStatus />}
+        {/* Adăugăm SubscriptionStatus și verificăm dacă este meșter */}
+        {user?.id === profile?.id && profile.role === 'professional' && (
+          <SubscriptionStatus />
+        )}
         
         <div className="flex flex-col md:flex-row md:items-start gap-8">
           <Card className="flex-1">
