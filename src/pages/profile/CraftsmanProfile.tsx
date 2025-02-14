@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
+import { CraftsmanStats } from "@/components/profile/CraftsmanStats";
 import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
 import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
 
@@ -139,6 +140,11 @@ const CraftsmanProfile = () => {
         {/* Adăugăm SubscriptionStatus doar pentru profilul propriu al meșterului */}
         {user?.id === profile?.id && profile.role === 'professional' && (
           <SubscriptionStatus />
+        )}
+
+        {/* Statisticile meșterului */}
+        {profile.role === 'professional' && (
+          <CraftsmanStats craftsmanId={profile.id} />
         )}
 
         <div className="flex flex-col md:flex-row md:items-start gap-8">
