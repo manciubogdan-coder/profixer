@@ -9,10 +9,12 @@ import { ChatDialog } from "./chat/ChatDialog";
 import { NotificationsDialog } from "./notifications/NotificationsDialog";
 import { useQuery } from "@tanstack/react-query";
 import { useSubscriptionCheck } from "@/hooks/useSubscriptionCheck";
+import { useLocation } from "react-router-dom";
 
 export const Navigation = () => {
   const { user } = useAuth();
   const { hasActiveSubscription } = useSubscriptionCheck();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -48,7 +50,14 @@ export const Navigation = () => {
   const isClient = userProfile?.role === 'client';
   const isProfessional = userProfile?.role === 'professional';
   const canAccessSearch = isClient || (isProfessional && hasActiveSubscription);
-  const canAccessPremiumFeatures = !isProfessional || (isProfessional && hasActiveSubscription);
+
+  // Verificăm dacă suntem pe o pagină de abonament
+  const isSubscriptionPage = location.pathname.startsWith('/subscription/');
+
+  // Permitem accesul la chat și notificări pentru toată lumea pe paginile de abonament
+  const showPremiumFeatures = !isProfessional || 
+                             (isProfessional && hasActiveSubscription) || 
+                             isSubscriptionPage;
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -105,7 +114,7 @@ export const Navigation = () => {
           <div className="flex items-center gap-2">
             {user ? (
               <>
-                {canAccessPremiumFeatures && (
+                {showPremiumFeatures && (
                   <>
                     <ChatDialog />
                     <NotificationsDialog />

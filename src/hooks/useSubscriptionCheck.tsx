@@ -1,14 +1,24 @@
 
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+// Paginile care nu necesită verificarea abonamentului
+const EXEMPT_PATHS = [
+  '/subscription/activate',
+  '/subscription/checkout',
+  '/subscription/success',
+  '/profile/me',
+  '/'
+];
+
 export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -47,6 +57,11 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
   useEffect(() => {
     if (!shouldCheck || !profile) return;
 
+    // Nu verificăm abonamentul pentru paginile exceptate
+    if (EXEMPT_PATHS.some(path => location.pathname.startsWith(path))) {
+      return;
+    }
+
     if (profile.role === 'professional') {
       const isActive = subscription?.is_subscription_active;
 
@@ -55,7 +70,7 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
         navigate('/subscription/activate');
       }
     }
-  }, [shouldCheck, profile, subscription, navigate]);
+  }, [shouldCheck, profile, subscription, navigate, location]);
 
   return {
     isLoading: !profile,
