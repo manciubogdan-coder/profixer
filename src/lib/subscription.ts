@@ -24,6 +24,14 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
     });
 
     if (response.error) {
+      // Verificăm dacă eroarea este despre abonament activ
+      const errorBody = response.error?.message ? 
+        JSON.parse(response.error.message)?.error : null;
+      
+      if (errorBody === 'Ai deja un abonament activ') {
+        throw new Error('Ai deja un abonament activ. Nu poți crea un nou abonament până când cel curent nu expiră.');
+      }
+      
       throw new Error(response.error.message || 'A apărut o eroare la crearea plății');
     }
 

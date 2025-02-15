@@ -34,8 +34,15 @@ const Checkout = () => {
         setClientSecret(secret);
       } catch (error: any) {
         console.error('Error initializing payment:', error);
-        toast.error(error.message || 'A apărut o eroare la inițializarea plății.');
-        navigate('/subscription/activate');
+        
+        // Actualizat gestionarea erorii pentru a arăta un mesaj mai prietenos
+        if (error.message.includes('Ai deja un abonament activ')) {
+          toast.error('Nu poți crea un nou abonament deoarece ai deja unul activ.');
+          navigate('/profile/me');
+        } else {
+          toast.error(error.message || 'A apărut o eroare la inițializarea plății.');
+          navigate('/subscription/activate');
+        }
       } finally {
         setIsLoading(false);
       }
