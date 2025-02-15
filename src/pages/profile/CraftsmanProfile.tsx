@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -18,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
 import { SubscriptionStatus } from "@/components/subscription/SubscriptionStatus";
 import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
+import { CraftsmanStats } from '@/components/profile/CraftsmanStats';
 
 const CraftsmanProfile = () => {
   const { id } = useParams();
@@ -142,15 +142,21 @@ const CraftsmanProfile = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
-        {/* Card-ul de status al abonamentului - doar pentru meșteri și doar pe profilul propriu */}
-        {isOwnProfile && profile.role === 'professional' && (
-          <Card>
-            <CardContent className="pt-6">
-              <SubscriptionStatus />
-            </CardContent>
-          </Card>
+        {/* Statistici pentru meșteri */}
+        {profile.role === 'professional' && (
+          <>
+            {/* Card-ul de status al abonamentului - doar pentru meșteri și doar pe profilul propriu */}
+            {isOwnProfile && (
+              <Card>
+                <CardContent className="pt-6">
+                  <SubscriptionStatus />
+                </CardContent>
+              </Card>
+            )}
+            <CraftsmanStats craftsmanId={profile.id} />
+          </>
         )}
-        
+
         <div className="flex flex-col md:flex-row md:items-start gap-8">
           <Card className="flex-1">
             <CardHeader>
