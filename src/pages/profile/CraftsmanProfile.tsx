@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -137,8 +136,10 @@ const CraftsmanProfile = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
-        {/* Adăugăm SubscriptionStatus doar pentru proprietarul profilului */}
-        {user?.id === profile?.id && <SubscriptionStatus />}
+        {/* Card-ul de status al abonamentului - doar pentru meșteri */}
+        {profile.role === 'professional' && (
+          <SubscriptionStatus />
+        )}
         
         <div className="flex flex-col md:flex-row md:items-start gap-8">
           <Card className="flex-1">
@@ -165,34 +166,6 @@ const CraftsmanProfile = () => {
                       <span>{profile?.city}, {profile?.county}</span>
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                  <Button 
-                    variant="default" 
-                    size="lg" 
-                    className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                    asChild
-                  >
-                    <a href={`tel:${profile?.phone}`}>
-                      <Phone className="h-5 w-5 mr-2" />
-                      Sună acum
-                    </a>
-                  </Button>
-                  {user && user.id !== profile?.id && (
-                    <ChatDialog
-                      recipientId={profile?.id}
-                      recipientName={`${profile?.first_name} ${profile?.last_name}`}
-                    >
-                      <Button 
-                        variant="outline"
-                        size="lg"
-                        className="w-full sm:w-auto border-2 border-purple-600 text-purple-600 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200"
-                      >
-                        <MessageCircle className="h-5 w-5 mr-2" />
-                        Trimite mesaj
-                      </Button>
-                    </ChatDialog>
-                  )}
                 </div>
               </div>
             </CardHeader>
