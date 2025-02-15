@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -24,6 +25,9 @@ const CraftsmanProfile = () => {
   const { user } = useAuth();
   const { isProfessional } = useSubscriptionCheck();
 
+  // Pentru ruta /profile/me, folosim ID-ul utilizatorului curent
+  const userId = id === 'me' ? user?.id : id;
+
   useEffect(() => {
     if (!user) {
       toast.error("Trebuie să fii autentificat pentru a vedea profilul");
@@ -32,9 +36,9 @@ const CraftsmanProfile = () => {
   }, [user, navigate]);
 
   const { data: profile, isLoading } = useQuery({
-    queryKey: ["craftsman", id],
+    queryKey: ["craftsman", userId],
     queryFn: async () => {
-      console.log("Fetching craftsman profile for ID:", id);
+      console.log("Fetching craftsman profile for ID:", userId);
       
       const { data: profile, error } = await supabase
         .from("profiles")
@@ -78,7 +82,7 @@ const CraftsmanProfile = () => {
             )
           )
         `)
-        .eq("id", id)
+        .eq("id", userId)
         .single();
 
       if (error) {
@@ -89,7 +93,7 @@ const CraftsmanProfile = () => {
       console.log("Fetched profile:", profile);
       return profile;
     },
-    enabled: !!user && !!id,
+    enabled: !!user && !!userId,
   });
 
   if (!user) {
@@ -132,13 +136,19 @@ const CraftsmanProfile = () => {
     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
     : 0;
 
+  const isOwnProfile = user.id === profile.id;
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
-        {/* Card-ul de status al abonamentului - doar pentru meșteri */}
-        {profile.role === 'professional' && (
-          <SubscriptionStatus />
+        {/* Card-ul de status al abonamentului - doar pentru meșteri și doar pe profilul propriu */}
+        {isOwnProfile && profile.role === 'professional' && (
+          <Card>
+            <CardContent className="pt-6">
+              <SubscriptionStatus />
+            </CardContent>
+          </Card>
         )}
         
         <div className="flex flex-col md:flex-row md:items-start gap-8">
