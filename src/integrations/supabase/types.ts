@@ -959,9 +959,7 @@ export type Database = {
       craftsman_subscription_status: {
         Row: {
           craftsman_id: string | null
-          first_name: string | null
           is_subscription_active: boolean | null
-          last_name: string | null
           subscription_end_date: string | null
           subscription_status: string | null
         }
