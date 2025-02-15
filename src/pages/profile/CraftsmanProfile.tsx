@@ -137,19 +137,29 @@ const CraftsmanProfile = () => {
 
   const isOwnProfile = user.id === profile.id;
 
+  console.log("Profile role:", profile.role);
+  console.log("Is own profile:", isOwnProfile);
+  console.log("Should show subscription status:", profile.role === 'professional' && isOwnProfile);
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8">
-        {profile.role === 'professional' && isOwnProfile && (
+        <div className="text-sm text-gray-500 mb-4">
+          Role: {profile.role}, Own Profile: {isOwnProfile ? 'Yes' : 'No'}
+        </div>
+
+        {profile.role === 'professional' && (
           <div className="mb-8">
             <SubscriptionStatus />
           </div>
         )}
+
         <div className="space-y-8">
           {profile.role === 'professional' && (
             <CraftsmanStats craftsmanId={profile.id} />
           )}
+
           <div className="flex flex-col md:flex-row md:items-start gap-8">
             <Card className="flex-1">
               <CardHeader>

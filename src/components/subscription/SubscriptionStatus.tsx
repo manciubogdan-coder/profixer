@@ -24,9 +24,11 @@ export const SubscriptionStatus = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { data: subscriptionStatus } = useQuery({
+  const { data: subscriptionStatus, isLoading, error } = useQuery({
     queryKey: ["subscription-status", user?.id],
     queryFn: async () => {
+      console.log("Fetching subscription status for user:", user?.id);
+      
       const { data, error } = await supabase
         .from("craftsman_subscription_status")
         .select("*")
@@ -38,12 +40,35 @@ export const SubscriptionStatus = () => {
         return null;
       }
 
+      console.log("Fetched subscription status:", data);
       return data as SubscriptionStatusData;
     },
     enabled: !!user,
   });
 
-  if (!subscriptionStatus) return null;
+  // Adăugăm console.log pentru debugging
+  console.log("Subscription status:", subscriptionStatus);
+  console.log("Loading:", isLoading);
+  console.log("Error:", error);
+
+  if (isLoading) {
+    return (
+      <Alert className="mb-4 bg-gray-50">
+        <AlertTitle>Se încarcă statusul abonamentului...</AlertTitle>
+      </Alert>
+    );
+  }
+
+  if (error || !subscriptionStatus) {
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertTitle>Eroare la încărcarea statusului abonamentului</AlertTitle>
+        <AlertDescription>
+          Nu am putut încărca informațiile despre abonament. Te rugăm să încerci din nou mai târziu.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   const endDate = subscriptionStatus.subscription_end_date 
     ? new Date(subscriptionStatus.subscription_end_date)
