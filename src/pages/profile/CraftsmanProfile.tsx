@@ -140,206 +140,210 @@ const CraftsmanProfile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container py-8 space-y-8">
+      <div className="container py-8">
         {profile.role === 'professional' && isOwnProfile && (
-          <SubscriptionStatus />
+          <div className="mb-8">
+            <SubscriptionStatus />
+          </div>
         )}
-        {profile.role === 'professional' && (
-          <CraftsmanStats craftsmanId={profile.id} />
-        )}
-        <div className="flex flex-col md:flex-row md:items-start gap-8">
-          <Card className="flex-1">
-            <CardHeader>
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={profile?.avatar_url || undefined} />
-                    <AvatarFallback>
-                      <User className="h-12 w-12" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle className="text-2xl">
-                      {profile?.first_name} {profile?.last_name}
-                    </CardTitle>
-                    {profile?.trade && (
-                      <Badge variant="secondary" className="mt-2">
-                        {profile.trade.name}
-                      </Badge>
-                    )}
-                    <div className="flex items-center mt-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      <span>{profile?.city}, {profile?.county}</span>
+        <div className="space-y-8">
+          {profile.role === 'professional' && (
+            <CraftsmanStats craftsmanId={profile.id} />
+          )}
+          <div className="flex flex-col md:flex-row md:items-start gap-8">
+            <Card className="flex-1">
+              <CardHeader>
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage src={profile?.avatar_url || undefined} />
+                      <AvatarFallback>
+                        <User className="h-12 w-12" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <CardTitle className="text-2xl">
+                        {profile?.first_name} {profile?.last_name}
+                      </CardTitle>
+                      {profile?.trade && (
+                        <Badge variant="secondary" className="mt-2">
+                          {profile.trade.name}
+                        </Badge>
+                      )}
+                      <div className="flex items-center mt-2 text-muted-foreground">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        <span>{profile?.city}, {profile?.county}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2">
-                <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                <span className="font-medium">{averageRating.toFixed(1)}</span>
-                <span className="text-muted-foreground">
-                  ({reviews.length} {reviews.length === 1 ? "recenzie" : "recenzii"})
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="about" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="about">Despre</TabsTrigger>
-            <TabsTrigger value="reviews">Recenzii</TabsTrigger>
-            <TabsTrigger value="portfolio">Portofoliu</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="about" className="space-y-6">
-            <Card>
-              <CardHeader>
+              </CardHeader>
+              <CardContent>
                 <div className="flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <CardTitle>Informații personale</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Adresă</p>
-                    <p>{profile.address}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Telefon</p>
-                    <p>{profile.phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Oraș</p>
-                    <p>{profile.city}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Județ</p>
-                    <p>{profile.county}</p>
-                  </div>
+                  <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+                  <span className="font-medium">{averageRating.toFixed(1)}</span>
+                  <span className="text-muted-foreground">
+                    ({reviews.length} {reviews.length === 1 ? "recenzie" : "recenzii"})
+                  </span>
                 </div>
               </CardContent>
             </Card>
+          </div>
 
-            <Card>
-              <CardHeader>
-                <div className="flex items-center space-x-2">
-                  <Briefcase className="h-5 w-5" />
-                  <CardTitle>Specializări</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {specializations.length === 0 ? (
-                  <p className="text-muted-foreground">Nu există specializări adăugate.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {specializations.map((specialization) => (
-                      <div key={specialization.id} className="space-y-2">
-                        <h4 className="font-medium">{specialization.name}</h4>
-                        {specialization.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {specialization.description}
-                          </p>
-                        )}
-                      </div>
-                    ))}
+          <Tabs defaultValue="about" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="about">Despre</TabsTrigger>
+              <TabsTrigger value="reviews">Recenzii</TabsTrigger>
+              <TabsTrigger value="portfolio">Portofoliu</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="about" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <User className="h-5 w-5" />
+                    <CardTitle>Informații personale</CardTitle>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center space-x-2">
-                  <Award className="h-5 w-5" />
-                  <CardTitle>Calificări</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {qualifications.length === 0 ? (
-                  <p className="text-muted-foreground">Nu există calificări adăugate.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {qualifications.map((qualification) => (
-                      <div key={qualification.id} className="space-y-2">
-                        <h4 className="font-medium">{qualification.title}</h4>
-                        {qualification.issue_date && (
-                          <p className="text-sm text-muted-foreground">
-                            Data emiterii: {new Date(qualification.issue_date).toLocaleDateString()}
-                          </p>
-                        )}
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={qualification.document_url} target="_blank" rel="noopener noreferrer">
-                            Vezi document
-                          </a>
-                        </Button>
-                      </div>
-                    ))}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Adresă</p>
+                      <p>{profile.address}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Telefon</p>
+                      <p>{profile.phone}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Oraș</p>
+                      <p>{profile.city}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Județ</p>
+                      <p>{profile.county}</p>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
 
-          <TabsContent value="reviews">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Recenzii</CardTitle>
-                {user && user.id !== profile.id && (
-                  <AddReviewDialog craftsman={profile}>
-                    <Button variant="default" className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700">
-                      Adaugă recenzie
-                    </Button>
-                  </AddReviewDialog>
-                )}
-              </CardHeader>
-              <CardContent>
-                <ReviewSection craftsman={profile} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="portfolio">
-            <Card>
-              <CardHeader>
-                <CardTitle>Portofoliu</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {portfolios.length === 0 ? (
-                  <p className="text-muted-foreground">Nu există proiecte în portofoliu încă.</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {portfolios.map((portfolio) => (
-                      <Card key={portfolio.id}>
-                        <CardHeader>
-                          <CardTitle>{portfolio.title}</CardTitle>
-                          {portfolio.description && (
-                            <CardDescription>{portfolio.description}</CardDescription>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <Briefcase className="h-5 w-5" />
+                    <CardTitle>Specializări</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {specializations.length === 0 ? (
+                    <p className="text-muted-foreground">Nu există specializări adăugate.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {specializations.map((specialization) => (
+                        <div key={specialization.id} className="space-y-2">
+                          <h4 className="font-medium">{specialization.name}</h4>
+                          {specialization.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {specialization.description}
+                            </p>
                           )}
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-2 gap-2">
-                            {portfolio.portfolio_images?.map((image) => (
-                              <img
-                                key={image.id}
-                                src={image.image_url}
-                                alt={portfolio.title}
-                                className="w-full h-32 object-cover rounded-lg"
-                              />
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <Award className="h-5 w-5" />
+                    <CardTitle>Calificări</CardTitle>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                </CardHeader>
+                <CardContent>
+                  {qualifications.length === 0 ? (
+                    <p className="text-muted-foreground">Nu există calificări adăugate.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {qualifications.map((qualification) => (
+                        <div key={qualification.id} className="space-y-2">
+                          <h4 className="font-medium">{qualification.title}</h4>
+                          {qualification.issue_date && (
+                            <p className="text-sm text-muted-foreground">
+                              Data emiterii: {new Date(qualification.issue_date).toLocaleDateString()}
+                            </p>
+                          )}
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={qualification.document_url} target="_blank" rel="noopener noreferrer">
+                              Vezi document
+                            </a>
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="reviews">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Recenzii</CardTitle>
+                  {user && user.id !== profile.id && (
+                    <AddReviewDialog craftsman={profile}>
+                      <Button variant="default" className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700">
+                        Adaugă recenzie
+                      </Button>
+                    </AddReviewDialog>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <ReviewSection craftsman={profile} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="portfolio">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Portofoliu</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {portfolios.length === 0 ? (
+                    <p className="text-muted-foreground">Nu există proiecte în portofoliu încă.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {portfolios.map((portfolio) => (
+                        <Card key={portfolio.id}>
+                          <CardHeader>
+                            <CardTitle>{portfolio.title}</CardTitle>
+                            {portfolio.description && (
+                              <CardDescription>{portfolio.description}</CardDescription>
+                            )}
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 gap-2">
+                              {portfolio.portfolio_images?.map((image) => (
+                                <img
+                                  key={image.id}
+                                  src={image.image_url}
+                                  alt={portfolio.title}
+                                  className="w-full h-32 object-cover rounded-lg"
+                                />
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
