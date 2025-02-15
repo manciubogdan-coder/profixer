@@ -45,21 +45,21 @@ export const SubscriptionStatus = () => {
 
   if (!subscriptionStatus.is_subscription_active) {
     return (
-      <Alert variant="destructive" className="mb-4">
+      <Alert variant="destructive" className="mb-4 bg-[#0F1729] border-red-600 text-white">
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Abonament Expirat</AlertTitle>
-        <AlertDescription className="space-y-4">
+        <AlertTitle className="text-white mb-2">Abonament Expirat</AlertTitle>
+        <AlertDescription className="space-y-4 text-gray-300">
           <p>
             Abonamentul tău a expirat. Profilul tău nu mai este vizibil pentru clienți și nu mai poți:
           </p>
-          <ul className="list-disc list-inside space-y-1">
+          <ul className="list-disc list-inside space-y-1 ml-2">
             <li>Să apari în rezultatele căutării</li>
             <li>Să fii găsit pe hartă</li>
             <li>Să primești mesaje de la clienți noi</li>
             <li>Să primești notificări despre interacțiuni noi</li>
           </ul>
           <Button 
-            className="mt-4 w-full sm:w-auto"
+            className="mt-4 bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => navigate("/subscription/activate")}
           >
             Reactivează Abonamentul
