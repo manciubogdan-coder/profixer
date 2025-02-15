@@ -25,7 +25,6 @@ const CraftsmanProfile = () => {
   const { user } = useAuth();
   const { isProfessional } = useSubscriptionCheck();
 
-  // Pentru ruta /profile/me, folosim ID-ul utilizatorului curent
   const userId = id === 'me' ? user?.id : id;
 
   useEffect(() => {
@@ -142,21 +141,12 @@ const CraftsmanProfile = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
-        {/* Statistici pentru meșteri */}
-        {profile.role === 'professional' && (
-          <>
-            {/* Card-ul de status al abonamentului - doar pentru meșteri și doar pe profilul propriu */}
-            {isOwnProfile && (
-              <Card>
-                <CardContent className="pt-6">
-                  <SubscriptionStatus />
-                </CardContent>
-              </Card>
-            )}
-            <CraftsmanStats craftsmanId={profile.id} />
-          </>
+        {profile.role === 'professional' && isOwnProfile && (
+          <SubscriptionStatus />
         )}
-
+        {profile.role === 'professional' && (
+          <CraftsmanStats craftsmanId={profile.id} />
+        )}
         <div className="flex flex-col md:flex-row md:items-start gap-8">
           <Card className="flex-1">
             <CardHeader>
