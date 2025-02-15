@@ -43,7 +43,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         setUser(null);
         if (window.location.pathname !== "/auth") {
-          toast.error("Sesiunea a expirat. Te rugăm să te autentifici din nou.");
           navigate("/auth");
         }
       }

@@ -7,11 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User } from "lucide-react";
+import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChatDialog } from "@/components/chat/ChatDialog";
+import { ReviewSection } from "@/components/reviews/ReviewSection";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SubscriptionStatus } from '@/components/subscription/SubscriptionStatus';
+import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
+import { SubscriptionStatus } from "@/components/subscription/SubscriptionStatus";
 import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
 
 const CraftsmanProfile = () => {
@@ -22,6 +27,7 @@ const CraftsmanProfile = () => {
 
   useEffect(() => {
     if (!user) {
+      toast.error("Trebuie să fii autentificat pentru a vedea profilul");
       navigate("/auth");
     }
   }, [user, navigate]);
@@ -29,23 +35,40 @@ const CraftsmanProfile = () => {
   const { data: profile, isLoading } = useQuery({
     queryKey: ["craftsman", id],
     queryFn: async () => {
-      // Folosim view-ul user_profiles_with_email pentru a include și email-ul
+      console.log("Fetching craftsman profile for ID:", id);
+      
       const { data: profile, error } = await supabase
-        .from("user_profiles_with_email")
+        .from("profiles")
         .select(`
           *,
-          specializations!specializations_craftsman_id_fkey(
+          reviews!reviews_craftsman_id_fkey(
+            id,
+            rating,
+            comment,
+            created_at,
+            user:profiles!reviews_client_id_fkey(
+              id,
+              first_name,
+              last_name,
+              avatar_url
+            )
+          ),
+          specializations(
             id,
             name,
             description
           ),
-          qualifications!qualifications_craftsman_id_fkey(
+          qualifications(
             id,
             title,
             document_url,
             issue_date
           ),
-          portfolios!portfolios_craftsman_id_fkey(
+          trade:craftsman_type(
+            id,
+            name
+          ),
+          portfolios(
             id,
             title,
             description,
@@ -59,20 +82,33 @@ const CraftsmanProfile = () => {
         .eq("id", id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+
+      console.log("Fetched profile:", profile);
       return profile;
     },
     enabled: !!user && !!id,
   });
 
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
-        <div className="container py-8">
-          <Skeleton className="h-48 w-full" />
+        <div className="container py-8 space-y-8">
+          <div className="flex items-center space-x-4">
+            <Skeleton className="h-24 w-24 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -89,73 +125,178 @@ const CraftsmanProfile = () => {
     );
   }
 
+  const reviews = profile?.reviews || [];
   const specializations = profile?.specializations || [];
   const qualifications = profile?.qualifications || [];
   const portfolios = profile?.portfolios || [];
+  const averageRating = reviews.length > 0
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+    : 0;
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
-        {/* Adăugăm SubscriptionStatus doar pentru profilul propriu al meșterului */}
-        {user?.id === profile?.id && profile.role === 'professional' && (
-          <SubscriptionStatus />
-        )}
-
-        {/* Informații de bază */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback>
-                  <User className="h-10 w-10" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle className="text-2xl">{profile.first_name} {profile.last_name}</CardTitle>
-                <p className="text-muted-foreground">{profile.city}, {profile.county}</p>
+        {/* Adăugăm SubscriptionStatus doar pentru proprietarul profilului */}
+        {user?.id === profile?.id && <SubscriptionStatus />}
+        
+        <div className="flex flex-col md:flex-row md:items-start gap-8">
+          <Card className="flex-1">
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={profile?.avatar_url || undefined} />
+                    <AvatarFallback>
+                      <User className="h-12 w-12" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-2xl">
+                      {profile?.first_name} {profile?.last_name}
+                    </CardTitle>
+                    {profile?.trade && (
+                      <Badge variant="secondary" className="mt-2">
+                        {profile.trade.name}
+                      </Badge>
+                    )}
+                    <div className="flex items-center mt-2 text-muted-foreground">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      <span>{profile?.city}, {profile?.county}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                  <Button 
+                    variant="default" 
+                    size="lg" 
+                    className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    asChild
+                  >
+                    <a href={`tel:${profile?.phone}`}>
+                      <Phone className="h-5 w-5 mr-2" />
+                      Sună acum
+                    </a>
+                  </Button>
+                  {user && user.id !== profile?.id && (
+                    <ChatDialog
+                      recipientId={profile?.id}
+                      recipientName={`${profile?.first_name} ${profile?.last_name}`}
+                    >
+                      <Button 
+                        variant="outline"
+                        size="lg"
+                        className="w-full sm:w-auto border-2 border-purple-600 text-purple-600 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-700 shadow-md hover:shadow-lg transition-all duration-200"
+                      >
+                        <MessageCircle className="h-5 w-5 mr-2" />
+                        Trimite mesaj
+                      </Button>
+                    </ChatDialog>
+                  )}
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div>
-              <p className="text-sm font-medium">Email</p>
-              <p className="text-sm text-muted-foreground">{profile.email}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Adresă</p>
-              <p className="text-sm text-muted-foreground">{profile.address}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Telefon</p>
-              <p className="text-sm text-muted-foreground">{profile.phone}</p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-2">
+                <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+                <span className="font-medium">{averageRating.toFixed(1)}</span>
+                <span className="text-muted-foreground">
+                  ({reviews.length} {reviews.length === 1 ? "recenzie" : "recenzii"})
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Tab-uri pentru specializări, calificări și portofoliu */}
-        <Tabs defaultValue="specializations" className="space-y-4">
+        <Tabs defaultValue="about" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="specializations">Specializări</TabsTrigger>
-            <TabsTrigger value="qualifications">Calificări</TabsTrigger>
+            <TabsTrigger value="about">Despre</TabsTrigger>
+            <TabsTrigger value="reviews">Recenzii</TabsTrigger>
             <TabsTrigger value="portfolio">Portofoliu</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="specializations">
+          <TabsContent value="about" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Specializări</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <CardTitle>Informații personale</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Adresă</p>
+                    <p>{profile.address}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Telefon</p>
+                    <p>{profile.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Oraș</p>
+                    <p>{profile.city}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Județ</p>
+                    <p>{profile.county}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <Briefcase className="h-5 w-5" />
+                  <CardTitle>Specializări</CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
                 {specializations.length === 0 ? (
-                  <p className="text-muted-foreground">Nu ai adăugat încă nicio specializare.</p>
+                  <p className="text-muted-foreground">Nu există specializări adăugate.</p>
                 ) : (
                   <div className="space-y-4">
-                    {specializations.map((spec) => (
-                      <div key={spec.id} className="space-y-2">
-                        <h4 className="font-medium">{spec.name}</h4>
-                        <p className="text-sm text-muted-foreground">{spec.description}</p>
+                    {specializations.map((specialization) => (
+                      <div key={specialization.id} className="space-y-2">
+                        <h4 className="font-medium">{specialization.name}</h4>
+                        {specialization.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {specialization.description}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <Award className="h-5 w-5" />
+                  <CardTitle>Calificări</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {qualifications.length === 0 ? (
+                  <p className="text-muted-foreground">Nu există calificări adăugate.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {qualifications.map((qualification) => (
+                      <div key={qualification.id} className="space-y-2">
+                        <h4 className="font-medium">{qualification.title}</h4>
+                        {qualification.issue_date && (
+                          <p className="text-sm text-muted-foreground">
+                            Data emiterii: {new Date(qualification.issue_date).toLocaleDateString()}
+                          </p>
+                        )}
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={qualification.document_url} target="_blank" rel="noopener noreferrer">
+                            Vezi document
+                          </a>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -164,33 +305,20 @@ const CraftsmanProfile = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="qualifications">
+          <TabsContent value="reviews">
             <Card>
-              <CardHeader>
-                <CardTitle>Calificări</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Recenzii</CardTitle>
+                {user && user.id !== profile.id && (
+                  <AddReviewDialog craftsman={profile}>
+                    <Button variant="default" className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700">
+                      Adaugă recenzie
+                    </Button>
+                  </AddReviewDialog>
+                )}
               </CardHeader>
               <CardContent>
-                {qualifications.length === 0 ? (
-                  <p className="text-muted-foreground">Nu ai adăugat încă nicio calificare.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {qualifications.map((qual) => (
-                      <div key={qual.id} className="space-y-2">
-                        <h4 className="font-medium">{qual.title}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Data emiterii: {new Date(qual.issue_date).toLocaleDateString()}
-                        </p>
-                        {qual.document_url && (
-                          <Button variant="outline" size="sm" asChild>
-                            <a href={qual.document_url} target="_blank" rel="noopener noreferrer">
-                              Vezi document
-                            </a>
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <ReviewSection craftsman={profile} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -202,24 +330,30 @@ const CraftsmanProfile = () => {
               </CardHeader>
               <CardContent>
                 {portfolios.length === 0 ? (
-                  <p className="text-muted-foreground">Nu ai adăugat încă niciun proiect în portofoliu.</p>
+                  <p className="text-muted-foreground">Nu există proiecte în portofoliu încă.</p>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {portfolios.map((portfolio) => (
-                      <div key={portfolio.id} className="space-y-2">
-                        <h4 className="font-medium">{portfolio.title}</h4>
-                        <p className="text-sm text-muted-foreground">{portfolio.description}</p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {portfolio.portfolio_images?.map((image) => (
-                            <img
-                              key={image.id}
-                              src={image.image_url}
-                              alt={portfolio.title}
-                              className="w-full h-32 object-cover rounded-lg"
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      <Card key={portfolio.id}>
+                        <CardHeader>
+                          <CardTitle>{portfolio.title}</CardTitle>
+                          {portfolio.description && (
+                            <CardDescription>{portfolio.description}</CardDescription>
+                          )}
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-2">
+                            {portfolio.portfolio_images?.map((image) => (
+                              <img
+                                key={image.id}
+                                src={image.image_url}
+                                alt={portfolio.title}
+                                className="w-full h-32 object-cover rounded-lg"
+                              />
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 )}

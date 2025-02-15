@@ -1,24 +1,14 @@
 
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Paginile care nu necesită verificarea abonamentului
-const EXEMPT_PATHS = [
-  '/subscription/activate',
-  '/subscription/checkout',
-  '/subscription/success',
-  '/profile/me',
-  '/'
-];
-
 export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -43,12 +33,14 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
       if (!user?.id) return null;
 
       const { data, error } = await supabase
-        .from('craftsman_subscription_status')
+        .from('subscriptions')
         .select('*')
         .eq('craftsman_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
 
-      if (error) throw error;
+      if (error && error.code !== 'PGRST116') throw error;
       return data;
     },
     enabled: !!user && profile?.role === 'professional',
@@ -57,26 +49,21 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
   useEffect(() => {
     if (!shouldCheck || !profile) return;
 
-    // Nu verificăm abonamentul pentru paginile exceptate
-    if (EXEMPT_PATHS.some(path => location.pathname.startsWith(path))) {
-      return;
-    }
-
     if (profile.role === 'professional') {
-      const isActive = subscription?.is_subscription_active;
+      const isActive = subscription && 
+        subscription.status === 'active' && 
+        new Date(subscription.end_date) > new Date();
 
       if (!isActive) {
         toast.error('Abonamentul tău a expirat. Te rugăm să îl reînnoiești pentru a continua.');
         navigate('/subscription/activate');
       }
     }
-  }, [shouldCheck, profile, subscription, navigate, location]);
+  }, [shouldCheck, profile, subscription, navigate]);
 
   return {
     isLoading: !profile,
     isProfessional: profile?.role === 'professional',
-    hasActiveSubscription: subscription?.is_subscription_active || false,
-    subscriptionStatus: subscription?.subscription_status || 'inactive',
-    subscriptionEndDate: subscription?.subscription_end_date || null,
+    hasActiveSubscription: subscription?.status === 'active' && new Date(subscription?.end_date) > new Date(),
   };
 };

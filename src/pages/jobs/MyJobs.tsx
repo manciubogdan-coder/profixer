@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,11 +56,10 @@ const MyJobs = () => {
     if (userProfile && userProfile.role !== 'client') {
       toast.error("Această pagină este disponibilă doar pentru clienți");
       navigate("/");
-      return;
     }
   }, [user, userProfile, navigate]);
 
-  const { data: myJobs = [], isLoading } = useQuery({
+  const { data: myJobs = [], isLoading, refetch } = useQuery({
     queryKey: ["myJobs", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -84,7 +82,7 @@ const MyJobs = () => {
 
       return data;
     },
-    enabled: !!user && (!userProfile || userProfile.role === 'client'),
+    enabled: !!user && userProfile?.role === 'client',
   });
 
   const handleDelete = async (jobId: string) => {
@@ -97,7 +95,7 @@ const MyJobs = () => {
       if (error) throw error;
 
       toast.success("Lucrarea a fost ștearsă cu succes");
-      navigate(0); // Reîncarcă pagina pentru a actualiza lista
+      refetch();
     } catch (error) {
       console.error('Error deleting job:', error);
       toast.error("A apărut o eroare la ștergerea lucrării");
@@ -110,6 +108,7 @@ const MyJobs = () => {
 
   const handleStatusToggle = async (jobId: string, currentStatus: string) => {
     try {
+      // Ensure we only use valid status values
       const newStatus = currentStatus === 'open' ? 'closed' : 'open';
       
       const { error } = await supabase
@@ -124,7 +123,7 @@ const MyJobs = () => {
       }
 
       toast.success(`Statusul lucrării a fost schimbat în ${newStatus === 'open' ? 'Activ' : 'Închis'}`);
-      navigate(0); // Reîncarcă pagina pentru a actualiza lista
+      refetch();
     } catch (error) {
       console.error('Error updating job status:', error);
       toast.error("A apărut o eroare la actualizarea statusului");

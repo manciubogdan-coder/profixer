@@ -8,13 +8,9 @@ import { toast } from "sonner";
 import { ChatDialog } from "./chat/ChatDialog";
 import { NotificationsDialog } from "./notifications/NotificationsDialog";
 import { useQuery } from "@tanstack/react-query";
-import { useSubscriptionCheck } from "@/hooks/useSubscriptionCheck";
-import { useLocation } from "react-router-dom";
 
 export const Navigation = () => {
   const { user } = useAuth();
-  const { hasActiveSubscription } = useSubscriptionCheck();
-  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -49,15 +45,6 @@ export const Navigation = () => {
 
   const isClient = userProfile?.role === 'client';
   const isProfessional = userProfile?.role === 'professional';
-  const canAccessSearch = isClient || (isProfessional && hasActiveSubscription);
-
-  // Verificăm dacă suntem pe o pagină de abonament
-  const isSubscriptionPage = location.pathname.startsWith('/subscription/');
-
-  // Permitem accesul la chat și notificări pentru toată lumea pe paginile de abonament
-  const showPremiumFeatures = !isProfessional || 
-                             (isProfessional && hasActiveSubscription) || 
-                             isSubscriptionPage;
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -71,14 +58,12 @@ export const Navigation = () => {
 
         <div className="flex-1 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {canAccessSearch && (
-              <Link
-                to="/search"
-                className="text-sm font-medium transition-colors hover:text-primary"
-              >
-                Caută Meșteri
-              </Link>
-            )}
+            <Link
+              to="/search"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
+              Caută Meșteri
+            </Link>
             {user && (
               <>
                 {isClient && (
@@ -98,7 +83,7 @@ export const Navigation = () => {
                     </Link>
                   </>
                 )}
-                {isProfessional && hasActiveSubscription && (
+                {isProfessional && (
                   <Link
                     to="/jobs"
                     className="text-sm font-medium transition-colors hover:text-primary flex items-center gap-2"
@@ -114,12 +99,8 @@ export const Navigation = () => {
           <div className="flex items-center gap-2">
             {user ? (
               <>
-                {showPremiumFeatures && (
-                  <>
-                    <ChatDialog />
-                    <NotificationsDialog />
-                  </>
-                )}
+                <ChatDialog />
+                <NotificationsDialog />
                 <Link to="/profile/me">
                   <Button variant="ghost" size="icon">
                     <User className="h-5 w-5" />

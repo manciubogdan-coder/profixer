@@ -11,6 +11,13 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
+interface SubscriptionStatusData {
+  craftsman_id: string;
+  subscription_status: 'active' | 'inactive';
+  subscription_end_date: string | null;
+  is_subscription_active: boolean;
+}
+
 export const SubscriptionStatus = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +36,7 @@ export const SubscriptionStatus = () => {
         return null;
       }
 
-      return data;
+      return data as SubscriptionStatusData;
     },
     enabled: !!user,
   });
