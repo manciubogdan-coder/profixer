@@ -362,7 +362,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          amount: number
+          amount?: number
           craftsman_id: string
           created_at?: string
           currency?: string
