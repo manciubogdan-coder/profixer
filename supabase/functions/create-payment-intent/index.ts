@@ -124,11 +124,14 @@ serve(async (req) => {
     }
 
     try {
-      // Creează un produs nou în Stripe (sau folosește unul existent)
-      const priceId = 'price_1OqWrHBhVBCT5VBKnLtg7XSN'; // ID-ul prețului din Stripe
+      // Folosim price ID-ul corect din Stripe
+      const priceId = 'price_1QtCAwDYsHU2MI0ngpwkeHep';
+      console.log('Using Stripe price ID:', priceId);
       
       // Obține prețul din Stripe
       const price = await stripe.prices.retrieve(priceId);
+      console.log('Retrieved price from Stripe:', price);
+      
       const amount = price.unit_amount ? price.unit_amount / 100 : 99; // Convertim din cenți în RON
 
       // Crează payment intent în Stripe
