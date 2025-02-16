@@ -1,10 +1,10 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import Stripe from 'https://esm.sh/stripe@13.6.0'
+import Stripe from 'https://esm.sh/stripe@11.18.0'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2023-10-16',
+  apiVersion: '2022-11-15',
 });
 
 const WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
@@ -57,8 +57,8 @@ serve(async (req) => {
     console.log('Signature received:', signature);
 
     try {
-      // Folosim constructEventAsync în loc de constructEvent
-      event = await stripe.webhooks.constructEventAsync(body, signature, WEBHOOK_SECRET);
+      // Folosim constructEvent în loc de constructEventAsync pentru versiunea mai veche
+      event = stripe.webhooks.constructEvent(body, signature, WEBHOOK_SECRET);
       console.log('Webhook signature verified successfully');
     } catch (err) {
       console.error(`Webhook signature verification failed:`, err);
