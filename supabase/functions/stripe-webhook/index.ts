@@ -35,68 +35,64 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Tratăm evenimentul de plată finalizată
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       console.log('Payment completed for session:', session.id);
-      console.log('Client reference ID:', session.client_reference_id);
 
-      if (!session.client_reference_id) {
-        console.error('No client_reference_id found in session');
-        return new Response('No client_reference_id found', { status: 400 });
+      const craftsman_id = session.client_reference_id;
+      const plan = session.metadata?.plan || 'lunar';
+
+      if (!craftsman_id) {
+        console.error('No craftsman_id found in session');
+        return new Response('No craftsman_id found', { status: 400 });
       }
 
-      // Găsim plata după metadata sau ID
+      // Creăm plata
       const { data: payment, error: paymentError } = await supabaseClient
         .from('payments')
-        .update({
+        .insert({
+          craftsman_id,
+          amount: plan === 'lunar' ? 299 : 2990,
           status: 'completed',
-          stripe_payment_id: session.id
+          stripe_payment_id: session.id,
+          stripe_customer_id: session.customer
         })
-        .eq('status', 'pending')
-        .eq('craftsman_id', session.client_reference_id)
         .select()
         .single();
 
       if (paymentError) {
-        console.error('Error updating payment:', paymentError);
-        return new Response('Error updating payment', { status: 500 });
+        console.error('Error creating payment:', paymentError);
+        return new Response('Error creating payment', { status: 500 });
       }
 
-      if (!payment) {
-        console.error('No payment found to update');
-        return new Response('No payment found', { status: 404 });
-      }
+      console.log('Payment created:', payment.id);
 
-      console.log('Payment updated successfully:', payment.id);
-
-      // Actualizăm abonamentul
+      // Calculăm data de sfârșit
       const startDate = new Date();
       const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 30); // 30 zile
+      endDate.setMonth(endDate.getMonth() + (plan === 'lunar' ? 1 : 12));
 
+      // Creăm abonamentul
       const { error: subscriptionError } = await supabaseClient
         .from('subscriptions')
-        .update({
+        .insert({
+          craftsman_id,
+          payment_id: payment.id,
           status: 'active',
+          plan,
+          stripe_subscription_id: session.subscription,
           start_date: startDate.toISOString(),
           end_date: endDate.toISOString()
-        })
-        .eq('payment_id', payment.id);
+        });
 
       if (subscriptionError) {
-        console.error('Error updating subscription:', subscriptionError);
-        return new Response('Error updating subscription', { status: 500 });
+        console.error('Error creating subscription:', subscriptionError);
+        return new Response('Error creating subscription', { status: 500 });
       }
 
       console.log('Subscription activated successfully');
-
-      return new Response(JSON.stringify({ received: true }), {
-        headers: { 'Content-Type': 'application/json' }
-      });
     }
 
-    // Pentru orice alt eveniment, răspundem cu succes
     return new Response(JSON.stringify({ received: true }), {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -106,4 +102,3 @@ serve(async (req) => {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 });
-
