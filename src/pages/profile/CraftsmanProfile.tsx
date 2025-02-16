@@ -27,6 +27,27 @@ const CraftsmanProfile = () => {
 
   const userId = id === 'me' ? user?.id : id;
 
+  const { data: subscriptionStatus } = useQuery({
+    queryKey: ["subscription-status", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      
+      const { data, error } = await supabase
+        .from("craftsman_subscription_status")
+        .select("*")
+        .eq("craftsman_id", userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching subscription status:", error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!userId && isProfessional,
+  });
+
   useEffect(() => {
     if (!user) {
       toast.error("Trebuie să fii autentificat pentru a vedea profilul");
@@ -144,16 +165,35 @@ const CraftsmanProfile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container py-8">
+      <div className="container py-8 space-y-8">
+        {user.id === userId && isProfessional && (
+          <SubscriptionStatus />
+        )}
+
+        {!subscriptionStatus?.is_subscription_active && user.id === userId && isProfessional && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+              <div className="ml-3">
+                <h3 className="text-yellow-800 font-medium">Abonament inactiv</h3>
+                <p className="mt-2 text-yellow-700">
+                  Nu poți fi găsit de către clienți în rezultatele căutării sau pe hartă. 
+                  Pentru a beneficia de toate funcționalitățile platformei, te rugăm să activezi un abonament.
+                </p>
+                <Button 
+                  className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white"
+                  onClick={() => navigate("/subscription/activate")}
+                >
+                  Activează abonament
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="text-sm text-gray-500 mb-4">
           Role: {profile.role}, Own Profile: {isOwnProfile ? 'Yes' : 'No'}
         </div>
-
-        {profile.role === 'professional' && (
-          <div className="mb-8">
-            <SubscriptionStatus />
-          </div>
-        )}
 
         <div className="space-y-8">
           {profile.role === 'professional' && (

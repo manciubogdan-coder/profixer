@@ -1,6 +1,12 @@
 
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
+import { Card } from "@/components/ui/card";
+import { Star, MapPin } from "lucide-react";
+import type { Craftsman } from "@/pages/Search";
 import {
   Select,
   SelectContent,
@@ -8,28 +14,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Filter } from "lucide-react";
-import type { Craftsman } from "@/pages/Search";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SearchSidebarProps {
   searchTerm: string;
-  setSearchTerm: (term: string) => void;
+  setSearchTerm: (value: string) => void;
   selectedType: string | null;
-  setSelectedType: (type: string | null) => void;
+  setSelectedType: (value: string | null) => void;
   craftsmen: Craftsman[];
   isLoading: boolean;
   maxDistance: number;
-  setMaxDistance: (distance: number) => void;
+  setMaxDistance: (value: number) => void;
   minRating: number;
-  setMinRating: (rating: number) => void;
+  setMinRating: (value: number) => void;
   onCraftsmanClick: (craftsman: Craftsman) => void;
 }
 
@@ -46,176 +44,119 @@ export const SearchSidebar = ({
   setMinRating,
   onCraftsmanClick,
 }: SearchSidebarProps) => {
-  const { data: trades = [], isLoading: isLoadingTrades } = useQuery({
-    queryKey: ["trades"],
+  const { data: types } = useQuery({
+    queryKey: ["craftsman-types"],
     queryFn: async () => {
-      console.log("Fetching trades...");
       const { data, error } = await supabase
         .from("trades")
         .select("*")
         .order("name");
 
-      if (error) {
-        console.error("Error fetching trades:", error);
-        return [];
-      }
-
-      console.log("Fetched trades:", data);
+      if (error) throw error;
       return data;
     },
   });
 
-  const filters = (
-    <div className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="search">Caută după nume</Label>
-          <Input
-            id="search"
-            placeholder="ex: instalator, electrician..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Meserie</Label>
-          <Select
-            value={selectedType || "all"}
-            onValueChange={(value) => setSelectedType(value === "all" ? null : value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Alege meseria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toate meseriile</SelectItem>
-              {trades.map((trade) => (
-                <SelectItem key={trade.id} value={trade.id}>
-                  {trade.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Distanța maximă ({maxDistance} km)</Label>
-          <Slider
-            value={[maxDistance]}
-            onValueChange={(value) => setMaxDistance(value[0])}
-            max={400}
-            step={10}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Rating minim ({minRating})</Label>
-          <Slider
-            value={[minRating]}
-            onValueChange={(value) => setMinRating(value[0])}
-            max={5}
-            step={0.5}
-            min={0}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <h3 className="font-medium">Rezultate</h3>
-          <div className="flex flex-wrap gap-2">
-            {selectedType && (
-              <Badge variant="secondary">
-                {trades.find(t => t.id === selectedType)?.name || 'Toate meseriile'}
-              </Badge>
-            )}
-            {maxDistance < 400 && (
-              <Badge variant="secondary">
-                {maxDistance}km
-              </Badge>
-            )}
-            {minRating > 0 && (
-              <Badge variant="secondary">
-                ≥{minRating}★
-              </Badge>
-            )}
-          </div>
-        </div>
-        {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="space-y-3">
-              <Skeleton className="h-20 w-full" />
-            </div>
-          ))
-        ) : craftsmen.length === 0 ? (
-          <p className="text-muted-foreground">Nu s-au găsit meșteri</p>
-        ) : (
-          <div className="space-y-4">
-            {craftsmen.map((craftsman) => (
-              <div
-                key={craftsman.id}
-                className="rounded-lg border border-border hover:border-primary transition-colors cursor-pointer bg-card"
-                onClick={() => onCraftsmanClick(craftsman)}
-              >
-                <div className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-medium">
-                        {craftsman.first_name} {craftsman.last_name}
-                      </h4>
-                      <p className="text-sm text-muted-foreground">
-                        {craftsman.city}, {craftsman.county}
-                      </p>
-                      {craftsman.trade && (
-                        <p className="text-sm text-primary">
-                          {craftsman.trade.name}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm">{craftsman.average_rating?.toFixed(1) || "N/A"}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+  // Filtrăm meșterii pentru a afișa doar pe cei cu abonament activ
+  const activeCraftsmen = craftsmen.filter(
+    (craftsman) => craftsman.subscription_status?.is_subscription_active === true
   );
 
   return (
-    <TooltipProvider>
-      <>
-        {/* Desktop sidebar */}
-        <div className="hidden md:block w-96 border-r border-border bg-background p-6 overflow-y-auto">
-          {filters}
+    <div className="w-full md:w-96 p-4 border-r bg-card">
+      <div className="space-y-4">
+        <Input
+          placeholder="Caută după nume..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        
+        <Select
+          value={selectedType || ""}
+          onValueChange={(value) => setSelectedType(value || null)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Alege meseria..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Toate meseriile</SelectItem>
+            {types?.map((type) => (
+              <SelectItem key={type.id} value={type.id}>
+                {type.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">
+            Distanța maximă: {maxDistance} km
+          </label>
+          <Slider
+            value={[maxDistance]}
+            onValueChange={(values) => setMaxDistance(values[0])}
+            max={100}
+            step={1}
+          />
         </div>
 
-        {/* Mobile sidebar */}
-        <div className="md:hidden fixed top-[4.5rem] right-4 z-50">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button size="lg" className="shadow-lg">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filtrează ({craftsmen.length})
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  {filters}
-                </SheetContent>
-              </Sheet>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Filtrează meșterii după meserie, distanță și rating</p>
-            </TooltipContent>
-          </Tooltip>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">
+            Rating minim: {minRating} stele
+          </label>
+          <Slider
+            value={[minRating]}
+            onValueChange={(values) => setMinRating(values[0])}
+            max={5}
+            step={0.5}
+          />
         </div>
-      </>
-    </TooltipProvider>
+
+        <ScrollArea className="h-[calc(100vh-20rem)]">
+          <div className="space-y-2 pr-4">
+            {isLoading ? (
+              <p className="text-center text-muted-foreground">Se încarcă...</p>
+            ) : activeCraftsmen.length === 0 ? (
+              <p className="text-center text-muted-foreground">
+                Nu au fost găsiți meșteri care să corespundă criteriilor.
+              </p>
+            ) : (
+              activeCraftsmen.map((craftsman) => (
+                <Card
+                  key={craftsman.id}
+                  className="p-4 cursor-pointer hover:bg-accent"
+                  onClick={() => onCraftsmanClick(craftsman)}
+                >
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium">
+                          {craftsman.first_name} {craftsman.last_name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {craftsman.trade?.name}
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                        <span className="text-sm">
+                          {craftsman.average_rating?.toFixed(1) || "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 mr-1" />
+                      <span>
+                        {craftsman.city}, {craftsman.county}
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+    </div>
   );
 };
