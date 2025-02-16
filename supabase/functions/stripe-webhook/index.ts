@@ -41,6 +41,11 @@ serve(async (req) => {
       console.log('Payment completed for session:', session.id);
       console.log('Client reference ID:', session.client_reference_id);
 
+      if (!session.client_reference_id) {
+        console.error('No client_reference_id found in session');
+        return new Response('No client_reference_id found', { status: 400 });
+      }
+
       // Găsim plata după metadata sau ID
       const { data: payment, error: paymentError } = await supabaseClient
         .from('payments')
@@ -66,12 +71,16 @@ serve(async (req) => {
       console.log('Payment updated successfully:', payment.id);
 
       // Actualizăm abonamentul
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + 30); // 30 zile
+
       const { error: subscriptionError } = await supabaseClient
         .from('subscriptions')
         .update({
           status: 'active',
-          start_date: new Date().toISOString(),
-          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 zile
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString()
         })
         .eq('payment_id', payment.id);
 
@@ -81,8 +90,13 @@ serve(async (req) => {
       }
 
       console.log('Subscription activated successfully');
+
+      return new Response(JSON.stringify({ received: true }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
+    // Pentru orice alt eveniment, răspundem cu succes
     return new Response(JSON.stringify({ received: true }), {
       headers: { 'Content-Type': 'application/json' }
     });
@@ -92,3 +106,4 @@ serve(async (req) => {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 });
+
