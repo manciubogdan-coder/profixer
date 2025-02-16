@@ -163,10 +163,12 @@ serve(async (req) => {
         )
       }
 
-      // Construim URL-ul cu parametrii necesari
+      // Construim URL-ul cu parametrii necesari și success URL corect
       const paymentUrl = new URL('https://buy.stripe.com/test_8wM3cDanZ5TbfPG000');
       paymentUrl.searchParams.append('client_reference_id', user.id);
       paymentUrl.searchParams.append('prefilled_email', user.email);
+      paymentUrl.searchParams.append('success_url', 'https://mesteri.app/subscription/success');
+      paymentUrl.searchParams.append('cancel_url', 'https://mesteri.app/subscription/activate');
 
       return new Response(
         JSON.stringify({ 
