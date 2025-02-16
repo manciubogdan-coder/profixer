@@ -7,6 +7,7 @@ import { Navigation } from "@/components/Navigation";
 import { CheckoutForm } from '@/components/subscription/CheckoutForm';
 import { createPaymentIntent } from '@/lib/subscription';
 import { SubscriptionPlan } from '@/types/subscription';
+import { SUBSCRIPTION_PRICES } from '@/lib/subscription';
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
 
@@ -20,7 +21,7 @@ const Checkout = () => {
 
   const searchParams = new URLSearchParams(location.search);
   const plan = searchParams.get('plan') as SubscriptionPlan;
-  const amount = 99;
+  const amount = SUBSCRIPTION_PRICES[plan];
 
   useEffect(() => {
     if (!plan) {
@@ -54,7 +55,7 @@ const Checkout = () => {
 
   if (isLoading || !clientSecret) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container flex items-center justify-center py-8">
           <LoaderCircle className="h-8 w-8 animate-spin text-purple-600" />
@@ -64,31 +65,35 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container max-w-md mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold mb-6 text-slate-900">Finalizează Plata</h1>
+        <h1 className="text-2xl font-bold mb-6 text-white">Finalizează Plata</h1>
         {clientSecret && (
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-slate-900/50 rounded-xl shadow-sm p-6 border border-slate-800">
             <Elements 
               stripe={stripePromise} 
               options={{
                 clientSecret,
                 appearance: {
-                  theme: 'stripe',
+                  theme: 'night',
                   variables: {
                     colorPrimary: '#9333EA',
-                    colorBackground: '#FFFFFF',
-                    colorText: '#1F2937',
+                    colorBackground: '#1E293B',
+                    colorText: '#FFFFFF',
                     colorDanger: '#EF4444',
                     fontFamily: 'system-ui, sans-serif',
                     borderRadius: '8px',
                   },
                   rules: {
                     '.Input': {
-                      border: '1px solid #E5E7EB',
+                      border: '1px solid #334155',
                       boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                      backgroundColor: '#0F172A'
                     },
+                    '.Label': {
+                      color: '#94A3B8'
+                    }
                   }
                 }
               }}

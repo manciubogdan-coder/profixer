@@ -47,12 +47,12 @@ export const CheckoutForm = ({ clientSecret, amount }: CheckoutFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="p-4 bg-slate-100 rounded-lg mb-6">
-        <div className="text-sm text-slate-600">Total de plată</div>
-        <div className="text-2xl font-bold text-slate-900">{amount} RON</div>
+      <div className="p-4 bg-slate-800/50 rounded-lg mb-6 border border-slate-700">
+        <div className="text-sm text-slate-400">Total de plată</div>
+        <div className="text-2xl font-bold text-white">{amount} RON</div>
       </div>
       
-      <div className="bg-white p-4 rounded-lg shadow-sm">
+      <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
         <PaymentElement 
           options={{
             layout: 'tabs'
