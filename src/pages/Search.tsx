@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { SearchSidebar } from "@/components/search/SearchSidebar";
@@ -17,7 +16,9 @@ export type Craftsman = Tables<"profiles"> & {
   trade?: {
     name: string;
   } | null;
-  subscription_status?: string;
+  subscription_status?: {
+    is_subscription_active: boolean;
+  };
 };
 
 const Search = () => {
@@ -64,10 +65,7 @@ const Search = () => {
           *,
           reviews!reviews_craftsman_id_fkey(rating),
           trade:craftsman_type(name),
-          subscriptions!subscriptions_craftsman_id_fkey(
-            status,
-            end_date
-          )
+          subscription_status:craftsman_subscription_status(is_subscription_active)
         `)
         .eq("role", "professional");
 
@@ -97,36 +95,29 @@ const Search = () => {
             ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
             : 0;
 
-          // Check if craftsman has an active subscription
-          const subscriptions = Array.isArray(craftsman.subscriptions) ? craftsman.subscriptions : [];
-          const activeSubscription = subscriptions.find(sub => 
-            sub.status === 'active' && new Date(sub.end_date) > new Date()
-          );
-
           return {
             ...craftsman,
             average_rating: avgRating,
-            subscription_status: activeSubscription ? 'active' : 'inactive'
+            subscription_status: craftsman.subscription_status?.[0] || { is_subscription_active: false }
           };
         })
-        // Filter out craftsmen without active subscriptions
-        .filter(craftsman => craftsman.subscription_status === 'active');
+        .filter((craftsman) => {
+          if ((craftsman.average_rating || 0) < minRating) return false;
 
-      return processedCraftsmen.filter((craftsman) => {
-        if ((craftsman.average_rating || 0) < minRating) return false;
+          if (userLocation && craftsman.latitude && craftsman.longitude) {
+            const distance = calculateDistance(
+              userLocation.lat,
+              userLocation.lng,
+              craftsman.latitude,
+              craftsman.longitude
+            );
+            if (distance > maxDistance) return false;
+          }
 
-        if (userLocation && craftsman.latitude && craftsman.longitude) {
-          const distance = calculateDistance(
-            userLocation.lat,
-            userLocation.lng,
-            craftsman.latitude,
-            craftsman.longitude
-          );
-          if (distance > maxDistance) return false;
-        }
+          return true;
+        });
 
-        return true;
-      });
+      return processedCraftsmen;
     },
     enabled: !!user,
   });

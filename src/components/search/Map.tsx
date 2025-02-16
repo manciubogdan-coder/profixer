@@ -124,7 +124,13 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    craftsmen.forEach((craftsman) => {
+    // Filtrăm meșterii pentru a-i afișa doar pe cei cu abonament activ
+    const activeCraftsmen = craftsmen.filter(craftsman => {
+      const subscriptionStatus = craftsman.subscription_status;
+      return subscriptionStatus?.is_subscription_active === true;
+    });
+
+    activeCraftsmen.forEach((craftsman) => {
       if (!craftsman.latitude || !craftsman.longitude) return;
 
       // Create a custom marker element

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -15,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
+import { SubscriptionStatus } from "@/components/subscription/SubscriptionStatus";
 
 const CraftsmanPublicProfile = () => {
   const { id } = useParams();
@@ -133,6 +135,9 @@ const CraftsmanPublicProfile = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
+        {user.id === profile.id && (
+          <SubscriptionStatus />
+        )}
         <div className="flex flex-col md:flex-row md:items-start gap-8">
           <Card className="flex-1">
             <CardHeader>
