@@ -20,6 +20,8 @@ export const SubscriptionStatus = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  console.log("SubscriptionStatus Component - User ID:", user?.id);
+
   const {
     data: subscriptionStatus,
     isLoading,
