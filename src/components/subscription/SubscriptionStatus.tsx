@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, CheckCircle2, Calendar } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -22,6 +22,22 @@ export const SubscriptionStatus = () => {
 
   console.log("SubscriptionStatus Component - User ID:", user?.id);
 
+  // Verificăm rolul utilizatorului
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user?.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
   const {
     data: subscriptionStatus,
     isLoading,
@@ -34,7 +50,7 @@ export const SubscriptionStatus = () => {
         .from("craftsman_subscription_status")
         .select("*")
         .eq("craftsman_id", user?.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching subscription status:", error);
@@ -44,12 +60,18 @@ export const SubscriptionStatus = () => {
       console.log("Fetched subscription status:", data);
       return data as SubscriptionStatusData;
     },
-    enabled: !!user?.id
+    enabled: !!user?.id && profile?.role === 'professional'
   });
 
+  console.log("Profile role:", profile?.role);
   console.log("Subscription status:", subscriptionStatus);
   console.log("Loading:", isLoading);
   console.log("Error:", error);
+
+  // Nu afișăm nimic dacă utilizatorul nu este profesionist
+  if (!profile || profile.role !== 'professional') {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -59,13 +81,49 @@ export const SubscriptionStatus = () => {
     );
   }
 
-  if (error || !subscriptionStatus) {
+  if (error) {
     return (
       <Alert variant="destructive" className="mb-4">
         <AlertTitle>Eroare la încărcarea statusului abonamentului</AlertTitle>
         <AlertDescription>
           Nu am putut încărca informațiile despre abonament. Te rugăm să încerci din nou mai târziu.
         </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Dacă nu există date despre abonament, înseamnă că utilizatorul nu are unul
+  if (!subscriptionStatus) {
+    return (
+      <Alert variant="destructive" className="mb-4 bg-[#0F1729] border-red-600">
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-start">
+            <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
+            <div className="ml-3">
+              <AlertTitle className="text-lg font-semibold text-white">Fără Abonament Activ</AlertTitle>
+              <AlertDescription className="mt-2 text-gray-300">
+                Nu ai un abonament activ. Activează un abonament pentru a beneficia de toate funcționalitățile platformei.
+              </AlertDescription>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-700 pt-4">
+            <h4 className="text-white mb-2 font-medium">Nu ai acces la:</h4>
+            <ul className="list-disc list-inside space-y-1 text-gray-300 ml-2">
+              <li>Vizibilitate în rezultatele căutării</li>
+              <li>Prezență pe hartă</li>
+              <li>Mesaje de la clienți noi</li>
+              <li>Notificări despre interacțiuni</li>
+            </ul>
+          </div>
+
+          <Button 
+            className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white mt-2" 
+            onClick={() => navigate("/subscription/activate")}
+          >
+            Activează Abonamentul
+          </Button>
+        </div>
       </Alert>
     );
   }
