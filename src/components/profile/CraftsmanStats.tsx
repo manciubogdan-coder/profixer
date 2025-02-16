@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { addMonths, startOfMonth, endOfMonth, subMonths, format, startOfWeek, en
 import { ro } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
+import { SubscriptionStatus } from "@/components/subscription/SubscriptionStatus";
 
 interface CraftsmanStats {
   total_clients: number;
@@ -116,7 +118,7 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
   if (!stats) return null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-end gap-2">
         <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
           <SelectTrigger className="w-[180px]">
@@ -202,6 +204,8 @@ export const CraftsmanStats = ({ craftsmanId }: { craftsmanId: string }) => {
           </CardContent>
         </Card>
       </div>
+
+      <SubscriptionStatus />
     </div>
   );
 };
