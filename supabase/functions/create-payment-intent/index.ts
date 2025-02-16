@@ -57,7 +57,7 @@ serve(async (req) => {
       client_reference_id: craftsman_id,
       line_items: [
         {
-          price: plan === 'lunar' ? 'price_1QtCCEDYsHU2MI0nVeNPZrGe' : 'price_1QtCCEDYsHU2MI0nF0PvB3x5',
+          price: 'price_1QtCAwDYsHU2MI0ngpwkeHep',
           quantity: 1,
         },
       ],
