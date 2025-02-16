@@ -67,7 +67,23 @@ serve(async (req) => {
     console.log('User authenticated:', user.id);
 
     // Obține datele din request
-    const requestData = await req.json()
+    let requestData;
+    try {
+      requestData = await req.json()
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    }
+
     console.log('Request data:', requestData);
     const { plan, amount } = requestData
 
@@ -164,39 +180,53 @@ serve(async (req) => {
 
     console.log('Subscription created');
 
-    // Crează payment intent în Stripe
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amount * 100, // Stripe folosește cenți
-      currency: 'ron',
-      payment_method_types: ['card'],
-      metadata: {
-        payment_id: payment.id,
-        user_id: user.id,
-        plan
-      }
-    })
-
-    console.log('Stripe payment intent created:', paymentIntent.id);
-
-    // Actualizează payment cu ID-ul de la Stripe
-    await supabaseClient
-      .from('payments')
-      .update({
-        stripe_payment_id: paymentIntent.id
+    try {
+      // Crează payment intent în Stripe
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount * 100, // Stripe folosește cenți
+        currency: 'ron',
+        payment_method_types: ['card'],
+        metadata: {
+          payment_id: payment.id,
+          user_id: user.id,
+          plan
+        }
       })
-      .eq('id', payment.id)
 
-    console.log('Payment updated with Stripe ID');
+      console.log('Stripe payment intent created:', paymentIntent.id);
 
-    return new Response(
-      JSON.stringify({ clientSecret: paymentIntent.client_secret }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
+      // Actualizează payment cu ID-ul de la Stripe
+      await supabaseClient
+        .from('payments')
+        .update({
+          stripe_payment_id: paymentIntent.id
+        })
+        .eq('id', payment.id)
+
+      console.log('Payment updated with Stripe ID');
+
+      return new Response(
+        JSON.stringify({ clientSecret: paymentIntent.client_secret }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    } catch (stripeError) {
+      console.error('Stripe error:', stripeError);
+      return new Response(
+        JSON.stringify({ error: 'Eroare la procesarea plății cu Stripe' }),
+        { 
+          status: 500, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
+    }
   } catch (error) {
     console.error('Error:', error)
     return new Response(

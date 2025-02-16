@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { SubscriptionPlan } from "@/types/subscription";
+import { toast } from "sonner";
 
 export const SUBSCRIPTION_PRICES = {
   lunar: 99,
@@ -24,15 +25,18 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
     });
 
     if (response.error) {
+      console.error('Error response:', response.error);
       // Verificăm dacă eroarea este despre abonament activ
-      const errorBody = response.error?.message ? 
-        JSON.parse(response.error.message)?.error : null;
-      
-      if (errorBody === 'Ai deja un abonament activ') {
+      if (response.error.message?.includes('Ai deja un abonament activ')) {
         throw new Error('Ai deja un abonament activ. Nu poți crea un nou abonament până când cel curent nu expiră.');
       }
       
       throw new Error(response.error.message || 'A apărut o eroare la crearea plății');
+    }
+
+    if (!response.data || !response.data.clientSecret) {
+      console.error('Invalid response data:', response.data);
+      throw new Error('Răspuns invalid de la server');
     }
 
     console.log('Payment intent created successfully');
