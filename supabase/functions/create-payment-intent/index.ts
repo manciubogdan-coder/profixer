@@ -24,9 +24,28 @@ serve(async (req) => {
     );
 
     const { craftsman_id, plan = 'lunar' } = await req.json();
+    console.log('Received request with craftsman_id:', craftsman_id, 'and plan:', plan);
 
     if (!craftsman_id) {
       throw new Error('Craftsman ID is required');
+    }
+
+    // Verificăm dacă utilizatorul are deja un abonament activ
+    const { data: existingSubscription, error: subscriptionError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('craftsman_id', craftsman_id)
+      .eq('status', 'active')
+      .gt('end_date', new Date().toISOString())
+      .maybeSingle();
+
+    if (subscriptionError) {
+      console.error('Error checking existing subscription:', subscriptionError);
+      throw subscriptionError;
+    }
+
+    if (existingSubscription) {
+      throw new Error('Ai deja un abonament activ');
     }
 
     // Creăm o plată în baza de date
@@ -36,14 +55,16 @@ serve(async (req) => {
         craftsman_id,
         amount: plan === 'lunar' ? 299 : 2990,
         status: 'pending',
-        plan
       })
       .select()
       .single();
 
     if (paymentError) {
+      console.error('Error creating payment:', paymentError);
       throw paymentError;
     }
+
+    console.log('Created payment record:', payment.id);
 
     const baseUrl = req.headers.get('origin') || 'http://localhost:5173';
 
@@ -51,7 +72,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      client_reference_id: craftsman_id, // Adăugat aici
+      client_reference_id: craftsman_id,
       line_items: [
         {
           price: plan === 'lunar' ? 'price_1QtCCEDYsHU2MI0nVeNPZrGe' : 'price_1QtCCEDYsHU2MI0nF0PvB3x5',
@@ -70,6 +91,8 @@ serve(async (req) => {
       },
     });
 
+    console.log('Created Stripe session:', session.id);
+
     // Actualizăm plata cu ID-ul sesiunii
     const { error: updateError } = await supabase
       .from('payments')
@@ -77,11 +100,12 @@ serve(async (req) => {
       .eq('id', payment.id);
 
     if (updateError) {
+      console.error('Error updating payment with session ID:', updateError);
       throw updateError;
     }
 
     // Creăm abonamentul inactiv
-    const { error: subscriptionError } = await supabase
+    const { error: subscriptionCreateError } = await supabase
       .from('subscriptions')
       .insert({
         craftsman_id,
@@ -90,8 +114,9 @@ serve(async (req) => {
         plan
       });
 
-    if (subscriptionError) {
-      throw subscriptionError;
+    if (subscriptionCreateError) {
+      console.error('Error creating subscription:', subscriptionCreateError);
+      throw subscriptionCreateError;
     }
 
     console.log('Subscription record created (inactive)');
