@@ -37,6 +37,14 @@ serve(async (req) => {
     });
   }
 
+  if (!WEBHOOK_SECRET) {
+    console.error('No webhook secret configured');
+    return new Response('Webhook Error: No webhook secret configured', { 
+      headers: corsHeaders,
+      status: 500 
+    });
+  }
+
   try {
     const body = await req.text();
     let event;
