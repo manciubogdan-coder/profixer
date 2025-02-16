@@ -72,14 +72,14 @@ export const SearchSidebar = ({
         />
         
         <Select
-          value={selectedType || ""}
-          onValueChange={(value) => setSelectedType(value || null)}
+          value={selectedType || "all"}
+          onValueChange={(value) => setSelectedType(value === "all" ? null : value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Alege meseria..." />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Toate meseriile</SelectItem>
+            <SelectItem value="all">Toate meseriile</SelectItem>
             {types?.map((type) => (
               <SelectItem key={type.id} value={type.id}>
                 {type.name}
