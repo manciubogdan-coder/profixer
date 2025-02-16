@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import Stripe from 'https://esm.sh/stripe@13.6.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,204 +9,108 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log('Request received:', req.method);
-
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
+    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+      apiVersion: '2023-10-16',
+    });
+
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
-    // Verifică autorizarea
-    const authHeader = req.headers.get('Authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    const { craftsman_id, plan = 'lunar' } = await req.json();
 
-    if (!token) {
-      console.log('No token provided');
-      return new Response(
-        JSON.stringify({ error: 'Nu ești autentificat' }),
-        { 
-          status: 401, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
+    if (!craftsman_id) {
+      throw new Error('Craftsman ID is required');
     }
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser(token)
+    // Creăm o plată în baza de date
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .insert({
+        craftsman_id,
+        amount: plan === 'lunar' ? 299 : 2990,
+        status: 'pending',
+        plan
+      })
+      .select()
+      .single();
 
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Nu ești autentificat' }),
-        { 
-          status: 401, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
+    if (paymentError) {
+      throw paymentError;
     }
 
-    let requestData;
-    try {
-      requestData = await req.json()
-    } catch (error) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body' }),
-        { 
-          status: 400, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
+    const baseUrl = req.headers.get('origin') || 'http://localhost:5173';
+
+    // Creăm sesiunea Stripe
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      client_reference_id: craftsman_id, // Adăugat aici
+      line_items: [
+        {
+          price: plan === 'lunar' ? 'price_1QtCCEDYsHU2MI0nVeNPZrGe' : 'price_1QtCCEDYsHU2MI0nF0PvB3x5',
+          quantity: 1,
+        },
+      ],
+      success_url: `${baseUrl}/subscription/success`,
+      cancel_url: `${baseUrl}/subscription/activate`,
+      currency: 'ron',
+      billing_address_collection: 'required',
+      phone_number_collection: {
+        enabled: true,
+      },
+      metadata: {
+        payment_id: payment.id,
+      },
+    });
+
+    // Actualizăm plata cu ID-ul sesiunii
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({ stripe_session_id: session.id })
+      .eq('id', payment.id);
+
+    if (updateError) {
+      throw updateError;
     }
 
-    const { plan } = requestData;
-
-    if (!plan) {
-      return new Response(
-        JSON.stringify({ error: 'Datele sunt incomplete' }),
-        { 
-          status: 400, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
-    }
-
-    // Verifică dacă utilizatorul are deja un abonament activ
-    const { data: activeSubscription } = await supabaseClient
+    // Creăm abonamentul inactiv
+    const { error: subscriptionError } = await supabase
       .from('subscriptions')
-      .select('*')
-      .eq('craftsman_id', user.id)
-      .eq('status', 'active')
-      .gt('end_date', new Date().toISOString())
-      .maybeSingle()
+      .insert({
+        craftsman_id,
+        payment_id: payment.id,
+        status: 'inactive',
+        plan
+      });
 
-    if (activeSubscription) {
-      return new Response(
-        JSON.stringify({ error: 'Ai deja un abonament activ' }),
-        { 
-          status: 400, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
+    if (subscriptionError) {
+      throw subscriptionError;
     }
 
-    try {
-      // Crează plata în baza de date
-      const { data: payment, error: paymentError } = await supabaseClient
-        .from('payments')
-        .insert({
-          craftsman_id: user.id,
-          amount: 99,
-          currency: 'RON',
-          status: 'pending',
-          stripe_payment_id: 'pl_test_static'
-        })
-        .select()
-        .single()
+    console.log('Subscription record created (inactive)');
 
-      if (paymentError || !payment) {
-        console.error('Error creating payment:', paymentError)
-        return new Response(
-          JSON.stringify({ error: 'Eroare la crearea plății' }),
-          { 
-            status: 500, 
-            headers: { 
-              ...corsHeaders, 
-              'Content-Type': 'application/json' 
-            } 
-          }
-        )
-      }
-
-      // Crează înregistrarea de abonament inactivă
-      const { error: subscriptionError } = await supabaseClient
-        .from('subscriptions')
-        .insert({
-          craftsman_id: user.id,
-          status: 'inactive',
-          plan,
-          payment_id: payment.id,
-          start_date: null,
-          end_date: null
-        })
-
-      if (subscriptionError) {
-        console.error('Error creating subscription:', subscriptionError)
-        return new Response(
-          JSON.stringify({ error: 'Eroare la crearea abonamentului' }),
-          { 
-            status: 500, 
-            headers: { 
-              ...corsHeaders, 
-              'Content-Type': 'application/json' 
-            } 
-          }
-        )
-      }
-
-      // Construim URL-ul cu parametrii necesari și success URL corect
-      const paymentUrl = new URL('https://buy.stripe.com/test_8wM3cDanZ5TbfPG000');
-      paymentUrl.searchParams.append('client_reference_id', user.id);
-      paymentUrl.searchParams.append('prefilled_email', user.email);
-      paymentUrl.searchParams.append('success_url', 'https://mesteri.app/subscription/success');
-      paymentUrl.searchParams.append('cancel_url', 'https://mesteri.app/subscription/activate');
-
-      return new Response(
-        JSON.stringify({ 
-          paymentUrl: paymentUrl.toString()
-        }),
-        { 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
-
-    } catch (error) {
-      console.error('Error:', error);
-      return new Response(
-        JSON.stringify({ error: 'Eroare la procesarea plății' }),
-        { 
-          status: 500, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
-    }
-  } catch (error) {
-    console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal Server Error' }),
-      { 
-        status: 500, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    )
+      JSON.stringify({ url: session.url }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      },
+    );
+  } catch (error) {
+    console.error('Error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      },
+    );
   }
-})
+});
