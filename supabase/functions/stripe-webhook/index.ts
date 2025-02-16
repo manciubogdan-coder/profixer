@@ -29,6 +29,7 @@ serve(async (req) => {
     }
 
     console.log('Received Stripe webhook event:', event.type);
+    console.log('Event data:', JSON.stringify(event.data.object, null, 2));
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -37,7 +38,7 @@ serve(async (req) => {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      console.log('Payment completed for session:', session.id);
+      console.log('Processing completed payment session:', session.id);
 
       const craftsman_id = session.client_reference_id;
       const plan = session.metadata?.plan || 'lunar';
@@ -46,6 +47,8 @@ serve(async (req) => {
         console.error('No craftsman_id found in session');
         return new Response('No craftsman_id found', { status: 400 });
       }
+
+      console.log('Creating payment record for craftsman:', craftsman_id);
 
       // Creăm plata
       const { data: payment, error: paymentError } = await supabaseClient
@@ -62,7 +65,7 @@ serve(async (req) => {
 
       if (paymentError) {
         console.error('Error creating payment:', paymentError);
-        return new Response('Error creating payment', { status: 500 });
+        return new Response('Error creating payment: ' + paymentError.message, { status: 500 });
       }
 
       console.log('Payment created:', payment.id);
@@ -72,8 +75,13 @@ serve(async (req) => {
       const endDate = new Date(startDate);
       endDate.setMonth(endDate.getMonth() + (plan === 'lunar' ? 1 : 12));
 
+      console.log('Creating subscription with dates:', {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      });
+
       // Creăm abonamentul
-      const { error: subscriptionError } = await supabaseClient
+      const { data: subscription, error: subscriptionError } = await supabaseClient
         .from('subscriptions')
         .insert({
           craftsman_id,
@@ -83,14 +91,29 @@ serve(async (req) => {
           stripe_subscription_id: session.subscription,
           start_date: startDate.toISOString(),
           end_date: endDate.toISOString()
-        });
+        })
+        .select()
+        .single();
 
       if (subscriptionError) {
         console.error('Error creating subscription:', subscriptionError);
-        return new Response('Error creating subscription', { status: 500 });
+        return new Response('Error creating subscription: ' + subscriptionError.message, { status: 500 });
       }
 
-      console.log('Subscription activated successfully');
+      console.log('Subscription created successfully:', subscription.id);
+
+      // Verificăm dacă abonamentul a fost într-adevăr creat și este activ
+      const { data: verifySubscription, error: verifyError } = await supabaseClient
+        .from('subscriptions')
+        .select('*')
+        .eq('id', subscription.id)
+        .single();
+
+      if (verifyError) {
+        console.error('Error verifying subscription:', verifyError);
+      } else {
+        console.log('Verified subscription status:', verifySubscription.status);
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {
