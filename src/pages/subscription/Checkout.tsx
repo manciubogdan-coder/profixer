@@ -10,6 +10,7 @@ import { SubscriptionPlan } from '@/types/subscription';
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
 
+// Important: Folosim cheia publică de test pentru Stripe
 const stripePromise = loadStripe('pk_test_51OqWcLBhVBCT5VBK15MoNrBnuoZ51O2uKYjbXLFtaLmDm6rRBfhMnvWPBfVGV7Y3L6kICEbqPz5nIFiTDM7r4OgR00w6Ny4Ecy');
 
 const Checkout = () => {
@@ -35,7 +36,6 @@ const Checkout = () => {
       } catch (error: any) {
         console.error('Error initializing payment:', error);
         
-        // Actualizat gestionarea erorii pentru a arăta un mesaj mai prietenos
         if (error.message.includes('Ai deja un abonament activ')) {
           toast.error('Nu poți crea un nou abonament deoarece ai deja unul activ.');
           navigate('/profile/me');
@@ -68,7 +68,18 @@ const Checkout = () => {
       <div className="container max-w-md mx-auto py-8 px-4">
         <h1 className="text-2xl font-bold mb-6">Finalizează Plata</h1>
         {clientSecret && (
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <Elements 
+            stripe={stripePromise} 
+            options={{
+              clientSecret,
+              appearance: {
+                theme: 'stripe',
+                variables: {
+                  colorPrimary: '#0F172A',
+                }
+              }
+            }}
+          >
             <CheckoutForm 
               clientSecret={clientSecret}
               amount={amount}

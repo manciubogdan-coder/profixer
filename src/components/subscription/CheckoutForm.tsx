@@ -19,6 +19,7 @@ export const CheckoutForm = ({ clientSecret, amount }: CheckoutFormProps) => {
     e.preventDefault();
 
     if (!stripe || !elements) {
+      console.error('Stripe.js has not loaded yet');
       return;
     }
 
@@ -33,6 +34,7 @@ export const CheckoutForm = ({ clientSecret, amount }: CheckoutFormProps) => {
       });
 
       if (error) {
+        console.error('Payment error:', error);
         toast.error(error.message || 'A apărut o eroare la procesarea plății.');
       }
     } catch (error) {
@@ -45,7 +47,17 @@ export const CheckoutForm = ({ clientSecret, amount }: CheckoutFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
+      <div className="p-4 bg-gray-50 rounded-lg mb-6">
+        <div className="text-sm text-gray-600">Total de plată</div>
+        <div className="text-2xl font-bold">{amount} RON</div>
+      </div>
+      
+      <PaymentElement 
+        options={{
+          layout: 'tabs'
+        }}
+      />
+      
       <Button 
         type="submit" 
         disabled={!stripe || isProcessing}
