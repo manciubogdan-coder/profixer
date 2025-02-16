@@ -9,23 +9,48 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
 
 const WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: corsHeaders,
+      status: 204,
+    });
+  }
+
   const signature = req.headers.get('stripe-signature');
   
   if (!signature) {
-    console.error('No stripe signature found');
-    return new Response('Webhook Error: No Stripe signature', { status: 400 });
+    console.error('No stripe signature found in headers:', Object.fromEntries(req.headers.entries()));
+    return new Response('Webhook Error: No Stripe signature', { 
+      headers: corsHeaders,
+      status: 400 
+    });
   }
 
   try {
     const body = await req.text();
     let event;
 
+    console.log('Attempting to verify webhook signature...');
+    console.log('Webhook secret length:', WEBHOOK_SECRET.length);
+    console.log('Signature received:', signature);
+
     try {
       event = stripe.webhooks.constructEvent(body, signature, WEBHOOK_SECRET);
     } catch (err) {
       console.error(`Webhook signature verification failed:`, err);
-      return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+      console.error('Received body:', body);
+      return new Response(`Webhook Error: ${err.message}`, { 
+        headers: corsHeaders,
+        status: 400 
+      });
     }
 
     console.log('Received Stripe webhook event:', event.type);
@@ -45,7 +70,10 @@ serve(async (req) => {
 
       if (!craftsman_id) {
         console.error('No craftsman_id found in session');
-        return new Response('No craftsman_id found', { status: 400 });
+        return new Response('No craftsman_id found', { 
+          headers: corsHeaders,
+          status: 400 
+        });
       }
 
       console.log('Creating payment record for craftsman:', craftsman_id);
@@ -65,7 +93,10 @@ serve(async (req) => {
 
       if (paymentError) {
         console.error('Error creating payment:', paymentError);
-        return new Response('Error creating payment: ' + paymentError.message, { status: 500 });
+        return new Response('Error creating payment: ' + paymentError.message, { 
+          headers: corsHeaders,
+          status: 500 
+        });
       }
 
       console.log('Payment created:', payment.id);
@@ -97,7 +128,10 @@ serve(async (req) => {
 
       if (subscriptionError) {
         console.error('Error creating subscription:', subscriptionError);
-        return new Response('Error creating subscription: ' + subscriptionError.message, { status: 500 });
+        return new Response('Error creating subscription: ' + subscriptionError.message, { 
+          headers: corsHeaders,
+          status: 500 
+        });
       }
 
       console.log('Subscription created successfully:', subscription.id);
@@ -117,11 +151,14 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ received: true }), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (err) {
     console.error('Error processing webhook:', err);
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    return new Response(`Webhook Error: ${err.message}`, { 
+      headers: corsHeaders,
+      status: 400 
+    });
   }
 });
