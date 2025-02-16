@@ -66,7 +66,6 @@ serve(async (req) => {
 
     console.log('User authenticated:', user.id);
 
-    // Obține datele din request
     let requestData;
     try {
       requestData = await req.json()
@@ -124,70 +123,13 @@ serve(async (req) => {
       )
     }
 
-    // Crează plata în baza de date
-    const { data: payment, error: paymentError } = await supabaseClient
-      .from('payments')
-      .insert({
-        craftsman_id: user.id,
-        amount,
-        currency: 'RON',
-        status: 'pending'
-      })
-      .select()
-      .single()
-
-    if (paymentError || !payment) {
-      console.error('Error creating payment:', paymentError)
-      return new Response(
-        JSON.stringify({ error: 'Eroare la crearea plății' }),
-        { 
-          status: 500, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
-    }
-
-    console.log('Payment created:', payment.id);
-
-    // Crează abonamentul în status pending
-    const { error: subscriptionError } = await supabaseClient
-      .from('subscriptions')
-      .insert({
-        craftsman_id: user.id,
-        status: 'inactive',
-        plan,
-        payment_id: payment.id,
-        start_date: new Date().toISOString(),
-        end_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
-      })
-
-    if (subscriptionError) {
-      console.error('Error creating subscription:', subscriptionError)
-      return new Response(
-        JSON.stringify({ error: 'Eroare la crearea abonamentului' }),
-        { 
-          status: 500, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
-      )
-    }
-
-    console.log('Subscription created');
-
     try {
-      // Crează payment intent în Stripe
+      // Crează payment intent în Stripe ÎNAINTE de a crea înregistrările în baza de date
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount * 100, // Stripe folosește cenți
         currency: 'ron',
         payment_method_types: ['card'],
         metadata: {
-          payment_id: payment.id,
           user_id: user.id,
           plan
         }
@@ -195,15 +137,62 @@ serve(async (req) => {
 
       console.log('Stripe payment intent created:', paymentIntent.id);
 
-      // Actualizează payment cu ID-ul de la Stripe
-      await supabaseClient
+      // Doar după ce avem payment intent-ul, creăm plata în baza de date
+      const { data: payment, error: paymentError } = await supabaseClient
         .from('payments')
-        .update({
+        .insert({
+          craftsman_id: user.id,
+          amount,
+          currency: 'RON',
+          status: 'pending',
           stripe_payment_id: paymentIntent.id
         })
-        .eq('id', payment.id)
+        .select()
+        .single()
 
-      console.log('Payment updated with Stripe ID');
+      if (paymentError || !payment) {
+        console.error('Error creating payment:', paymentError)
+        return new Response(
+          JSON.stringify({ error: 'Eroare la crearea plății' }),
+          { 
+            status: 500, 
+            headers: { 
+              ...corsHeaders, 
+              'Content-Type': 'application/json' 
+            } 
+          }
+        )
+      }
+
+      console.log('Payment record created:', payment.id);
+
+      // Crează înregistrarea de abonament inactivă
+      const { error: subscriptionError } = await supabaseClient
+        .from('subscriptions')
+        .insert({
+          craftsman_id: user.id,
+          status: 'inactive', // Important: începe ca inactiv
+          plan,
+          payment_id: payment.id,
+          start_date: null, // Va fi setat când plata este confirmată
+          end_date: null // Va fi setat când plata este confirmată
+        })
+
+      if (subscriptionError) {
+        console.error('Error creating subscription:', subscriptionError)
+        return new Response(
+          JSON.stringify({ error: 'Eroare la crearea abonamentului' }),
+          { 
+            status: 500, 
+            headers: { 
+              ...corsHeaders, 
+              'Content-Type': 'application/json' 
+            } 
+          }
+        )
+      }
+
+      console.log('Subscription record created (inactive)');
 
       return new Response(
         JSON.stringify({ clientSecret: paymentIntent.client_secret }),
@@ -214,6 +203,7 @@ serve(async (req) => {
           } 
         }
       )
+
     } catch (stripeError) {
       console.error('Stripe error:', stripeError);
       return new Response(
