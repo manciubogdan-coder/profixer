@@ -1,27 +1,19 @@
 
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
 import { Navigation } from "@/components/Navigation";
-import { CheckoutForm } from '@/components/subscription/CheckoutForm';
 import { createPaymentIntent } from '@/lib/subscription';
 import { SubscriptionPlan } from '@/types/subscription';
-import { SUBSCRIPTION_PRICES } from '@/lib/subscription';
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
 
-const stripePromise = loadStripe('pk_test_51OqWcLBhVBCT5VBK15MoNrBnuoZ51O2uKYjbXLFtaLmDm6rRBfhMnvWPBfVGV7Y3L6kICEbqPz5nIFiTDM7r4OgR00w6Ny4Ecy');
-
 const Checkout = () => {
-  const [clientSecret, setClientSecret] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
 
   const searchParams = new URLSearchParams(location.search);
   const plan = searchParams.get('plan') as SubscriptionPlan;
-  const amount = SUBSCRIPTION_PRICES[plan];
 
   useEffect(() => {
     if (!plan) {
@@ -31,12 +23,12 @@ const Checkout = () => {
 
     const initializePayment = async () => {
       try {
-        console.log('Initializing payment for plan:', plan);
-        const secret = await createPaymentIntent(plan);
-        console.log('Payment intent created successfully');
-        setClientSecret(secret);
+        console.log('Creating payment link for plan:', plan);
+        const paymentUrl = await createPaymentIntent(plan);
+        console.log('Payment link created, redirecting to:', paymentUrl);
+        window.location.href = paymentUrl;
       } catch (error: any) {
-        console.error('Error initializing payment:', error);
+        console.error('Error creating payment:', error);
         
         if (error.message.includes('Ai deja un abonament activ')) {
           toast.error('Nu poți crea un nou abonament deoarece ai deja unul activ.');
@@ -53,7 +45,7 @@ const Checkout = () => {
     initializePayment();
   }, [plan, navigate]);
 
-  if (isLoading || !clientSecret) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />
@@ -64,50 +56,7 @@ const Checkout = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="container max-w-md mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold mb-6 text-white">Finalizează Plata</h1>
-        {clientSecret && (
-          <div className="bg-slate-900/50 rounded-xl shadow-sm p-6 border border-slate-800">
-            <Elements 
-              stripe={stripePromise} 
-              options={{
-                clientSecret,
-                appearance: {
-                  theme: 'night',
-                  variables: {
-                    colorPrimary: '#9333EA',
-                    colorBackground: '#1E293B',
-                    colorText: '#FFFFFF',
-                    colorDanger: '#EF4444',
-                    fontFamily: 'system-ui, sans-serif',
-                    borderRadius: '8px',
-                  },
-                  rules: {
-                    '.Input': {
-                      border: '1px solid #334155',
-                      boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-                      backgroundColor: '#0F172A'
-                    },
-                    '.Label': {
-                      color: '#94A3B8'
-                    }
-                  }
-                }
-              }}
-            >
-              <CheckoutForm 
-                clientSecret={clientSecret}
-                amount={amount}
-              />
-            </Elements>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return null;
 };
 
 export default Checkout;

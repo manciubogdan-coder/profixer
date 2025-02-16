@@ -15,7 +15,6 @@ const corsHeaders = {
 serve(async (req) => {
   console.log('Request received:', req.method);
 
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -28,7 +27,6 @@ serve(async (req) => {
 
     // Verifică autorizarea
     const authHeader = req.headers.get('Authorization')
-    console.log('Auth header:', authHeader);
     const token = authHeader?.replace('Bearer ', '')
 
     if (!token) {
@@ -51,7 +49,6 @@ serve(async (req) => {
     } = await supabaseClient.auth.getUser(token)
 
     if (userError || !user) {
-      console.log('User error:', userError);
       return new Response(
         JSON.stringify({ error: 'Nu ești autentificat' }),
         { 
@@ -64,13 +61,10 @@ serve(async (req) => {
       )
     }
 
-    console.log('User authenticated:', user.id);
-
     let requestData;
     try {
       requestData = await req.json()
     } catch (error) {
-      console.error('Error parsing request body:', error);
       return new Response(
         JSON.stringify({ error: 'Invalid JSON in request body' }),
         { 
@@ -83,11 +77,9 @@ serve(async (req) => {
       )
     }
 
-    console.log('Request data:', requestData);
     const { plan } = requestData;
 
     if (!plan) {
-      console.log('Missing required data:', { plan });
       return new Response(
         JSON.stringify({ error: 'Datele sunt incomplete' }),
         { 
@@ -110,7 +102,6 @@ serve(async (req) => {
       .maybeSingle()
 
     if (activeSubscription) {
-      console.log('User already has active subscription');
       return new Response(
         JSON.stringify({ error: 'Ai deja un abonament activ' }),
         { 
@@ -124,40 +115,35 @@ serve(async (req) => {
     }
 
     try {
-      // Folosim price ID-ul corect din Stripe
-      const priceId = 'price_1QtCAwDYsHU2MI0ngpwkeHep';
-      console.log('Using Stripe price ID:', priceId);
-      
-      // Obține prețul din Stripe
-      const price = await stripe.prices.retrieve(priceId);
-      console.log('Retrieved price from Stripe:', price);
-      
-      const amount = price.unit_amount ? price.unit_amount / 100 : 99; // Convertim din cenți în RON
-
-      // Crează payment intent în Stripe
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: price.unit_amount || 9900, // Stripe folosește cenți
-        currency: 'ron',
-        automatic_payment_methods: {
-          enabled: true,
+      // Creează un Payment Link în Stripe
+      const paymentLink = await stripe.paymentLinks.create({
+        line_items: [{
+          price: 'price_1QtCAwDYsHU2MI0ngpwkeHep',
+          quantity: 1,
+        }],
+        after_completion: {
+          type: 'redirect',
+          redirect: {
+            url: `${req.headers.get('origin')}/subscription/success`,
+          },
         },
         metadata: {
           user_id: user.id,
-          plan
+          plan: plan
         }
-      })
+      });
 
-      console.log('Stripe payment intent created:', paymentIntent.id);
+      console.log('Payment link created:', paymentLink.url);
 
       // Crează plata în baza de date
       const { data: payment, error: paymentError } = await supabaseClient
         .from('payments')
         .insert({
           craftsman_id: user.id,
-          amount,
+          amount: 99, // Prețul în RON
           currency: 'RON',
           status: 'pending',
-          stripe_payment_id: paymentIntent.id
+          stripe_payment_id: paymentLink.id
         })
         .select()
         .single()
@@ -175,8 +161,6 @@ serve(async (req) => {
           }
         )
       }
-
-      console.log('Payment record created:', payment.id);
 
       // Crează înregistrarea de abonament inactivă
       const { error: subscriptionError } = await supabaseClient
@@ -204,12 +188,9 @@ serve(async (req) => {
         )
       }
 
-      console.log('Subscription record created (inactive)');
-
       return new Response(
         JSON.stringify({ 
-          clientSecret: paymentIntent.client_secret,
-          amount: amount
+          paymentUrl: paymentLink.url
         }),
         { 
           headers: { 

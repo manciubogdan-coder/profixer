@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import type { SubscriptionPlan } from "@/types/subscription";
 
@@ -7,7 +8,7 @@ export const SUBSCRIPTION_PRICES = {
 
 export async function createPaymentIntent(plan: SubscriptionPlan) {
   try {
-    console.log('Creating payment intent for plan:', plan);
+    console.log('Creating payment link for plan:', plan);
     const session = await supabase.auth.getSession();
     const accessToken = session.data.session?.access_token;
     
@@ -30,15 +31,15 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
       throw new Error(response.error.message || 'A apărut o eroare la crearea plății');
     }
 
-    if (!response.data || !response.data.clientSecret) {
+    if (!response.data || !response.data.paymentUrl) {
       console.error('Invalid response data:', response.data);
       throw new Error('Răspuns invalid de la server');
     }
 
-    console.log('Payment intent created successfully');
-    return response.data.clientSecret;
+    console.log('Payment link created successfully');
+    return response.data.paymentUrl;
   } catch (error) {
-    console.error('Error creating payment intent:', error);
+    console.error('Error creating payment link:', error);
     throw error;
   }
 }
