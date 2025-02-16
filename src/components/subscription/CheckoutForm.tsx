@@ -47,21 +47,23 @@ export const CheckoutForm = ({ clientSecret, amount }: CheckoutFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="p-4 bg-gray-50 rounded-lg mb-6">
-        <div className="text-sm text-gray-600">Total de plată</div>
-        <div className="text-2xl font-bold">{amount} RON</div>
+      <div className="p-4 bg-slate-100 rounded-lg mb-6">
+        <div className="text-sm text-slate-600">Total de plată</div>
+        <div className="text-2xl font-bold text-slate-900">{amount} RON</div>
       </div>
       
-      <PaymentElement 
-        options={{
-          layout: 'tabs'
-        }}
-      />
+      <div className="bg-white p-4 rounded-lg shadow-sm">
+        <PaymentElement 
+          options={{
+            layout: 'tabs'
+          }}
+        />
+      </div>
       
       <Button 
         type="submit" 
         disabled={!stripe || isProcessing}
-        className="w-full"
+        className="w-full bg-purple-600 hover:bg-purple-700"
       >
         {isProcessing ? (
           <>

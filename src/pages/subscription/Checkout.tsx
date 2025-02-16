@@ -10,7 +10,6 @@ import { SubscriptionPlan } from '@/types/subscription';
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
 
-// Important: Folosim cheia publică de test pentru Stripe
 const stripePromise = loadStripe('pk_test_51OqWcLBhVBCT5VBK15MoNrBnuoZ51O2uKYjbXLFtaLmDm6rRBfhMnvWPBfVGV7Y3L6kICEbqPz5nIFiTDM7r4OgR00w6Ny4Ecy');
 
 const Checkout = () => {
@@ -21,7 +20,7 @@ const Checkout = () => {
 
   const searchParams = new URLSearchParams(location.search);
   const plan = searchParams.get('plan') as SubscriptionPlan;
-  const amount = 99; // Preț fix pentru abonamentul lunar
+  const amount = 99;
 
   useEffect(() => {
     if (!plan) {
@@ -31,7 +30,9 @@ const Checkout = () => {
 
     const initializePayment = async () => {
       try {
+        console.log('Initializing payment for plan:', plan);
         const secret = await createPaymentIntent(plan);
+        console.log('Payment intent created successfully');
         setClientSecret(secret);
       } catch (error: any) {
         console.error('Error initializing payment:', error);
@@ -53,38 +54,51 @@ const Checkout = () => {
 
   if (isLoading || !clientSecret) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-slate-50">
         <Navigation />
         <div className="container flex items-center justify-center py-8">
-          <LoaderCircle className="h-8 w-8 animate-spin" />
+          <LoaderCircle className="h-8 w-8 animate-spin text-purple-600" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-50">
       <Navigation />
       <div className="container max-w-md mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold mb-6">Finalizează Plata</h1>
+        <h1 className="text-2xl font-bold mb-6 text-slate-900">Finalizează Plata</h1>
         {clientSecret && (
-          <Elements 
-            stripe={stripePromise} 
-            options={{
-              clientSecret,
-              appearance: {
-                theme: 'stripe',
-                variables: {
-                  colorPrimary: '#0F172A',
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <Elements 
+              stripe={stripePromise} 
+              options={{
+                clientSecret,
+                appearance: {
+                  theme: 'stripe',
+                  variables: {
+                    colorPrimary: '#9333EA',
+                    colorBackground: '#FFFFFF',
+                    colorText: '#1F2937',
+                    colorDanger: '#EF4444',
+                    fontFamily: 'system-ui, sans-serif',
+                    borderRadius: '8px',
+                  },
+                  rules: {
+                    '.Input': {
+                      border: '1px solid #E5E7EB',
+                      boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+                    },
+                  }
                 }
-              }
-            }}
-          >
-            <CheckoutForm 
-              clientSecret={clientSecret}
-              amount={amount}
-            />
-          </Elements>
+              }}
+            >
+              <CheckoutForm 
+                clientSecret={clientSecret}
+                amount={amount}
+              />
+            </Elements>
+          </div>
         )}
       </div>
     </div>
