@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -159,43 +158,10 @@ const CraftsmanProfile = () => {
 
   const isOwnProfile = user.id === profile.id;
 
-  console.log("Profile role:", profile.role);
-  console.log("Is own profile:", isOwnProfile);
-  console.log("Should show subscription status:", profile.role === 'professional' && isOwnProfile);
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
-        {user.id === userId && isProfessional && (
-          <SubscriptionStatus />
-        )}
-
-        {!subscriptionStatus?.is_subscription_active && user.id === userId && isProfessional && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <div className="flex items-start">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-              <div className="ml-3">
-                <h3 className="text-yellow-800 font-medium">Abonament inactiv</h3>
-                <p className="mt-2 text-yellow-700">
-                  Nu poți fi găsit de către clienți în rezultatele căutării sau pe hartă. 
-                  Pentru a beneficia de toate funcționalitățile platformei, te rugăm să activezi un abonament.
-                </p>
-                <Button 
-                  className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white"
-                  onClick={() => navigate("/subscription/activate")}
-                >
-                  Activează abonament
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="text-sm text-gray-500 mb-4">
-          Role: {profile.role}, Own Profile: {isOwnProfile ? 'Yes' : 'No'}
-        </div>
-
         <div className="space-y-8">
           {profile.role === 'professional' && (
             <CraftsmanStats craftsmanId={profile.id} />
