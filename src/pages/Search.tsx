@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { SearchSidebar } from "@/components/search/SearchSidebar";
@@ -59,13 +60,14 @@ const Search = () => {
     queryKey: ["craftsmen", searchTerm, selectedType, maxDistance, minRating, userLocation],
     queryFn: async () => {
       console.log("Fetching craftsmen...");
+      
+      // Primul query pentru a obține profilurile meșterilor
       let query = supabase
         .from("profiles")
         .select(`
           *,
           reviews!reviews_craftsman_id_fkey(rating),
-          trade:craftsman_type(name),
-          subscription_status:craftsman_subscription_status(is_subscription_active)
+          trade:craftsman_type(name)
         `)
         .eq("role", "professional");
 
@@ -86,7 +88,26 @@ const Search = () => {
         return [];
       }
 
+      // Al doilea query pentru a obține statusul abonamentelor
+      const { data: subscriptionStatuses, error: subError } = await supabase
+        .from("craftsman_subscription_status")
+        .select("*");
+
+      if (subError) {
+        console.error("Error fetching subscription statuses:", subError);
+        return [];
+      }
+
+      // Creăm un map pentru a accesa rapid statusurile abonamentelor
+      const statusMap = new Map(
+        subscriptionStatuses.map((status) => [
+          status.craftsman_id,
+          status.is_subscription_active,
+        ])
+      );
+
       console.log("Raw craftsmen data:", craftsmenData);
+      console.log("Subscription statuses:", subscriptionStatuses);
 
       const processedCraftsmen = craftsmenData
         .map((craftsman): Craftsman => {
@@ -98,12 +119,16 @@ const Search = () => {
           return {
             ...craftsman,
             average_rating: avgRating,
-            subscription_status: craftsman.subscription_status?.[0] || { is_subscription_active: false }
+            subscription_status: {
+              is_subscription_active: statusMap.get(craftsman.id) || false
+            }
           };
         })
         .filter((craftsman) => {
+          // Filtrăm inițial după rating minim
           if ((craftsman.average_rating || 0) < minRating) return false;
 
+          // Apoi verificăm distanța dacă avem locația utilizatorului
           if (userLocation && craftsman.latitude && craftsman.longitude) {
             const distance = calculateDistance(
               userLocation.lat,
