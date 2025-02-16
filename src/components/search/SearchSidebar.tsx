@@ -72,7 +72,8 @@ export const SearchSidebar = ({
         />
         
         <Select
-          value={selectedType || "all"}
+          defaultValue="all"
+          value={selectedType ?? "all"}
           onValueChange={(value) => setSelectedType(value === "all" ? null : value)}
         >
           <SelectTrigger>
