@@ -98,13 +98,11 @@ const Search = () => {
         return [];
       }
 
-      // Creăm un map pentru a accesa rapid statusurile abonamentelor
-      const statusMap = new Map(
-        subscriptionStatuses.map((status) => [
-          status.craftsman_id,
-          status.is_subscription_active,
-        ])
-      );
+      // Creăm un obiect pentru a accesa rapid statusurile abonamentelor
+      const statusMap: Record<string, boolean> = {};
+      subscriptionStatuses.forEach((status: { craftsman_id: string; is_subscription_active: boolean }) => {
+        statusMap[status.craftsman_id] = status.is_subscription_active;
+      });
 
       console.log("Raw craftsmen data:", craftsmenData);
       console.log("Subscription statuses:", subscriptionStatuses);
@@ -120,7 +118,7 @@ const Search = () => {
             ...craftsman,
             average_rating: avgRating,
             subscription_status: {
-              is_subscription_active: statusMap.get(craftsman.id) || false
+              is_subscription_active: statusMap[craftsman.id] || false
             }
           };
         })
