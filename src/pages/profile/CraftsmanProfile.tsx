@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -138,13 +137,18 @@ const CraftsmanProfile = () => {
 
   const isOwnProfile = user.id === profile.id;
 
+  console.log("Profile role:", profile.role);
+  console.log("Is own profile:", isOwnProfile);
+  console.log("Show subscription status:", isOwnProfile && profile.role === 'professional');
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container py-8 space-y-8">
-        {/* Am simplificat condiția de afișare */}
-        {profile.role === 'professional' && <SubscriptionStatus />}
-        
+      <div className="container py-8">
+        <div className="mb-8">
+          <SubscriptionStatus />
+        </div>
+
         <div className="space-y-8">
           {profile.role === 'professional' && (
             <CraftsmanStats craftsmanId={profile.id} />
