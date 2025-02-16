@@ -209,3 +209,18 @@ export const SubscriptionStatus = () => {
         <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
         <div className="ml-3 flex-1">
           <AlertTitle className="text-green-800 text-lg font-semibold">
+            Abonament Activ
+          </AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="text-green-700">
+              Abonamentul tău este activ și va expira pe data de{' '}
+              {endDate ? format(endDate, 'd MMMM yyyy', {
+                locale: ro
+              }) : 'N/A'}.
+            </p>
+          </AlertDescription>
+        </div>
+      </div>
+    </Alert>
+  );
+};
