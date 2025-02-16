@@ -16,6 +16,9 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('Webhook called with method:', req.method);
+  console.log('Headers:', Object.fromEntries(req.headers.entries()));
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -27,32 +30,34 @@ serve(async (req) => {
   const signature = req.headers.get('stripe-signature');
   
   if (!signature) {
-    console.error('No stripe signature found in headers:', Object.fromEntries(req.headers.entries()));
-    // Important: Am eliminat verificarea semnăturii pentru moment
-    // return new Response('Webhook Error: No Stripe signature', { 
-    //   headers: corsHeaders,
-    //   status: 400 
-    // });
+    console.error('No stripe signature found in headers');
+    return new Response('Webhook Error: No Stripe signature', { 
+      headers: corsHeaders,
+      status: 400 
+    });
+  }
+
+  if (!WEBHOOK_SECRET) {
+    console.error('No webhook secret configured');
+    return new Response('Webhook Error: No webhook secret configured', { 
+      headers: corsHeaders,
+      status: 500 
+    });
   }
 
   try {
     const body = await req.text();
     let event;
 
-    console.log('Processing webhook request...');
-    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
-    console.log('Request body:', body);
+    console.log('Attempting to verify webhook signature...');
+    console.log('Webhook secret length:', WEBHOOK_SECRET.length);
+    console.log('Signature received:', signature);
 
     try {
-      // Dacă avem semnătură și secret, verificăm
-      if (signature && WEBHOOK_SECRET) {
-        event = stripe.webhooks.constructEvent(body, signature, WEBHOOK_SECRET);
-      } else {
-        // Altfel, parsăm direct body-ul
-        event = JSON.parse(body);
-      }
+      event = stripe.webhooks.constructEvent(body, signature, WEBHOOK_SECRET);
+      console.log('Webhook signature verified successfully');
     } catch (err) {
-      console.error(`Webhook parsing failed:`, err);
+      console.error(`Webhook signature verification failed:`, err);
       console.error('Received body:', body);
       return new Response(`Webhook Error: ${err.message}`, { 
         headers: corsHeaders,
