@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -6,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award, AlertTriangle } from "lucide-react";
+import { Star, MapPin, Phone, MessageCircle, User, Briefcase, Award } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
@@ -15,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
-import { SubscriptionStatus } from "@/components/subscription/SubscriptionStatus";
 import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
 import { CraftsmanStats } from '@/components/profile/CraftsmanStats';
 
