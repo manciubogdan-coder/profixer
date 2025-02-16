@@ -39,6 +39,7 @@ serve(async (req) => {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       console.log('Payment completed for session:', session.id);
+      console.log('Client reference ID:', session.client_reference_id);
 
       // Găsim plata după metadata sau ID
       const { data: payment, error: paymentError } = await supabaseClient
@@ -48,7 +49,7 @@ serve(async (req) => {
           stripe_payment_id: session.id
         })
         .eq('status', 'pending')
-        .eq('craftsman_id', session.metadata?.user_id)
+        .eq('craftsman_id', session.client_reference_id)
         .select()
         .single();
 

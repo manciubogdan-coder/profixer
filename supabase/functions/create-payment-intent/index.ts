@@ -115,10 +115,10 @@ serve(async (req) => {
         .from('payments')
         .insert({
           craftsman_id: user.id,
-          amount: 99, // Prețul în RON
+          amount: 99,
           currency: 'RON',
           status: 'pending',
-          stripe_payment_id: 'pl_test_static' // Un ID static pentru că folosim un payment link static
+          stripe_payment_id: 'pl_test_static'
         })
         .select()
         .single()
@@ -163,9 +163,14 @@ serve(async (req) => {
         )
       }
 
+      // Construim URL-ul cu parametrii necesari
+      const paymentUrl = new URL('https://buy.stripe.com/test_8wM3cDanZ5TbfPG000');
+      paymentUrl.searchParams.append('client_reference_id', user.id);
+      paymentUrl.searchParams.append('prefilled_email', user.email);
+
       return new Response(
         JSON.stringify({ 
-          paymentUrl: 'https://buy.stripe.com/test_8wM3cDanZ5TbfPG000'
+          paymentUrl: paymentUrl.toString()
         }),
         { 
           headers: { 
