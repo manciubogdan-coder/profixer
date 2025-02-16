@@ -17,8 +17,9 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('Webhook called with method:', req.method);
+  console.log('Request URL:', req.url);
   console.log('Headers:', Object.fromEntries(req.headers.entries()));
-
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -47,9 +48,11 @@ serve(async (req) => {
 
   try {
     const body = await req.text();
+    console.log('Received webhook body:', body);
     let event;
 
     console.log('Attempting to verify webhook signature...');
+    console.log('Webhook secret present:', !!WEBHOOK_SECRET);
     console.log('Webhook secret length:', WEBHOOK_SECRET.length);
     console.log('Signature received:', signature);
 
