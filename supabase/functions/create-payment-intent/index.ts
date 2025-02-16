@@ -1,11 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import Stripe from 'https://esm.sh/stripe@13.6.0'
-
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2023-10-16',
-});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -115,26 +110,6 @@ serve(async (req) => {
     }
 
     try {
-      // Creează un Payment Link în Stripe
-      const paymentLink = await stripe.paymentLinks.create({
-        line_items: [{
-          price: 'price_1QtCAwDYsHU2MI0ngpwkeHep',
-          quantity: 1,
-        }],
-        after_completion: {
-          type: 'redirect',
-          redirect: {
-            url: `${req.headers.get('origin')}/subscription/success`,
-          },
-        },
-        metadata: {
-          user_id: user.id,
-          plan: plan
-        }
-      });
-
-      console.log('Payment link created:', paymentLink.url);
-
       // Crează plata în baza de date
       const { data: payment, error: paymentError } = await supabaseClient
         .from('payments')
@@ -143,7 +118,7 @@ serve(async (req) => {
           amount: 99, // Prețul în RON
           currency: 'RON',
           status: 'pending',
-          stripe_payment_id: paymentLink.id
+          stripe_payment_id: 'pl_test_static' // Un ID static pentru că folosim un payment link static
         })
         .select()
         .single()
@@ -190,7 +165,7 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ 
-          paymentUrl: paymentLink.url
+          paymentUrl: 'https://buy.stripe.com/test_8wM3cDanZ5TbfPG000'
         }),
         { 
           headers: { 
@@ -200,10 +175,10 @@ serve(async (req) => {
         }
       )
 
-    } catch (stripeError) {
-      console.error('Stripe error:', stripeError);
+    } catch (error) {
+      console.error('Error:', error);
       return new Response(
-        JSON.stringify({ error: 'Eroare la procesarea plății cu Stripe' }),
+        JSON.stringify({ error: 'Eroare la procesarea plății' }),
         { 
           status: 500, 
           headers: { 

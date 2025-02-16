@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { SubscriptionPlan } from "@/types/subscription";
 
@@ -31,13 +30,8 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
       throw new Error(response.error.message || 'A apărut o eroare la crearea plății');
     }
 
-    if (!response.data || !response.data.paymentUrl) {
-      console.error('Invalid response data:', response.data);
-      throw new Error('Răspuns invalid de la server');
-    }
-
-    console.log('Payment link created successfully');
-    return response.data.paymentUrl;
+    console.log('Using static payment link');
+    return 'https://buy.stripe.com/test_8wM3cDanZ5TbfPG000';
   } catch (error) {
     console.error('Error creating payment link:', error);
     throw error;
