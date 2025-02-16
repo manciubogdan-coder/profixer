@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,17 +8,18 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ro } from "date-fns/locale";
+
 interface SubscriptionStatusData {
   craftsman_id: string;
   subscription_status: 'active' | 'inactive';
   subscription_end_date: string | null;
   is_subscription_active: boolean;
 }
+
 export const SubscriptionStatus = () => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
   const {
     data: subscriptionStatus,
     isLoading,
@@ -26,41 +28,52 @@ export const SubscriptionStatus = () => {
     queryKey: ["subscription-status", user?.id],
     queryFn: async () => {
       console.log("Fetching subscription status for user:", user?.id);
-      const {
-        data,
-        error
-      } = await supabase.from("craftsman_subscription_status").select("*").eq("craftsman_id", user?.id).single();
+      const { data, error } = await supabase
+        .from("craftsman_subscription_status")
+        .select("*")
+        .eq("craftsman_id", user?.id)
+        .single();
+
       if (error) {
         console.error("Error fetching subscription status:", error);
-        return null;
+        throw error;
       }
+
       console.log("Fetched subscription status:", data);
       return data as SubscriptionStatusData;
     },
-    enabled: !!user
+    enabled: !!user?.id
   });
 
-  // Adăugăm console.log pentru debugging
   console.log("Subscription status:", subscriptionStatus);
   console.log("Loading:", isLoading);
   console.log("Error:", error);
+
   if (isLoading) {
-    return <Alert className="mb-4 bg-gray-50">
+    return (
+      <Alert className="mb-4 bg-gray-50">
         <AlertTitle>Se încarcă statusul abonamentului...</AlertTitle>
-      </Alert>;
+      </Alert>
+    );
   }
+
   if (error || !subscriptionStatus) {
-    return <Alert variant="destructive" className="mb-4">
+    return (
+      <Alert variant="destructive" className="mb-4">
         <AlertTitle>Eroare la încărcarea statusului abonamentului</AlertTitle>
         <AlertDescription>
           Nu am putut încărca informațiile despre abonament. Te rugăm să încerci din nou mai târziu.
         </AlertDescription>
-      </Alert>;
+      </Alert>
+    );
   }
+
   const endDate = subscriptionStatus.subscription_end_date ? new Date(subscriptionStatus.subscription_end_date) : null;
   const daysUntilExpiration = endDate ? Math.ceil((endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
   if (!subscriptionStatus.is_subscription_active) {
-    return <Alert variant="destructive" className="mb-4 bg-[#0F1729] border-red-600">
+    return (
+      <Alert variant="destructive" className="mb-4 bg-[#0F1729] border-red-600">
         <div className="flex flex-col space-y-4">
           <div className="flex items-start">
             <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
@@ -68,8 +81,8 @@ export const SubscriptionStatus = () => {
               <AlertTitle className="text-lg font-semibold text-white">Abonament Expirat</AlertTitle>
               <AlertDescription className="mt-2 text-gray-300">
                 Abonamentul tău a expirat la data de {endDate ? format(endDate, 'd MMMM yyyy', {
-                locale: ro
-              }) : 'N/A'}.
+                  locale: ro
+                }) : 'N/A'}.
                 Profilul tău nu mai este vizibil pentru clienți și ai acces limitat la platformă.
               </AlertDescription>
             </div>
@@ -85,14 +98,20 @@ export const SubscriptionStatus = () => {
             </ul>
           </div>
 
-          <Button className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white mt-2" onClick={() => navigate("/subscription/activate")}>
+          <Button 
+            className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white mt-2" 
+            onClick={() => navigate("/subscription/activate")}
+          >
             Reactivează Abonamentul
           </Button>
         </div>
-      </Alert>;
+      </Alert>
+    );
   }
+
   if (daysUntilExpiration <= 7) {
-    return <Alert className="mb-4 border-yellow-500 bg-yellow-50">
+    return (
+      <Alert className="mb-4 border-yellow-500 bg-yellow-50">
         <div className="flex items-start">
           <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
           <div className="ml-3 flex-1">
@@ -103,19 +122,45 @@ export const SubscriptionStatus = () => {
               <p className="text-yellow-700">
                 Abonamentul tău va expira în {daysUntilExpiration} zile, 
                 pe data de {endDate ? format(endDate, 'd MMMM yyyy', {
-                locale: ro
-              }) : 'N/A'}.
+                  locale: ro
+                }) : 'N/A'}.
               </p>
               <p className="text-yellow-700">
                 Pentru a evita întreruperea serviciilor, te rugăm să reînnoiești abonamentul.
               </p>
-              <Button variant="outline" className="mt-2 w-full sm:w-auto border-yellow-600 text-yellow-700 hover:bg-yellow-100" onClick={() => navigate("/subscription/activate")}>
+              <Button 
+                variant="outline" 
+                className="mt-2 w-full sm:w-auto border-yellow-600 text-yellow-700 hover:bg-yellow-100"
+                onClick={() => navigate("/subscription/activate")}
+              >
                 Reînnoiește Abonamentul
               </Button>
             </AlertDescription>
           </div>
         </div>
-      </Alert>;
+      </Alert>
+    );
   }
-  return;
+
+  // Pentru abonament activ și valid (mai mult de 7 zile până la expirare)
+  return (
+    <Alert className="mb-4 border-green-500 bg-green-50">
+      <div className="flex items-start">
+        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+        <div className="ml-3 flex-1">
+          <AlertTitle className="text-green-800 text-lg font-semibold">
+            Abonament Activ
+          </AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="text-green-700">
+              Abonamentul tău este activ și va expira pe data de{' '}
+              {endDate ? format(endDate, 'd MMMM yyyy', {
+                locale: ro
+              }) : 'N/A'}.
+            </p>
+          </AlertDescription>
+        </div>
+      </div>
+    </Alert>
+  );
 };
