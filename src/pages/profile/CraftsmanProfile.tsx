@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
@@ -18,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AddReviewDialog } from "@/components/reviews/AddReviewDialog";
 import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
 import { CraftsmanStats } from '@/components/profile/CraftsmanStats';
+import { SubscriptionStatus } from "@/components/subscription/SubscriptionStatus";
 
 const CraftsmanProfile = () => {
   const { id } = useParams();
@@ -26,27 +26,6 @@ const CraftsmanProfile = () => {
   const { isProfessional } = useSubscriptionCheck();
 
   const userId = id === 'me' ? user?.id : id;
-
-  const { data: subscriptionStatus } = useQuery({
-    queryKey: ["subscription-status", userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      
-      const { data, error } = await supabase
-        .from("craftsman_subscription_status")
-        .select("*")
-        .eq("craftsman_id", userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error("Error fetching subscription status:", error);
-        throw error;
-      }
-
-      return data;
-    },
-    enabled: !!userId && isProfessional,
-  });
 
   useEffect(() => {
     if (!user) {
@@ -157,11 +136,14 @@ const CraftsmanProfile = () => {
     : 0;
 
   const isOwnProfile = user.id === profile.id;
+  const showSubscriptionStatus = isOwnProfile && profile.role === 'professional';
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container py-8 space-y-8">
+        {showSubscriptionStatus && <SubscriptionStatus />}
+        
         <div className="space-y-8">
           {profile.role === 'professional' && (
             <CraftsmanStats craftsmanId={profile.id} />
