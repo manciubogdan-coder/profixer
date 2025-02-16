@@ -84,10 +84,10 @@ serve(async (req) => {
     }
 
     console.log('Request data:', requestData);
-    const { plan, amount } = requestData
+    const { plan } = requestData;
 
-    if (!plan || !amount) {
-      console.log('Missing required data:', { plan, amount });
+    if (!plan) {
+      console.log('Missing required data:', { plan });
       return new Response(
         JSON.stringify({ error: 'Datele sunt incomplete' }),
         { 
@@ -124,11 +124,20 @@ serve(async (req) => {
     }
 
     try {
-      // Crează payment intent în Stripe ÎNAINTE de a crea înregistrările în baza de date
+      // Creează un produs nou în Stripe (sau folosește unul existent)
+      const priceId = 'price_1OqWrHBhVBCT5VBKnLtg7XSN'; // ID-ul prețului din Stripe
+      
+      // Obține prețul din Stripe
+      const price = await stripe.prices.retrieve(priceId);
+      const amount = price.unit_amount ? price.unit_amount / 100 : 99; // Convertim din cenți în RON
+
+      // Crează payment intent în Stripe
       const paymentIntent = await stripe.paymentIntents.create({
-        amount: amount * 100, // Stripe folosește cenți
+        amount: price.unit_amount || 9900, // Stripe folosește cenți
         currency: 'ron',
-        payment_method_types: ['card'],
+        automatic_payment_methods: {
+          enabled: true,
+        },
         metadata: {
           user_id: user.id,
           plan
@@ -137,7 +146,7 @@ serve(async (req) => {
 
       console.log('Stripe payment intent created:', paymentIntent.id);
 
-      // Doar după ce avem payment intent-ul, creăm plata în baza de date
+      // Crează plata în baza de date
       const { data: payment, error: paymentError } = await supabaseClient
         .from('payments')
         .insert({
@@ -171,11 +180,11 @@ serve(async (req) => {
         .from('subscriptions')
         .insert({
           craftsman_id: user.id,
-          status: 'inactive', // Important: începe ca inactiv
+          status: 'inactive',
           plan,
           payment_id: payment.id,
-          start_date: null, // Va fi setat când plata este confirmată
-          end_date: null // Va fi setat când plata este confirmată
+          start_date: null,
+          end_date: null
         })
 
       if (subscriptionError) {
@@ -195,7 +204,10 @@ serve(async (req) => {
       console.log('Subscription record created (inactive)');
 
       return new Response(
-        JSON.stringify({ clientSecret: paymentIntent.client_secret }),
+        JSON.stringify({ 
+          clientSecret: paymentIntent.client_secret,
+          amount: amount
+        }),
         { 
           headers: { 
             ...corsHeaders, 

@@ -1,7 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { SubscriptionPlan } from "@/types/subscription";
-import { toast } from "sonner";
 
 export const SUBSCRIPTION_PRICES = {
   lunar: 99,
@@ -20,13 +18,11 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
     const response = await supabase.functions.invoke('create-payment-intent', {
       body: {
         plan,
-        amount: SUBSCRIPTION_PRICES[plan],
       }
     });
 
     if (response.error) {
       console.error('Error response:', response.error);
-      // Verificăm dacă eroarea este despre abonament activ
       if (response.error.message?.includes('Ai deja un abonament activ')) {
         throw new Error('Ai deja un abonament activ. Nu poți crea un nou abonament până când cel curent nu expiră.');
       }
