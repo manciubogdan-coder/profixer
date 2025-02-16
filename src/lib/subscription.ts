@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import type { SubscriptionPlan } from "@/types/subscription";
 
@@ -7,16 +8,18 @@ export const SUBSCRIPTION_PRICES = {
 
 export async function createPaymentIntent(plan: SubscriptionPlan) {
   try {
-    console.log('Creating payment link for plan:', plan);
     const session = await supabase.auth.getSession();
-    const accessToken = session.data.session?.access_token;
+    const user = session.data.session?.user;
     
-    if (!accessToken) {
+    if (!user) {
       throw new Error('Nu ești autentificat');
     }
 
+    console.log('Creating payment link for user:', user.id);
+    
     const response = await supabase.functions.invoke('create-payment-intent', {
       body: {
+        craftsman_id: user.id,
         plan,
       }
     });
@@ -30,8 +33,7 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
       throw new Error(response.error.message || 'A apărut o eroare la crearea plății');
     }
 
-    console.log('Using static payment link');
-    return 'https://buy.stripe.com/test_8wM3cDanZ5TbfPG000';
+    return response.data.url;
   } catch (error) {
     console.error('Error creating payment link:', error);
     throw error;
