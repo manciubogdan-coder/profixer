@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -22,14 +21,7 @@ import { Database } from "@/integrations/supabase/types";
 type DbResult<T> = T extends PromiseLike<infer U> ? U : never;
 
 type DatabaseSubscription = Database['public']['Tables']['subscriptions']['Row'];
-
-type CraftsmanSubscriptionStatus = Database['public']['Views']['craftsman_subscription_status']['Row'] & {
-  profiles: {
-    first_name: string;
-    last_name: string;
-    email: string;
-  } | null;
-};
+type UserProfile = Database['public']['Tables']['profiles']['Row'];
 
 interface Subscription {
   id: string;
@@ -98,39 +90,35 @@ export const SubscriptionManagement = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      const { data: subscriptionsData, error } = await supabase
-        .from('craftsman_subscription_status')
-        .select(`
-          craftsman_id,
-          is_subscription_active,
-          subscription_end_date,
-          profiles!craftsman_subscription_status_craftsman_id_fkey (
-            first_name,
-            last_name,
-            email
-          )
-        `) as { data: CraftsmanSubscriptionStatus[] | null; error: any };
+      const { data: professionals, error: profError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .eq('role', 'professional');
 
-      if (error) throw error;
+      if (profError) throw profError;
+      if (!professionals) return;
 
-      if (!subscriptionsData) return;
+      const { data: subscriptionsData, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .in('craftsman_id', professionals.map(p => p.id));
 
-      const uniqueSubscriptions = new Map<string, Subscription>();
-      
-      subscriptionsData.forEach(sub => {
-        if (!uniqueSubscriptions.has(sub.craftsman_id) && sub.profiles) {
-          uniqueSubscriptions.set(sub.craftsman_id, {
-            id: sub.craftsman_id,
-            craftsman_id: sub.craftsman_id,
-            craftsman_name: `${sub.profiles.first_name} ${sub.profiles.last_name}`,
-            craftsman_email: sub.profiles.email,
-            status: sub.is_subscription_active ? "active" : "inactive",
-            end_date: sub.subscription_end_date
-          });
-        }
+      if (subError) throw subError;
+
+      const combinedSubscriptions = professionals.map(prof => {
+        const subscription = subscriptionsData?.find(s => s.craftsman_id === prof.id);
+        
+        return {
+          id: prof.id,
+          craftsman_id: prof.id,
+          craftsman_name: `${prof.first_name} ${prof.last_name}`,
+          craftsman_email: prof.email || '',
+          status: subscription?.status || "inactive",
+          end_date: subscription?.end_date || null
+        };
       });
 
-      setSubscriptions(Array.from(uniqueSubscriptions.values()));
+      setSubscriptions(combinedSubscriptions);
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
       toast.error('Nu am putut încărca lista de abonamente');
@@ -145,10 +133,9 @@ export const SubscriptionManagement = () => {
         .from('subscriptions')
         .select('*')
         .eq('craftsman_id', subscriptionId)
-        .single();
+        .maybeSingle();
 
       if (!existingSubscription) {
-        // Create new subscription if none exists
         const { error } = await supabase
           .from('subscriptions')
           .insert({
@@ -159,7 +146,6 @@ export const SubscriptionManagement = () => {
           });
         if (error) throw error;
       } else {
-        // Update existing subscription
         const { error } = await supabase
           .from('subscriptions')
           .update({
