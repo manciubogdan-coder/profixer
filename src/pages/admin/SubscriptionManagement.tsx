@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -23,11 +24,16 @@ type DbResult<T> = T extends PromiseLike<infer U> ? U : never;
 type DatabaseSubscription = Database['public']['Tables']['subscriptions']['Row'];
 type UserProfile = Database['public']['Tables']['profiles']['Row'];
 
+interface ProfessionalProfile {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
 interface Subscription {
   id: string;
   craftsman_id: string;
   craftsman_name: string;
-  craftsman_email: string;
   status: "active" | "inactive";
   end_date: string | null;
 }
@@ -90,14 +96,16 @@ export const SubscriptionManagement = () => {
 
   const fetchSubscriptions = async () => {
     try {
+      // Fetch all professional users first
       const { data: professionals, error: profError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email')
+        .select('id, first_name, last_name')
         .eq('role', 'professional');
 
       if (profError) throw profError;
       if (!professionals) return;
 
+      // Then fetch their subscription status
       const { data: subscriptionsData, error: subError } = await supabase
         .from('subscriptions')
         .select('*')
@@ -105,6 +113,7 @@ export const SubscriptionManagement = () => {
 
       if (subError) throw subError;
 
+      // Combine the data
       const combinedSubscriptions = professionals.map(prof => {
         const subscription = subscriptionsData?.find(s => s.craftsman_id === prof.id);
         
@@ -112,8 +121,7 @@ export const SubscriptionManagement = () => {
           id: prof.id,
           craftsman_id: prof.id,
           craftsman_name: `${prof.first_name} ${prof.last_name}`,
-          craftsman_email: prof.email || '',
-          status: subscription?.status || "inactive",
+          status: (subscription?.status === 'active' ? 'active' : 'inactive') as "active" | "inactive",
           end_date: subscription?.end_date || null
         };
       });
@@ -165,8 +173,7 @@ export const SubscriptionManagement = () => {
   };
 
   const filteredSubscriptions = subscriptions.filter(sub =>
-    sub.craftsman_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.craftsman_email.toLowerCase().includes(searchTerm.toLowerCase())
+    sub.craftsman_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -231,7 +238,7 @@ export const SubscriptionManagement = () => {
           <div className="flex items-center mb-6">
             <Search className="w-5 h-5 text-muted-foreground mr-2" />
             <Input
-              placeholder="Caută după nume sau email..."
+              placeholder="Caută după nume..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-sm"
@@ -245,7 +252,6 @@ export const SubscriptionManagement = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nume</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Data Expirării</TableHead>
                   <TableHead>Acțiuni</TableHead>
@@ -257,7 +263,6 @@ export const SubscriptionManagement = () => {
                     <TableCell className="font-medium">
                       {subscription.craftsman_name}
                     </TableCell>
-                    <TableCell>{subscription.craftsman_email}</TableCell>
                     <TableCell>
                       <Badge 
                         variant={subscription.status === "active" ? "default" : "destructive"}
