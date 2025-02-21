@@ -218,7 +218,7 @@ const Search = () => {
           </div>
         )}
         {(!isMobile || showMap) && (
-          <div className="flex-1">
+          <div className="flex-1 h-full">
             <Map 
               craftsmen={craftsmen} 
               userLocation={userLocation}
