@@ -1,5 +1,5 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -19,6 +19,7 @@ interface SubscriptionStatusData {
 export const SubscriptionStatus = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   console.log("SubscriptionStatus Component - User ID:", user?.id);
 
@@ -60,8 +61,13 @@ export const SubscriptionStatus = () => {
       console.log("Fetched subscription status:", data);
       return data as SubscriptionStatusData;
     },
-    enabled: !!user?.id && profile?.role === 'professional'
+    enabled: !!user?.id && profile?.role === 'professional',
+    refetchInterval: 30000 // Reîmprospătăm datele la fiecare 30 secunde
   });
+
+  const refreshSubscriptionStatus = () => {
+    queryClient.invalidateQueries({ queryKey: ['subscription-status', user?.id] });
+  };
 
   console.log("Profile role:", profile?.role);
   console.log("Subscription status:", subscriptionStatus);
@@ -119,7 +125,10 @@ export const SubscriptionStatus = () => {
 
           <Button 
             className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white mt-2" 
-            onClick={() => navigate("/subscription/activate")}
+            onClick={() => {
+              navigate("/subscription/activate");
+              refreshSubscriptionStatus();
+            }}
           >
             Activează Abonamentul
           </Button>
@@ -160,7 +169,10 @@ export const SubscriptionStatus = () => {
 
           <Button 
             className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white mt-2" 
-            onClick={() => navigate("/subscription/activate")}
+            onClick={() => {
+              navigate("/subscription/activate");
+              refreshSubscriptionStatus();
+            }}
           >
             Reactivează Abonamentul
           </Button>
@@ -191,7 +203,10 @@ export const SubscriptionStatus = () => {
               <Button 
                 variant="outline" 
                 className="mt-2 w-full sm:w-auto border-yellow-600 text-yellow-700 hover:bg-yellow-100"
-                onClick={() => navigate("/subscription/activate")}
+                onClick={() => {
+                  navigate("/subscription/activate");
+                  refreshSubscriptionStatus();
+                }}
               >
                 Reînnoiește Abonamentul
               </Button>
