@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -23,6 +22,7 @@ type DbResult<T> = T extends PromiseLike<infer U> ? U : never;
 
 // Use the correct table type from the database schema
 type SubscriptionRecord = Database['public']['Tables']['subscriptions']['Update'];
+type StatusUpdate = Pick<Database['public']['Tables']['subscriptions']['Row'], 'status' | 'end_date'>;
 
 type CraftsmanSubscriptionStatus = Database['public']['Views']['craftsman_subscription_status']['Row'] & {
   profiles: {
@@ -142,24 +142,17 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
-      const { error } = await supabase
+      const updateData: StatusUpdate = {
+        end_date: newDate.toISOString(),
+        status: 'active'
+      };
+
+      const { error: subscriptionError } = await supabase
         .from('subscriptions')
-        .update({
-          end_date: newDate.toISOString(),
-          status: 'active'
-        } satisfies Partial<SubscriptionRecord>)
+        .update(updateData)
         .eq('craftsman_id', subscriptionId);
 
-      if (error) throw error;
-
-      // After updating the subscription, let's update the status view as well
-      await supabase
-        .from('craftsman_subscription_status')
-        .update({
-          is_subscription_active: true,
-          subscription_end_date: newDate.toISOString()
-        })
-        .eq('craftsman_id', subscriptionId);
+      if (subscriptionError) throw subscriptionError;
 
       toast.success('Data abonamentului a fost actualizată');
       fetchSubscriptions();
