@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -19,14 +18,17 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Input } from "@/components/ui/input";
 
 export const Users = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchUsers();
@@ -36,7 +38,8 @@ export const Users = () => {
     try {
       const { data: profiles, error } = await supabase
         .from("user_profiles_with_email")
-        .select("*");
+        .select("*")
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -46,7 +49,11 @@ export const Users = () => {
         return;
       }
 
-      setUsers(profiles);
+      const uniqueProfiles = profiles.filter((profile, index, self) =>
+        index === self.findIndex((p) => p.id === profile.id)
+      );
+
+      setUsers(uniqueProfiles);
     } catch (error) {
       console.error("Eroare la încărcarea utilizatorilor:", error);
       toast.error("Nu am putut încărca lista utilizatorilor");
@@ -64,14 +71,12 @@ export const Users = () => {
 
       if (error) throw error;
       
-      // Actualizăm starea locală
       setUsers(users.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
       ));
       
       toast.success("Rolul utilizatorului a fost actualizat");
       
-      // Adăugăm log de audit
       await supabase.from("admin_audit_logs").insert({
         admin_id: (await supabase.auth.getUser()).data.user?.id,
         action: "update_role",
@@ -79,11 +84,25 @@ export const Users = () => {
         entity_id: userId,
         details: { new_role: newRole }
       });
+
+      await fetchUsers();
     } catch (error) {
       console.error("Eroare la actualizarea rolului:", error);
       toast.error("Nu am putut actualiza rolul utilizatorului");
     }
   };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = 
+      user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone?.includes(searchTerm);
+    
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+    
+    return matchesSearch && matchesRole;
+  });
 
   const exportToExcel = () => {
     const exportData = users.map(user => ({
@@ -171,9 +190,34 @@ export const Users = () => {
         </div>
       </div>
 
-      {users.length === 0 ? (
+      <div className="flex gap-4 items-center">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Caută după nume, email sau telefon..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+        </div>
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filtrează după rol" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toate rolurile</SelectItem>
+            <SelectItem value="client">Client</SelectItem>
+            <SelectItem value="professional">Profesionist</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {filteredUsers.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          Nu există utilizatori în sistem.
+          Nu există utilizatori care să corespundă criteriilor de căutare.
         </div>
       ) : (
         <Table>
@@ -187,7 +231,7 @@ export const Users = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   {user.first_name} {user.last_name}

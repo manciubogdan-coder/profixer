@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -9,8 +9,9 @@ import { toast } from 'sonner';
 export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -27,7 +28,7 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
     enabled: !!user,
   });
 
-  const { data: subscriptionStatus } = useQuery({
+  const { data: subscriptionStatus, isLoading: subscriptionLoading } = useQuery({
     queryKey: ['subscription-status', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -39,9 +40,11 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
+      console.log("Subscription status data:", data);
       return data;
     },
     enabled: !!user && profile?.role === 'professional',
+    refetchInterval: 30000, // Verificăm statusul la fiecare 30 secunde
   });
 
   useEffect(() => {
@@ -55,9 +58,14 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
     }
   }, [shouldCheck, profile, subscriptionStatus, navigate]);
 
+  const refreshSubscriptionStatus = () => {
+    queryClient.invalidateQueries({ queryKey: ['subscription-status', user?.id] });
+  };
+
   return {
-    isLoading: !profile,
+    isLoading: profileLoading || subscriptionLoading,
     isProfessional: profile?.role === 'professional',
     hasActiveSubscription: subscriptionStatus?.is_subscription_active ?? false,
+    refreshSubscriptionStatus,
   };
 };
