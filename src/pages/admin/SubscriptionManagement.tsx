@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -16,6 +17,12 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search } from "lucide-react";
+
+// Define type for subscription status update
+type SubscriptionStatusUpdate = {
+  subscription_end_date: string;
+  is_subscription_active: boolean;
+}
 
 interface CraftsmanSubscriptionStatus {
   id: string;
@@ -108,8 +115,7 @@ export const SubscriptionManagement = () => {
             last_name,
             email
           )
-        `)
-        .returns<CraftsmanSubscriptionStatus[]>();
+        `);
 
       if (error) throw error;
 
@@ -146,9 +152,8 @@ export const SubscriptionManagement = () => {
         .update({
           subscription_end_date: newDate.toISOString(),
           is_subscription_active: true
-        })
-        .eq('id', subscriptionId)
-        .select();
+        } satisfies SubscriptionStatusUpdate)
+        .eq('id', subscriptionId);
 
       if (error) throw error;
 
