@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -96,14 +97,15 @@ export const SubscriptionManagement = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      const { data, error } = await supabase
+      // Am modificat query-ul pentru a include join-ul corect cu profiles
+      const { data: subscriptionsData, error } = await supabase
         .from('craftsman_subscription_status')
         .select(`
           id,
           craftsman_id,
           is_subscription_active,
           subscription_end_date,
-          profiles (
+          profiles:craftsman_id (
             first_name,
             last_name,
             email
@@ -112,16 +114,25 @@ export const SubscriptionManagement = () => {
 
       if (error) throw error;
 
-      const formattedData: Subscription[] = (data || []).map(sub => ({
-        id: sub.id,
-        craftsman_id: sub.craftsman_id,
-        craftsman_name: `${sub.profiles.first_name} ${sub.profiles.last_name}`,
-        craftsman_email: sub.profiles.email,
-        status: sub.is_subscription_active ? "active" : "inactive",
-        end_date: sub.subscription_end_date
-      }));
+      if (!subscriptionsData) return;
 
-      setSubscriptions(formattedData);
+      // Eliminăm duplicatele folosind Set și Map
+      const uniqueSubscriptions = new Map();
+      
+      subscriptionsData.forEach(sub => {
+        if (!uniqueSubscriptions.has(sub.craftsman_id)) {
+          uniqueSubscriptions.set(sub.craftsman_id, {
+            id: sub.id,
+            craftsman_id: sub.craftsman_id,
+            craftsman_name: `${sub.profiles.first_name} ${sub.profiles.last_name}`,
+            craftsman_email: sub.profiles.email,
+            status: sub.is_subscription_active ? "active" : "inactive",
+            end_date: sub.subscription_end_date
+          });
+        }
+      });
+
+      setSubscriptions(Array.from(uniqueSubscriptions.values()));
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
       toast.error('Nu am putut încărca lista de abonamente');
@@ -132,12 +143,19 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
+      type SubscriptionUpdate = {
+        subscription_end_date: string;
+        is_subscription_active: boolean;
+      };
+
+      const updateData: SubscriptionUpdate = {
+        subscription_end_date: newDate.toISOString(),
+        is_subscription_active: true
+      };
+
       const { error } = await supabase
         .from('craftsman_subscription_status')
-        .update({
-          subscription_end_date: newDate.toISOString(),
-          is_subscription_active: true
-        } as any)
+        .update(updateData)
         .eq('id', subscriptionId);
 
       if (error) throw error;
