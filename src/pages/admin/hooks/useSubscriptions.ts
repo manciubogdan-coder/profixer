@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { UserProfile } from "@/types/auth";
 
 interface Subscription {
   id: string;
@@ -24,11 +25,6 @@ interface SubscriptionStatus {
   subscription_status: string | null;
   subscription_end_date: string | null;
   is_subscription_active: boolean | null;
-  profiles: {
-    first_name: string | null;
-    last_name: string | null;
-    email: string | null;
-  } | null;
 }
 
 export const useSubscriptions = () => {
@@ -76,27 +72,28 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Folosim două query-uri separate pentru a evita problemele cu tipurile
       const { data: statusesRaw, error: statusError } = await supabase
         .from('craftsman_subscription_status')
         .select('craftsman_id, subscription_status, subscription_end_date, is_subscription_active');
 
       if (statusError) throw statusError;
 
-      // Obținem informațiile despre utilizatori separat
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email')
-        .in('id', statusesRaw?.map(s => s.craftsman_id) || []);
+        .select('id, first_name, last_name, email');
 
       if (profilesError) throw profilesError;
 
+      // Folosim type assertion pentru a specifica tipul corect
+      const typedProfiles = profiles as UserProfile[];
+      const typedStatuses = statusesRaw as SubscriptionStatus[];
+
       // Creăm un map pentru profiluri pentru lookup rapid
       const profileMap = new Map(
-        profiles?.map(p => [p.id, p]) || []
+        typedProfiles.map(p => [p.id, p])
       );
 
-      const formattedSubscriptions: Subscription[] = (statusesRaw || []).map(status => {
+      const formattedSubscriptions: Subscription[] = typedStatuses.map(status => {
         const profile = profileMap.get(status.craftsman_id);
         return {
           id: status.craftsman_id,
