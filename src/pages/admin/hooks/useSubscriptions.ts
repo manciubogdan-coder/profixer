@@ -64,47 +64,33 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Obținem toți meșterii activi
-      const { data: professionals, error: profError } = await supabase
-        .from('user_profiles_with_email')
-        .select('id, first_name, last_name, email')
-        .eq('role', 'professional');
+      // Folosim un view care include toate informațiile necesare
+      const { data: statuses, error } = await supabase
+        .from('craftsman_subscription_status')
+        .select(`
+          craftsman_id,
+          subscription_status,
+          subscription_end_date,
+          is_subscription_active,
+          profiles:craftsman_id (
+            first_name,
+            last_name,
+            email
+          )
+        `);
 
-      if (profError) throw profError;
-      if (!professionals) return;
+      if (error) throw error;
 
-      // Obținem cel mai recent abonament pentru fiecare meșter
-      const { data: latestSubscriptions, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .in('craftsman_id', professionals.map(p => p.id))
-        .order('created_at', { ascending: false });
+      const formattedSubscriptions = statuses?.map(status => ({
+        id: status.craftsman_id,
+        craftsman_id: status.craftsman_id,
+        craftsman_name: `${status.profiles?.first_name || ''} ${status.profiles?.last_name || ''}`,
+        craftsman_email: status.profiles?.email || 'N/A',
+        status: status.is_subscription_active ? 'active' : 'inactive',
+        end_date: status.subscription_end_date
+      })) || [];
 
-      if (subError) throw subError;
-
-      // Creăm un Map pentru a păstra doar cel mai recent abonament per meșter
-      const latestSubscriptionMap = new Map();
-      latestSubscriptions?.forEach(sub => {
-        if (!latestSubscriptionMap.has(sub.craftsman_id)) {
-          latestSubscriptionMap.set(sub.craftsman_id, sub);
-        }
-      });
-
-      // Construim lista finală de abonamente
-      const uniqueSubscriptions = professionals.map(prof => {
-        const latestSubscription = latestSubscriptionMap.get(prof.id);
-        
-        return {
-          id: prof.id,
-          craftsman_id: prof.id,
-          craftsman_name: `${prof.first_name} ${prof.last_name}`,
-          craftsman_email: prof.email || 'N/A',
-          status: (latestSubscription?.status === 'active' ? 'active' : 'inactive') as "active" | "inactive",
-          end_date: latestSubscription?.end_date || null
-        };
-      });
-
-      setSubscriptions(uniqueSubscriptions);
+      setSubscriptions(formattedSubscriptions);
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
       toast.error('Nu am putut încărca lista de abonamente');
@@ -115,14 +101,17 @@ export const useSubscriptions = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
+      // Creăm sau actualizăm abonamentul
       const { data: existingSubscription } = await supabase
         .from('subscriptions')
-        .select('*')
+        .select('id')
         .eq('craftsman_id', subscriptionId)
         .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (!existingSubscription) {
+        // Creăm un nou abonament
         const { error: insertError } = await supabase
           .from('subscriptions')
           .insert({
@@ -133,16 +122,18 @@ export const useSubscriptions = () => {
           });
         if (insertError) throw insertError;
       } else {
+        // Actualizăm abonamentul existent
         const { error: updateError } = await supabase
           .from('subscriptions')
           .update({
             end_date: newDate.toISOString(),
             status: 'active'
           })
-          .eq('id', existingSubscription.id); // Actualizăm după ID-ul specific al abonamentului
+          .eq('id', existingSubscription.id);
         if (updateError) throw updateError;
       }
 
+      // Actualizăm statusul în view
       const { error: rpcError } = await supabase
         .rpc('update_craftsman_subscription_status', {
           p_craftsman_id: subscriptionId,
@@ -153,8 +144,12 @@ export const useSubscriptions = () => {
       if (rpcError) throw rpcError;
 
       toast.success('Data abonamentului a fost actualizată');
-      await fetchSubscriptions();
-      await fetchDashboardStats();
+      
+      // Reîmprospătăm datele
+      await Promise.all([
+        fetchSubscriptions(),
+        fetchDashboardStats()
+      ]);
     } catch (error) {
       console.error('Error updating subscription:', error);
       toast.error('Nu am putut actualiza data abonamentului');
