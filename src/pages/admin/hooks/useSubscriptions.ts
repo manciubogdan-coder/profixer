@@ -19,6 +19,18 @@ interface DashboardStats {
   expiredSubscriptions: number;
 }
 
+interface SubscriptionStatus {
+  craftsman_id: string;
+  subscription_status: string | null;
+  subscription_end_date: string | null;
+  is_subscription_active: boolean | null;
+  profiles: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+  } | null;
+}
+
 export const useSubscriptions = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -64,7 +76,6 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Folosim un view care include toate informațiile necesare
       const { data: statuses, error } = await supabase
         .from('craftsman_subscription_status')
         .select(`
@@ -72,7 +83,7 @@ export const useSubscriptions = () => {
           subscription_status,
           subscription_end_date,
           is_subscription_active,
-          profiles:craftsman_id (
+          profiles (
             first_name,
             last_name,
             email
@@ -81,12 +92,12 @@ export const useSubscriptions = () => {
 
       if (error) throw error;
 
-      const formattedSubscriptions = statuses?.map(status => ({
+      const formattedSubscriptions: Subscription[] = (statuses as SubscriptionStatus[])?.map(status => ({
         id: status.craftsman_id,
         craftsman_id: status.craftsman_id,
         craftsman_name: `${status.profiles?.first_name || ''} ${status.profiles?.last_name || ''}`,
         craftsman_email: status.profiles?.email || 'N/A',
-        status: status.is_subscription_active ? 'active' : 'inactive',
+        status: status.is_subscription_active ? 'active' as const : 'inactive' as const,
         end_date: status.subscription_end_date
       })) || [];
 
@@ -101,7 +112,6 @@ export const useSubscriptions = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
-      // Creăm sau actualizăm abonamentul
       const { data: existingSubscription } = await supabase
         .from('subscriptions')
         .select('id')
@@ -111,7 +121,6 @@ export const useSubscriptions = () => {
         .maybeSingle();
 
       if (!existingSubscription) {
-        // Creăm un nou abonament
         const { error: insertError } = await supabase
           .from('subscriptions')
           .insert({
@@ -122,7 +131,6 @@ export const useSubscriptions = () => {
           });
         if (insertError) throw insertError;
       } else {
-        // Actualizăm abonamentul existent
         const { error: updateError } = await supabase
           .from('subscriptions')
           .update({
@@ -133,7 +141,6 @@ export const useSubscriptions = () => {
         if (updateError) throw updateError;
       }
 
-      // Actualizăm statusul în view
       const { error: rpcError } = await supabase
         .rpc('update_craftsman_subscription_status', {
           p_craftsman_id: subscriptionId,
@@ -145,7 +152,6 @@ export const useSubscriptions = () => {
 
       toast.success('Data abonamentului a fost actualizată');
       
-      // Reîmprospătăm datele
       await Promise.all([
         fetchSubscriptions(),
         fetchDashboardStats()
