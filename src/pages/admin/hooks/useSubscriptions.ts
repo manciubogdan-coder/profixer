@@ -3,17 +3,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface Profile {
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-}
-
 interface SubscriptionData {
   craftsman_id: string;
   is_subscription_active: boolean;
   subscription_end_date: string | null;
-  user_profiles_with_email: Profile | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
 }
 
 interface Subscription {
@@ -88,16 +84,7 @@ export const useSubscriptions = () => {
     try {
       let query = supabase
         .from('craftsman_subscription_status_latest')
-        .select(`
-          craftsman_id,
-          is_subscription_active,
-          subscription_end_date,
-          user_profiles_with_email (
-            first_name,
-            last_name,
-            email
-          )
-        `);
+        .select('*');
 
       if (filters.status !== 'all') {
         query = query.eq('is_subscription_active', filters.status === 'active');
@@ -107,30 +94,28 @@ export const useSubscriptions = () => {
 
       if (statusError) throw statusError;
 
-      const formattedSubscriptions: Subscription[] = (statusData || []).map(sub => {
-        const profile = (sub as unknown as SubscriptionData).user_profiles_with_email;
-        return {
+      const formattedSubscriptions: Subscription[] = (statusData as SubscriptionData[] || [])
+        .map(sub => ({
           id: sub.craftsman_id,
           craftsman_id: sub.craftsman_id,
-          craftsman_name: `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'N/A',
-          craftsman_email: profile?.email || 'N/A',
+          craftsman_name: `${sub.first_name || ''} ${sub.last_name || ''}`.trim() || 'N/A',
+          craftsman_email: sub.email || 'N/A',
           status: sub.is_subscription_active ? 'active' as const : 'inactive' as const,
           end_date: sub.subscription_end_date
-        };
-      })
-      .filter(sub => {
-        if (!filters.search) return true;
-        const searchLower = filters.search.toLowerCase();
-        return (
-          sub.craftsman_name.toLowerCase().includes(searchLower) ||
-          sub.craftsman_email.toLowerCase().includes(searchLower)
-        );
-      })
-      .sort((a, b) => {
-        if (!a.end_date) return 1;
-        if (!b.end_date) return -1;
-        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
-      });
+        }))
+        .filter(sub => {
+          if (!filters.search) return true;
+          const searchLower = filters.search.toLowerCase();
+          return (
+            sub.craftsman_name.toLowerCase().includes(searchLower) ||
+            sub.craftsman_email.toLowerCase().includes(searchLower)
+          );
+        })
+        .sort((a, b) => {
+          if (!a.end_date) return 1;
+          if (!b.end_date) return -1;
+          return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+        });
 
       setSubscriptions(formattedSubscriptions);
     } catch (error) {
