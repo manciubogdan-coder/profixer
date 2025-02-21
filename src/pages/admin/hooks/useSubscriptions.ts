@@ -41,15 +41,19 @@ export const useSubscriptions = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      // Folosim RPC pentru a obține statusurile corecte
-      const { data: subscriptionStats } = await supabase
-        .rpc('get_subscription_statistics');
+      // Obținem numărul de abonamente active/expirate direct din tabela de status
+      const { data: statusData } = await supabase
+        .from('craftsman_subscription_status')
+        .select('is_subscription_active');
+
+      const activeSubscriptions = statusData?.filter(s => s.is_subscription_active).length || 0;
+      const expiredSubscriptions = statusData?.filter(s => !s.is_subscription_active).length || 0;
 
       setStats({
         totalUsers: totalUsers || 0,
         activeListings: activeListings || 0,
-        activeSubscriptions: subscriptionStats?.[0]?.active_subscriptions || 0,
-        expiredSubscriptions: subscriptionStats?.[0]?.expired_subscriptions || 0
+        activeSubscriptions,
+        expiredSubscriptions
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -59,14 +63,13 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Folosim DISTINCT ON pentru a obține doar cel mai recent status pentru fiecare meșter
-      const { data: subscriptionData, error: subscriptionError } = await supabase
-        .from('craftsman_subscription_status_latest')
+      const { data: statusData, error: statusError } = await supabase
+        .from('craftsman_subscription_status')
         .select(`
           craftsman_id,
           is_subscription_active,
           subscription_end_date,
-          profile:profiles!inner(
+          profiles!inner(
             first_name,
             last_name,
             email
@@ -74,13 +77,21 @@ export const useSubscriptions = () => {
         `)
         .order('subscription_end_date', { ascending: false });
 
-      if (subscriptionError) throw subscriptionError;
+      if (statusError) throw statusError;
 
-      const formattedSubscriptions: Subscription[] = (subscriptionData || []).map(sub => ({
+      // Folosim Map pentru a păstra doar cel mai recent status pentru fiecare meșter
+      const uniqueStatuses = new Map();
+      statusData?.forEach(status => {
+        if (!uniqueStatuses.has(status.craftsman_id)) {
+          uniqueStatuses.set(status.craftsman_id, status);
+        }
+      });
+
+      const formattedSubscriptions: Subscription[] = Array.from(uniqueStatuses.values()).map(sub => ({
         id: sub.craftsman_id,
         craftsman_id: sub.craftsman_id,
-        craftsman_name: `${sub.profile.first_name || ''} ${sub.profile.last_name || ''}`.trim() || 'N/A',
-        craftsman_email: sub.profile.email || 'N/A',
+        craftsman_name: `${sub.profiles.first_name || ''} ${sub.profiles.last_name || ''}`.trim() || 'N/A',
+        craftsman_email: sub.profiles.email || 'N/A',
         status: sub.is_subscription_active ? 'active' : 'inactive',
         end_date: sub.subscription_end_date
       }));
