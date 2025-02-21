@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -17,6 +16,18 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search } from "lucide-react";
+
+interface SubscriptionWithProfile {
+  id: string;
+  craftsman_id: string;
+  subscription_end_date: string | null;
+  is_subscription_active: boolean;
+  profiles: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+}
 
 interface Subscription {
   id: string;
@@ -88,18 +99,21 @@ export const SubscriptionManagement = () => {
       const { data, error } = await supabase
         .from('craftsman_subscription_status')
         .select(`
-          *,
-          profiles:craftsman_id (
+          id,
+          craftsman_id,
+          is_subscription_active,
+          subscription_end_date,
+          profiles (
             first_name,
             last_name,
             email
           )
         `)
-        .order('created_at', { ascending: false });
+        .returns<SubscriptionWithProfile[]>();
 
       if (error) throw error;
 
-      const formattedData = data?.map(sub => ({
+      const formattedData: Subscription[] = (data || []).map(sub => ({
         id: sub.id,
         craftsman_id: sub.craftsman_id,
         craftsman_name: `${sub.profiles.first_name} ${sub.profiles.last_name}`,
@@ -108,7 +122,7 @@ export const SubscriptionManagement = () => {
         end_date: sub.subscription_end_date
       }));
 
-      setSubscriptions(formattedData || []);
+      setSubscriptions(formattedData);
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
       toast.error('Nu am putut încărca lista de abonamente');
@@ -119,18 +133,20 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
+      const updateData = {
+        subscription_end_date: newDate.toISOString(),
+        is_subscription_active: true
+      };
+
       const { error } = await supabase
         .from('craftsman_subscription_status')
-        .update({
-          subscription_end_date: newDate.toISOString(),
-          is_subscription_active: true
-        })
+        .update(updateData)
         .eq('id', subscriptionId);
 
       if (error) throw error;
 
       toast.success('Data abonamentului a fost actualizată');
-      fetchSubscriptions(); // Reîncărcăm lista
+      fetchSubscriptions();
     } catch (error) {
       console.error('Error updating subscription:', error);
       toast.error('Nu am putut actualiza data abonamentului');
