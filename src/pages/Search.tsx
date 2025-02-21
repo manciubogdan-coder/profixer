@@ -9,6 +9,9 @@ import { Tables } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MapIcon, ListFilter } from "lucide-react";
 
 export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
@@ -25,6 +28,7 @@ export type Craftsman = Tables<"profiles"> & {
 const Search = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     if (!user) {
@@ -38,6 +42,7 @@ const Search = () => {
   const [maxDistance, setMaxDistance] = useState(50);
   const [minRating, setMinRating] = useState(0);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [showMap, setShowMap] = useState(!isMobile);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -165,6 +170,10 @@ const Search = () => {
     navigate(`/profile/${craftsman.id}`);
   }, [navigate]);
 
+  const toggleView = () => {
+    setShowMap(!showMap);
+  };
+
   if (!user) {
     return null;
   }
@@ -172,25 +181,51 @@ const Search = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
+      {isMobile && (
+        <div className="p-2 bg-card border-b flex justify-center gap-2">
+          <Button
+            variant={showMap ? "outline" : "default"}
+            size="sm"
+            onClick={() => setShowMap(false)}
+            className="flex items-center gap-2"
+          >
+            <ListFilter className="h-4 w-4" />
+            Listă
+          </Button>
+          <Button
+            variant={showMap ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowMap(true)}
+            className="flex items-center gap-2"
+          >
+            <MapIcon className="h-4 w-4" />
+            Hartă
+          </Button>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row h-[calc(100vh-3.5rem)]">
-        <SearchSidebar
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          selectedType={selectedType}
-          setSelectedType={setSelectedType}
-          craftsmen={craftsmen}
-          isLoading={isLoading}
-          maxDistance={maxDistance}
-          setMaxDistance={setMaxDistance}
-          minRating={minRating}
-          setMinRating={setMinRating}
-          onCraftsmanClick={handleCraftsmanClick}
-        />
-        <Map 
-          craftsmen={craftsmen} 
-          userLocation={userLocation}
-          onCraftsmanClick={handleCraftsmanClick}
-        />
+        {(!isMobile || !showMap) && (
+          <SearchSidebar
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedType={selectedType}
+            setSelectedType={setSelectedType}
+            craftsmen={craftsmen}
+            isLoading={isLoading}
+            maxDistance={maxDistance}
+            setMaxDistance={setMaxDistance}
+            minRating={minRating}
+            setMinRating={setMinRating}
+            onCraftsmanClick={handleCraftsmanClick}
+          />
+        )}
+        {(!isMobile || showMap) && (
+          <Map 
+            craftsmen={craftsmen} 
+            userLocation={userLocation}
+            onCraftsmanClick={handleCraftsmanClick}
+          />
+        )}
       </div>
     </div>
   );

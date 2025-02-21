@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SearchSidebarProps {
   searchTerm: string;
@@ -44,6 +44,8 @@ export const SearchSidebar = ({
   setMinRating,
   onCraftsmanClick,
 }: SearchSidebarProps) => {
+  const isMobile = useIsMobile();
+  
   const { data: types } = useQuery({
     queryKey: ["craftsman-types"],
     queryFn: async () => {
@@ -63,7 +65,7 @@ export const SearchSidebar = ({
   );
 
   return (
-    <div className="w-full md:w-96 p-4 border-r bg-card">
+    <div className={`w-full ${isMobile ? 'h-[calc(100vh-7rem)]' : 'md:w-96'} p-4 border-r bg-card`}>
       <div className="space-y-4">
         <Input
           placeholder="Caută după nume..."
@@ -113,7 +115,7 @@ export const SearchSidebar = ({
           />
         </div>
 
-        <ScrollArea className="h-[calc(100vh-20rem)]">
+        <ScrollArea className={`${isMobile ? 'h-[calc(100vh-20rem)]' : 'h-[calc(100vh-24rem)]'}`}>
           <div className="space-y-2 pr-4">
             {isLoading ? (
               <p className="text-center text-muted-foreground">Se încarcă...</p>
