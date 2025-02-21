@@ -43,9 +43,9 @@ export const useSubscriptions = () => {
 
       const { data: statusData } = await supabase
         .from('craftsman_subscription_status')
-        .select('is_subscription_active');
+        .select('is_subscription_active, craftsman_id');
 
-      // Calculăm statusurile unice
+      // Calculăm statusurile unice folosind craftsman_id
       const uniqueStatuses = new Set(statusData?.map(s => s.craftsman_id));
       const activeSubscriptions = statusData?.filter(s => s.is_subscription_active).length || 0;
       const expiredSubscriptions = uniqueStatuses.size - activeSubscriptions;
@@ -64,7 +64,6 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Obținem doar cel mai recent status pentru fiecare meșter
       const { data: statusData, error: statusError } = await supabase
         .from('craftsman_subscription_status')
         .select(`
@@ -80,7 +79,6 @@ export const useSubscriptions = () => {
 
       if (statusError) throw statusError;
 
-      // Păstrăm doar cel mai recent status pentru fiecare meșter
       const latestStatuses = new Map();
       statusData?.forEach(status => {
         const existingStatus = latestStatuses.get(status.craftsman_id);
@@ -91,11 +89,11 @@ export const useSubscriptions = () => {
 
       const formattedSubscriptions: Subscription[] = Array.from(latestStatuses.values())
         .map(sub => ({
-          id: sub.craftsman_id,
-          craftsman_id: sub.craftsman_id,
+          id: sub.craftsman_id as string,
+          craftsman_id: sub.craftsman_id as string,
           craftsman_name: `${sub.profiles.first_name || ''} ${sub.profiles.last_name || ''}`.trim() || 'N/A',
           craftsman_email: sub.profiles.email || 'N/A',
-          status: sub.is_subscription_active ? 'active' : 'inactive',
+          status: sub.is_subscription_active ? 'active' as const : 'inactive' as const,
           end_date: sub.subscription_end_date
         }))
         .sort((a, b) => {
