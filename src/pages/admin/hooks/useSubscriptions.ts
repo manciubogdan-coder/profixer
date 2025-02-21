@@ -51,7 +51,7 @@ export const useSubscriptions = () => {
         .eq('status', 'active');
 
       const { data: statusData } = await supabase
-        .from('craftsman_subscription_status_latest')  // Using the latest view
+        .from('craftsman_subscription_status_latest')
         .select('is_subscription_active');
 
       if (statusData) {
@@ -74,7 +74,7 @@ export const useSubscriptions = () => {
   const fetchSubscriptions = async () => {
     try {
       let query = supabase
-        .from('craftsman_subscription_status_latest') // Using the latest view
+        .from('craftsman_subscription_status_latest')
         .select(`
           craftsman_id,
           is_subscription_active,
@@ -100,7 +100,7 @@ export const useSubscriptions = () => {
           craftsman_id: sub.craftsman_id,
           craftsman_name: `${sub.profiles?.first_name || ''} ${sub.profiles?.last_name || ''}`.trim() || 'N/A',
           craftsman_email: sub.profiles?.email || 'N/A',
-          status: sub.is_subscription_active ? 'active' : 'inactive',
+          status: sub.is_subscription_active ? 'active' as const : 'inactive' as const,
           end_date: sub.subscription_end_date
         }))
         .filter(sub => {
