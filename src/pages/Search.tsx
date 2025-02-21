@@ -9,9 +9,6 @@ import { Tables } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { MapIcon, ListFilter } from "lucide-react";
 
 export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
@@ -28,7 +25,6 @@ export type Craftsman = Tables<"profiles"> & {
 const Search = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   
   useEffect(() => {
     if (!user) {
@@ -42,7 +38,6 @@ const Search = () => {
   const [maxDistance, setMaxDistance] = useState(50);
   const [minRating, setMinRating] = useState(0);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [showMap, setShowMap] = useState(!isMobile);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -66,6 +61,7 @@ const Search = () => {
     queryFn: async () => {
       console.log("Fetching craftsmen...");
       
+      // Primul query pentru a obține profilurile meșterilor
       let query = supabase
         .from("profiles")
         .select(`
@@ -92,6 +88,7 @@ const Search = () => {
         return [];
       }
 
+      // Al doilea query pentru a obține statusul abonamentelor
       const { data: subscriptionStatuses, error: subError } = await supabase
         .from("craftsman_subscription_status")
         .select("*");
@@ -101,6 +98,7 @@ const Search = () => {
         return [];
       }
 
+      // Creăm un obiect pentru a accesa rapid statusurile abonamentelor
       const statusMap: Record<string, boolean> = {};
       subscriptionStatuses.forEach((status: { craftsman_id: string; is_subscription_active: boolean }) => {
         statusMap[status.craftsman_id] = status.is_subscription_active;
@@ -125,8 +123,10 @@ const Search = () => {
           };
         })
         .filter((craftsman) => {
+          // Filtrăm inițial după rating minim
           if ((craftsman.average_rating || 0) < minRating) return false;
 
+          // Apoi verificăm distanța dacă avem locația utilizatorului
           if (userLocation && craftsman.latitude && craftsman.longitude) {
             const distance = calculateDistance(
               userLocation.lat,
@@ -146,7 +146,7 @@ const Search = () => {
   });
 
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371;
+    const R = 6371; // Earth's radius in kilometers
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
@@ -172,55 +172,25 @@ const Search = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      {isMobile && (
-        <div className="sticky top-14 z-10 p-2 bg-card border-b flex justify-center gap-2">
-          <Button
-            variant={showMap ? "outline" : "default"}
-            size="sm"
-            onClick={() => setShowMap(false)}
-            className="flex items-center gap-2"
-          >
-            <ListFilter className="h-4 w-4" />
-            Listă
-          </Button>
-          <Button
-            variant={showMap ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowMap(true)}
-            className="flex items-center gap-2"
-          >
-            <MapIcon className="h-4 w-4" />
-            Hartă
-          </Button>
-        </div>
-      )}
-      <div className="flex flex-col md:flex-row h-[calc(100vh-7rem)]">
-        {(!isMobile || !showMap) && (
-          <div className="w-full md:w-96">
-            <SearchSidebar
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              selectedType={selectedType}
-              setSelectedType={setSelectedType}
-              craftsmen={craftsmen}
-              isLoading={isLoading}
-              maxDistance={maxDistance}
-              setMaxDistance={setMaxDistance}
-              minRating={minRating}
-              setMinRating={setMinRating}
-              onCraftsmanClick={handleCraftsmanClick}
-            />
-          </div>
-        )}
-        {(!isMobile || showMap) && (
-          <div className="flex-1 h-[calc(100vh-7rem)]">
-            <Map 
-              craftsmen={craftsmen} 
-              userLocation={userLocation}
-              onCraftsmanClick={handleCraftsmanClick}
-            />
-          </div>
-        )}
+      <div className="flex flex-col md:flex-row h-[calc(100vh-3.5rem)]">
+        <SearchSidebar
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          selectedType={selectedType}
+          setSelectedType={setSelectedType}
+          craftsmen={craftsmen}
+          isLoading={isLoading}
+          maxDistance={maxDistance}
+          setMaxDistance={setMaxDistance}
+          minRating={minRating}
+          setMinRating={setMinRating}
+          onCraftsmanClick={handleCraftsmanClick}
+        />
+        <Map 
+          craftsmen={craftsmen} 
+          userLocation={userLocation}
+          onCraftsmanClick={handleCraftsmanClick}
+        />
       </div>
     </div>
   );
