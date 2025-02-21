@@ -41,13 +41,14 @@ export const useSubscriptions = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      // Obținem numărul de abonamente active/expirate direct din tabela de status
       const { data: statusData } = await supabase
         .from('craftsman_subscription_status')
         .select('is_subscription_active');
 
+      // Calculăm statusurile unice
+      const uniqueStatuses = new Set(statusData?.map(s => s.craftsman_id));
       const activeSubscriptions = statusData?.filter(s => s.is_subscription_active).length || 0;
-      const expiredSubscriptions = statusData?.filter(s => !s.is_subscription_active).length || 0;
+      const expiredSubscriptions = uniqueStatuses.size - activeSubscriptions;
 
       setStats({
         totalUsers: totalUsers || 0,
@@ -63,6 +64,7 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
+      // Obținem doar cel mai recent status pentru fiecare meșter
       const { data: statusData, error: statusError } = await supabase
         .from('craftsman_subscription_status')
         .select(`
@@ -74,27 +76,33 @@ export const useSubscriptions = () => {
             last_name,
             email
           )
-        `)
-        .order('subscription_end_date', { ascending: false });
+        `);
 
       if (statusError) throw statusError;
 
-      // Folosim Map pentru a păstra doar cel mai recent status pentru fiecare meșter
-      const uniqueStatuses = new Map();
+      // Păstrăm doar cel mai recent status pentru fiecare meșter
+      const latestStatuses = new Map();
       statusData?.forEach(status => {
-        if (!uniqueStatuses.has(status.craftsman_id)) {
-          uniqueStatuses.set(status.craftsman_id, status);
+        const existingStatus = latestStatuses.get(status.craftsman_id);
+        if (!existingStatus || new Date(status.subscription_end_date) > new Date(existingStatus.subscription_end_date)) {
+          latestStatuses.set(status.craftsman_id, status);
         }
       });
 
-      const formattedSubscriptions: Subscription[] = Array.from(uniqueStatuses.values()).map(sub => ({
-        id: sub.craftsman_id,
-        craftsman_id: sub.craftsman_id,
-        craftsman_name: `${sub.profiles.first_name || ''} ${sub.profiles.last_name || ''}`.trim() || 'N/A',
-        craftsman_email: sub.profiles.email || 'N/A',
-        status: sub.is_subscription_active ? 'active' : 'inactive',
-        end_date: sub.subscription_end_date
-      }));
+      const formattedSubscriptions: Subscription[] = Array.from(latestStatuses.values())
+        .map(sub => ({
+          id: sub.craftsman_id,
+          craftsman_id: sub.craftsman_id,
+          craftsman_name: `${sub.profiles.first_name || ''} ${sub.profiles.last_name || ''}`.trim() || 'N/A',
+          craftsman_email: sub.profiles.email || 'N/A',
+          status: sub.is_subscription_active ? 'active' : 'inactive',
+          end_date: sub.subscription_end_date
+        }))
+        .sort((a, b) => {
+          if (!a.end_date) return 1;
+          if (!b.end_date) return -1;
+          return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+        });
 
       setSubscriptions(formattedSubscriptions);
     } catch (error) {
