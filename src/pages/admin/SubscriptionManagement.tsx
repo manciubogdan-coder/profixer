@@ -108,8 +108,7 @@ export const SubscriptionManagement = () => {
             last_name,
             email
           )
-        `)
-        .returns<SubscriptionWithProfile[]>();
+        `);
 
       if (error) throw error;
 
@@ -133,14 +132,12 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
-      const updateData = {
-        subscription_end_date: newDate.toISOString(),
-        is_subscription_active: true
-      };
-
       const { error } = await supabase
         .from('craftsman_subscription_status')
-        .update(updateData)
+        .update({
+          subscription_end_date: newDate.toISOString(),
+          is_subscription_active: true
+        } as any)
         .eq('id', subscriptionId);
 
       if (error) throw error;
@@ -160,7 +157,6 @@ export const SubscriptionManagement = () => {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -211,7 +207,6 @@ export const SubscriptionManagement = () => {
         </Card>
       </div>
 
-      {/* Subscription Management Section */}
       <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
         <div className="p-6">
           <h2 className="text-2xl font-bold mb-6">Managementul Abonamentelor</h2>
