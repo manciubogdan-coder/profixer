@@ -16,6 +16,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminDashboard } from "@/pages/admin/Dashboard";
 import { Users } from "@/pages/admin/Users";
 import { Messages } from "@/pages/admin/Messages";
+import { SubscriptionManagement } from "@/pages/admin/SubscriptionManagement";
 import ActivateSubscription from "@/pages/subscription/ActivateSubscription";
 import Checkout from "@/pages/subscription/Checkout";
 import SubscriptionSuccess from "@/pages/subscription/SubscriptionSuccess";
@@ -52,6 +53,7 @@ function App() {
             {/* Admin routes */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
+              <Route path="subscriptions" element={<SubscriptionManagement />} />
               <Route path="users" element={<Users />} />
               <Route path="messages" element={<Messages />} />
             </Route>
