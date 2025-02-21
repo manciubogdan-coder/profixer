@@ -9,11 +9,16 @@ import { useSubscriptions } from "./hooks/useSubscriptions";
 export const SubscriptionManagement = () => {
   const { subscriptions, stats, loading, updateSubscriptionDate } = useSubscriptions();
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const filteredSubscriptions = subscriptions.filter(sub =>
-    sub.craftsman_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    sub.craftsman_email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSubscriptions = subscriptions
+    .filter(sub =>
+      sub.craftsman_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sub.craftsman_email.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .filter(sub => 
+      statusFilter === "all" ? true : sub.status === statusFilter
+    );
 
   return (
     <div className="space-y-6 p-6">
@@ -40,6 +45,8 @@ export const SubscriptionManagement = () => {
             subscriptions={filteredSubscriptions}
             onUpdateDate={updateSubscriptionDate}
             loading={loading}
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
           />
         </div>
       </div>
