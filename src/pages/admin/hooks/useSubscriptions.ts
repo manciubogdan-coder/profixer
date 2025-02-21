@@ -19,6 +19,11 @@ interface DashboardStats {
   expiredSubscriptions: number;
 }
 
+interface Filters {
+  status: "all" | "active" | "inactive";
+  search: string;
+}
+
 export const useSubscriptions = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -28,6 +33,10 @@ export const useSubscriptions = () => {
     expiredSubscriptions: 0
   });
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<Filters>({
+    status: "all",
+    search: ""
+  });
 
   const fetchDashboardStats = async () => {
     try {
@@ -64,7 +73,7 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      const { data: statusData, error: statusError } = await supabase
+      let query = supabase
         .from('craftsman_subscription_status')
         .select(`
           craftsman_id,
@@ -75,19 +84,28 @@ export const useSubscriptions = () => {
             last_name,
             email
           )
-        `);
+        `)
+        .order('subscription_end_date', { ascending: false });
+
+      if (filters.status !== 'all') {
+        query = query.eq('is_subscription_active', filters.status === 'active');
+      }
+
+      const { data: statusData, error: statusError } = await query;
 
       if (statusError) throw statusError;
 
-      const latestStatuses = new Map();
+      // Folosim Map pentru a elimina duplicatele și a păstra doar cel mai recent status
+      const uniqueSubscriptions = new Map();
       statusData?.forEach(status => {
-        const existingStatus = latestStatuses.get(status.craftsman_id);
-        if (!existingStatus || new Date(status.subscription_end_date) > new Date(existingStatus.subscription_end_date)) {
-          latestStatuses.set(status.craftsman_id, status);
+        const key = status.craftsman_id;
+        if (!uniqueSubscriptions.has(key) || 
+            new Date(status.subscription_end_date) > new Date(uniqueSubscriptions.get(key).subscription_end_date)) {
+          uniqueSubscriptions.set(key, status);
         }
       });
 
-      const formattedSubscriptions: Subscription[] = Array.from(latestStatuses.values())
+      const formattedSubscriptions: Subscription[] = Array.from(uniqueSubscriptions.values())
         .map(sub => ({
           id: sub.craftsman_id as string,
           craftsman_id: sub.craftsman_id as string,
@@ -96,6 +114,11 @@ export const useSubscriptions = () => {
           status: sub.is_subscription_active ? 'active' as const : 'inactive' as const,
           end_date: sub.subscription_end_date
         }))
+        .filter(sub => {
+          const searchLower = filters.search.toLowerCase();
+          return sub.craftsman_name.toLowerCase().includes(searchLower) ||
+                 sub.craftsman_email.toLowerCase().includes(searchLower);
+        })
         .sort((a, b) => {
           if (!a.end_date) return 1;
           if (!b.end_date) return -1;
@@ -135,8 +158,11 @@ export const useSubscriptions = () => {
   };
 
   useEffect(() => {
-    fetchDashboardStats();
     fetchSubscriptions();
+  }, [filters]);
+
+  useEffect(() => {
+    fetchDashboardStats();
   }, []);
 
   return {
@@ -144,5 +170,7 @@ export const useSubscriptions = () => {
     stats,
     loading,
     updateSubscriptionDate,
+    filters,
+    setFilters,
   };
 };
