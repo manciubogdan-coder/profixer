@@ -136,17 +136,15 @@ export const useSubscriptions = () => {
         if (updateError) throw updateError;
       }
 
-      // Actualizăm și craftsman_subscription_status
-      const { error: statusError } = await supabase
-        .from('craftsman_subscription_status')
-        .upsert({
-          craftsman_id: subscriptionId,
-          is_subscription_active: true,
-          subscription_end_date: newDate.toISOString(),
-          subscription_status: 'active'
+      // Actualizăm statusul în view
+      const { error: viewError } = await supabase
+        .rpc('update_craftsman_subscription_status', {
+          p_craftsman_id: subscriptionId,
+          p_is_active: true,
+          p_end_date: newDate.toISOString()
         });
 
-      if (statusError) throw statusError;
+      if (viewError) throw viewError;
 
       toast.success('Data abonamentului a fost actualizată');
       await fetchSubscriptions();
