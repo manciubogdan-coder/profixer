@@ -63,12 +63,13 @@ export const useSubscriptions = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      if (subStats) {
+      // Verificăm dacă avem date și luăm primul element din array
+      if (subStats && subStats[0]) {
         setStats({
           totalUsers: totalUsers || 0,
           activeListings: activeListings || 0,
-          activeSubscriptions: Number(subStats.active_subscriptions) || 0,
-          expiredSubscriptions: Number(subStats.expired_subscriptions) || 0
+          activeSubscriptions: Number(subStats[0].active_subscriptions) || 0,
+          expiredSubscriptions: Number(subStats[0].expired_subscriptions) || 0
         });
       }
     } catch (error) {
