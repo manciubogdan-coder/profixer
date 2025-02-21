@@ -170,10 +170,6 @@ const Search = () => {
     navigate(`/profile/${craftsman.id}`);
   }, [navigate]);
 
-  const toggleView = () => {
-    setShowMap(!showMap);
-  };
-
   if (!user) {
     return null;
   }
@@ -182,7 +178,7 @@ const Search = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       {isMobile && (
-        <div className="p-2 bg-card border-b flex justify-center gap-2">
+        <div className="sticky top-14 z-10 p-2 bg-card border-b flex justify-center gap-2">
           <Button
             variant={showMap ? "outline" : "default"}
             size="sm"
@@ -203,28 +199,32 @@ const Search = () => {
           </Button>
         </div>
       )}
-      <div className="flex flex-col md:flex-row h-[calc(100vh-3.5rem)]">
+      <div className="relative flex flex-col md:flex-row h-[calc(100vh-7rem)]">
         {(!isMobile || !showMap) && (
-          <SearchSidebar
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedType={selectedType}
-            setSelectedType={setSelectedType}
-            craftsmen={craftsmen}
-            isLoading={isLoading}
-            maxDistance={maxDistance}
-            setMaxDistance={setMaxDistance}
-            minRating={minRating}
-            setMinRating={setMinRating}
-            onCraftsmanClick={handleCraftsmanClick}
-          />
+          <div className={`${isMobile ? 'absolute inset-0 z-20 bg-background' : ''}`}>
+            <SearchSidebar
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              selectedType={selectedType}
+              setSelectedType={setSelectedType}
+              craftsmen={craftsmen}
+              isLoading={isLoading}
+              maxDistance={maxDistance}
+              setMaxDistance={setMaxDistance}
+              minRating={minRating}
+              setMinRating={setMinRating}
+              onCraftsmanClick={handleCraftsmanClick}
+            />
+          </div>
         )}
         {(!isMobile || showMap) && (
-          <Map 
-            craftsmen={craftsmen} 
-            userLocation={userLocation}
-            onCraftsmanClick={handleCraftsmanClick}
-          />
+          <div className={`${isMobile ? 'absolute inset-0 z-20 bg-background' : 'flex-1'}`}>
+            <Map 
+              craftsmen={craftsmen} 
+              userLocation={userLocation}
+              onCraftsmanClick={handleCraftsmanClick}
+            />
+          </div>
         )}
       </div>
     </div>
