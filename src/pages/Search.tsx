@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { SearchSidebar } from "@/components/search/SearchSidebar";
@@ -93,7 +92,7 @@ const Search = () => {
       }
 
       const { data: subscriptionStatuses, error: subError } = await supabase
-        .from("craftsman_subscription_status")
+        .from("craftsman_subscription_status_latest")
         .select("*");
 
       if (subError) {
@@ -102,7 +101,7 @@ const Search = () => {
       }
 
       const statusMap: Record<string, boolean> = {};
-      subscriptionStatuses.forEach((status: { craftsman_id: string; is_subscription_active: boolean }) => {
+      subscriptionStatuses.forEach((status) => {
         statusMap[status.craftsman_id] = status.is_subscription_active;
       });
 

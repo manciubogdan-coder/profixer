@@ -34,10 +34,10 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
       if (!user?.id) return null;
 
       const { data, error } = await supabase
-        .from('craftsman_subscription_status')
+        .from('craftsman_subscription_status_latest')
         .select('*')
         .eq('craftsman_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       console.log("Subscription status data:", data);

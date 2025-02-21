@@ -11,9 +11,9 @@ import { ro } from "date-fns/locale";
 
 interface SubscriptionStatusData {
   craftsman_id: string;
-  subscription_status: 'active' | 'inactive';
-  subscription_end_date: string | null;
   is_subscription_active: boolean;
+  subscription_end_date: string | null;
+  subscription_status: 'active' | 'inactive';
 }
 
 export const SubscriptionStatus = () => {
@@ -48,7 +48,7 @@ export const SubscriptionStatus = () => {
     queryFn: async () => {
       console.log("Fetching subscription status for user:", user?.id);
       const { data, error } = await supabase
-        .from("craftsman_subscription_status")
+        .from("craftsman_subscription_status_latest")
         .select("*")
         .eq("craftsman_id", user?.id)
         .maybeSingle();
