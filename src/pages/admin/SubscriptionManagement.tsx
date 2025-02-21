@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -91,21 +90,14 @@ export const SubscriptionManagement = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Fetch professional users with their auth data
       const { data: professionals, error: profError } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          auth_user:auth.users(email)
-        `)
+        .from('user_profiles_with_email')
+        .select('id, first_name, last_name, email')
         .eq('role', 'professional');
 
       if (profError) throw profError;
       if (!professionals) return;
 
-      // Then fetch their subscription status
       const { data: subscriptionsData, error: subError } = await supabase
         .from('subscriptions')
         .select('*')
@@ -113,16 +105,14 @@ export const SubscriptionManagement = () => {
 
       if (subError) throw subError;
 
-      // Combine the data
       const combinedSubscriptions = professionals.map(prof => {
         const subscription = subscriptionsData?.find(s => s.craftsman_id === prof.id);
-        const authUser = Array.isArray(prof.auth_user) ? prof.auth_user[0] : null;
         
         return {
           id: prof.id,
           craftsman_id: prof.id,
           craftsman_name: `${prof.first_name} ${prof.last_name}`,
-          craftsman_email: authUser?.email || 'N/A',
+          craftsman_email: prof.email || 'N/A',
           status: (subscription?.status === 'active' ? 'active' : 'inactive') as "active" | "inactive",
           end_date: subscription?.end_date || null
         };
