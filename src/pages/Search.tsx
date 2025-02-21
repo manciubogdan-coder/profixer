@@ -201,7 +201,7 @@ const Search = () => {
       )}
       <div className="relative flex flex-col md:flex-row h-[calc(100vh-7rem)]">
         {(!isMobile || !showMap) && (
-          <div className={`${isMobile ? 'absolute inset-0 z-20 bg-background' : ''}`}>
+          <div className="w-full md:w-96">
             <SearchSidebar
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
@@ -218,7 +218,7 @@ const Search = () => {
           </div>
         )}
         {(!isMobile || showMap) && (
-          <div className={`${isMobile ? 'absolute inset-0 z-20 bg-background' : 'flex-1'}`}>
+          <div className="flex-1">
             <Map 
               craftsmen={craftsmen} 
               userLocation={userLocation}
