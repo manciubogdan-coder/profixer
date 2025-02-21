@@ -21,11 +21,8 @@ import { Database } from "@/integrations/supabase/types";
 
 type DbResult<T> = T extends PromiseLike<infer U> ? U : never;
 
-// Define the update type based on the fields we're actually updating
-type SubscriptionStatusUpdate = {
-  subscription_end_date: string;
-  is_subscription_active: boolean;
-}
+// Use the correct table type from the database schema
+type SubscriptionRecord = Database['public']['Tables']['subscriptions']['Update'];
 
 type CraftsmanSubscriptionStatus = Database['public']['Views']['craftsman_subscription_status']['Row'] & {
   profiles: {
@@ -145,17 +142,24 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
-      const updateData: SubscriptionStatusUpdate = {
-        subscription_end_date: newDate.toISOString(),
-        is_subscription_active: true
-      };
-
       const { error } = await supabase
-        .from('craftsman_subscription_status')
-        .update(updateData)
+        .from('subscriptions')
+        .update({
+          end_date: newDate.toISOString(),
+          status: 'active'
+        } satisfies Partial<SubscriptionRecord>)
         .eq('craftsman_id', subscriptionId);
 
       if (error) throw error;
+
+      // After updating the subscription, let's update the status view as well
+      await supabase
+        .from('craftsman_subscription_status')
+        .update({
+          is_subscription_active: true,
+          subscription_end_date: newDate.toISOString()
+        })
+        .eq('craftsman_id', subscriptionId);
 
       toast.success('Data abonamentului a fost actualizată');
       fetchSubscriptions();
