@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -19,7 +20,12 @@ import { Search } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 
 type DbResult<T> = T extends PromiseLike<infer U> ? U : never;
-type SubscriptionStatusUpdate = Database['public']['Views']['craftsman_subscription_status']['Update'];
+
+// Define the update type based on the fields we're actually updating
+type SubscriptionStatusUpdate = {
+  subscription_end_date: string;
+  is_subscription_active: boolean;
+}
 
 type CraftsmanSubscriptionStatus = Database['public']['Views']['craftsman_subscription_status']['Row'] & {
   profiles: {
@@ -139,12 +145,14 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
+      const updateData: SubscriptionStatusUpdate = {
+        subscription_end_date: newDate.toISOString(),
+        is_subscription_active: true
+      };
+
       const { error } = await supabase
         .from('craftsman_subscription_status')
-        .update({
-          subscription_end_date: newDate.toISOString(),
-          is_subscription_active: true
-        } as SubscriptionStatusUpdate)
+        .update(updateData)
         .eq('craftsman_id', subscriptionId);
 
       if (error) throw error;
