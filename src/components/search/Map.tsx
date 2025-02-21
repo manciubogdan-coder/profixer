@@ -84,21 +84,21 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    const defaultCenter = [26.1025, 44.4268]; // București ca centru implicit
+    // Definim centrul implicit ca tuple cu două numere fixe
+    const defaultCenter: [number, number] = [26.1025, 44.4268]; // București
 
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: "mapbox://styles/mapbox/streets-v12",
         center: userLocation 
-          ? [userLocation.lng, userLocation.lat]
+          ? [userLocation.lng, userLocation.lat] as [number, number]
           : defaultCenter,
         zoom: 12,
       });
 
       map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
-      // Adăugăm marker pentru locația utilizatorului
       if (userLocation) {
         const el = document.createElement("div");
         el.className = "marker";
@@ -110,7 +110,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         el.style.boxShadow = "0 0 0 2px rgba(59, 130, 246, 0.5)";
 
         new mapboxgl.Marker(el)
-          .setLngLat([userLocation.lng, userLocation.lat])
+          .setLngLat([userLocation.lng, userLocation.lat] as [number, number])
           .addTo(map.current);
       }
 
