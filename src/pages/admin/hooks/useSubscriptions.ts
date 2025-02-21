@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -50,30 +49,54 @@ export const useSubscriptions = () => {
   const fetchDashboardStats = async () => {
     try {
       // Obținem statisticile despre abonamente folosind noua funcție
-      const { data: subStats } = await supabase.rpc('get_subscription_statistics');
+      const { data: subStats, error: subStatsError } = await supabase.rpc('get_subscription_statistics');
+      console.log('Subscription stats received:', subStats);
+      
+      if (subStatsError) {
+        console.error('Error fetching subscription stats:', subStatsError);
+        throw subStatsError;
+      }
       
       // Obținem numărul total de meșteri
-      const { count: totalUsers } = await supabase
+      const { count: totalUsers, error: usersError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'professional');
 
-      const { count: activeListings } = await supabase
+      if (usersError) {
+        console.error('Error fetching total users:', usersError);
+        throw usersError;
+      }
+
+      console.log('Total users:', totalUsers);
+
+      const { count: activeListings, error: listingsError } = await supabase
         .from('job_listings')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      // Verificăm dacă avem date și luăm primul element din array
+      if (listingsError) {
+        console.error('Error fetching active listings:', listingsError);
+        throw listingsError;
+      }
+
+      console.log('Active listings:', activeListings);
+
+      // Verificăm dacă avem date și accesăm primul element
       if (subStats && subStats[0]) {
-        setStats({
+        const newStats = {
           totalUsers: totalUsers || 0,
           activeListings: activeListings || 0,
           activeSubscriptions: Number(subStats[0].active_subscriptions) || 0,
           expiredSubscriptions: Number(subStats[0].expired_subscriptions) || 0
-        });
+        };
+        console.log('Setting new stats:', newStats);
+        setStats(newStats);
+      } else {
+        console.log('No subscription stats available');
       }
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      console.error('Error in fetchDashboardStats:', error);
       toast.error('Nu am putut încărca statisticile');
     }
   };
@@ -148,10 +171,12 @@ export const useSubscriptions = () => {
   };
 
   useEffect(() => {
+    console.log('Running fetchSubscriptions effect');
     fetchSubscriptions();
   }, [filters]);
 
   useEffect(() => {
+    console.log('Running fetchDashboardStats effect');
     fetchDashboardStats();
   }, []);
 
