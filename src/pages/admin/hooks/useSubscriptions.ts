@@ -64,7 +64,6 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Folosim DISTINCT pentru a ne asigura că nu avem duplicate
       const { data: professionals, error: profError } = await supabase
         .from('user_profiles_with_email')
         .select('id, first_name, last_name, email')
@@ -73,16 +72,14 @@ export const useSubscriptions = () => {
       if (profError) throw profError;
       if (!professionals) return;
 
-      // Obținem toate abonamentele pentru profesioniști
       const { data: subscriptionsData, error: subError } = await supabase
         .from('subscriptions')
         .select('*')
         .in('craftsman_id', professionals.map(p => p.id))
-        .order('created_at', { ascending: false }); // Luăm cel mai recent abonament
+        .order('created_at', { ascending: false });
 
       if (subError) throw subError;
 
-      // Eliminăm duplicatele și păstrăm doar cel mai recent abonament pentru fiecare meșter
       const uniqueSubscriptions = professionals.map(prof => {
         const latestSubscription = subscriptionsData?.find(s => s.craftsman_id === prof.id);
         
@@ -114,7 +111,6 @@ export const useSubscriptions = () => {
         .maybeSingle();
 
       if (!existingSubscription) {
-        // Creăm un nou abonament
         const { error: insertError } = await supabase
           .from('subscriptions')
           .insert({
@@ -125,7 +121,6 @@ export const useSubscriptions = () => {
           });
         if (insertError) throw insertError;
       } else {
-        // Actualizăm abonamentul existent
         const { error: updateError } = await supabase
           .from('subscriptions')
           .update({
@@ -136,17 +131,15 @@ export const useSubscriptions = () => {
         if (updateError) throw updateError;
       }
 
-      // Actualizăm statusul direct în view folosind un update normal în loc de RPC
-      const { error: viewError } = await supabase
-        .from('craftsman_subscription_status')
-        .update({
-          is_subscription_active: true,
-          subscription_end_date: newDate.toISOString(),
-          subscription_status: 'active'
-        })
-        .eq('craftsman_id', subscriptionId);
+      // Folosim funcția RPC pentru a actualiza statusul
+      const { error: rpcError } = await supabase
+        .rpc('update_craftsman_subscription_status', {
+          p_craftsman_id: subscriptionId,
+          p_is_active: true,
+          p_end_date: newDate.toISOString()
+        });
 
-      if (viewError) throw viewError;
+      if (rpcError) throw rpcError;
 
       toast.success('Data abonamentului a fost actualizată');
       await fetchSubscriptions();
