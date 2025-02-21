@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -18,16 +17,16 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search } from "lucide-react";
 
-interface SubscriptionWithProfile {
+interface CraftsmanSubscriptionStatus {
   id: string;
   craftsman_id: string;
-  subscription_end_date: string | null;
   is_subscription_active: boolean;
+  subscription_end_date: string | null;
   profiles: {
     first_name: string;
     last_name: string;
     email: string;
-  };
+  } | null;
 }
 
 interface Subscription {
@@ -97,30 +96,29 @@ export const SubscriptionManagement = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Am modificat query-ul pentru a include join-ul corect cu profiles
-      const { data: subscriptionsData, error } = await supabase
+      const { data, error } = await supabase
         .from('craftsman_subscription_status')
         .select(`
           id,
           craftsman_id,
           is_subscription_active,
           subscription_end_date,
-          profiles:craftsman_id (
+          profiles!craftsman_subscription_status_craftsman_id_fkey (
             first_name,
             last_name,
             email
           )
-        `);
+        `)
+        .returns<CraftsmanSubscriptionStatus[]>();
 
       if (error) throw error;
 
-      if (!subscriptionsData) return;
+      if (!data) return;
 
-      // Eliminăm duplicatele folosind Set și Map
-      const uniqueSubscriptions = new Map();
+      const uniqueSubscriptions = new Map<string, Subscription>();
       
-      subscriptionsData.forEach(sub => {
-        if (!uniqueSubscriptions.has(sub.craftsman_id)) {
+      data.forEach(sub => {
+        if (!uniqueSubscriptions.has(sub.craftsman_id) && sub.profiles) {
           uniqueSubscriptions.set(sub.craftsman_id, {
             id: sub.id,
             craftsman_id: sub.craftsman_id,
@@ -143,20 +141,14 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
-      type SubscriptionUpdate = {
-        subscription_end_date: string;
-        is_subscription_active: boolean;
-      };
-
-      const updateData: SubscriptionUpdate = {
-        subscription_end_date: newDate.toISOString(),
-        is_subscription_active: true
-      };
-
       const { error } = await supabase
         .from('craftsman_subscription_status')
-        .update(updateData)
-        .eq('id', subscriptionId);
+        .update({
+          subscription_end_date: newDate.toISOString(),
+          is_subscription_active: true
+        })
+        .eq('id', subscriptionId)
+        .select();
 
       if (error) throw error;
 
@@ -229,7 +221,7 @@ export const SubscriptionManagement = () => {
         <div className="p-6">
           <h2 className="text-2xl font-bold mb-6">Managementul Abonamentelor</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Gestionează abonamentele meșterilor
+            Gestioneaz�� abonamentele meșterilor
           </p>
 
           <div className="flex items-center mb-6">
