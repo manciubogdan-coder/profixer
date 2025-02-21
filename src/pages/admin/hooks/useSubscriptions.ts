@@ -49,6 +49,10 @@ export const useSubscriptions = () => {
 
   const fetchDashboardStats = async () => {
     try {
+      // Obținem statisticile despre abonamente folosind noua funcție
+      const { data: subStats } = await supabase.rpc('get_subscription_statistics');
+      
+      // Obținem numărul total de meșteri
       const { count: totalUsers } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
@@ -59,19 +63,12 @@ export const useSubscriptions = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      const { data: statusData } = await supabase
-        .from('craftsman_subscription_status_latest')
-        .select('is_subscription_active');
-
-      if (statusData) {
-        const activeSubscriptions = statusData.filter(s => s.is_subscription_active).length;
-        const expiredSubscriptions = statusData.length - activeSubscriptions;
-
+      if (subStats) {
         setStats({
           totalUsers: totalUsers || 0,
           activeListings: activeListings || 0,
-          activeSubscriptions,
-          expiredSubscriptions
+          activeSubscriptions: Number(subStats.active_subscriptions) || 0,
+          expiredSubscriptions: Number(subStats.expired_subscriptions) || 0
         });
       }
     } catch (error) {

@@ -994,6 +994,7 @@ export type Database = {
         Returns: {
           active_subscriptions: number
           expired_subscriptions: number
+          total_subscribers: number
         }[]
       }
       has_active_subscription: {
