@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -20,9 +21,7 @@ import { Database } from "@/integrations/supabase/types";
 
 type DbResult<T> = T extends PromiseLike<infer U> ? U : never;
 
-// Use the correct table type from the database schema
-type SubscriptionRecord = Database['public']['Tables']['subscriptions']['Update'];
-type StatusUpdate = Pick<Database['public']['Tables']['subscriptions']['Row'], 'status' | 'end_date'>;
+type DatabaseSubscription = Database['public']['Tables']['subscriptions']['Row'];
 
 type CraftsmanSubscriptionStatus = Database['public']['Views']['craftsman_subscription_status']['Row'] & {
   profiles: {
@@ -142,17 +141,34 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
-      const updateData: StatusUpdate = {
-        end_date: newDate.toISOString(),
-        status: 'active'
-      };
-
-      const { error: subscriptionError } = await supabase
+      const { data: existingSubscription } = await supabase
         .from('subscriptions')
-        .update(updateData)
-        .eq('craftsman_id', subscriptionId);
+        .select('*')
+        .eq('craftsman_id', subscriptionId)
+        .single();
 
-      if (subscriptionError) throw subscriptionError;
+      if (!existingSubscription) {
+        // Create new subscription if none exists
+        const { error } = await supabase
+          .from('subscriptions')
+          .insert({
+            craftsman_id: subscriptionId,
+            end_date: newDate.toISOString(),
+            status: 'active',
+            plan: 'lunar'
+          });
+        if (error) throw error;
+      } else {
+        // Update existing subscription
+        const { error } = await supabase
+          .from('subscriptions')
+          .update({
+            end_date: newDate.toISOString(),
+            status: 'active'
+          })
+          .eq('craftsman_id', subscriptionId);
+        if (error) throw error;
+      }
 
       toast.success('Data abonamentului a fost actualizată');
       fetchSubscriptions();
