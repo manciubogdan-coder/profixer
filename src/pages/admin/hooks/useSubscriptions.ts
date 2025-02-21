@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UserProfile } from "@/types/auth";
 
 interface Subscription {
   id: string;
@@ -39,30 +38,37 @@ export const useSubscriptions = () => {
 
   const fetchDashboardStats = async () => {
     try {
+      // Modificăm query-urile pentru a obține numere corecte
       const { data: users } = await supabase
         .from('profiles')
-        .select('role', { count: 'exact' });
+        .select('id')
+        .eq('role', 'professional');
 
       const { data: activeListings } = await supabase
         .from('job_listings')
-        .select('*', { count: 'exact' })
+        .select('id, client_id')
         .eq('status', 'active');
 
+      // Folosim distinct pe craftsman_id pentru a număra meșterii unici
       const { data: activeSubscriptions } = await supabase
         .from('craftsman_subscription_status')
-        .select('*', { count: 'exact' })
+        .select('craftsman_id')
         .eq('is_subscription_active', true);
 
       const { data: expiredSubscriptions } = await supabase
         .from('craftsman_subscription_status')
-        .select('*', { count: 'exact' })
+        .select('craftsman_id')
         .eq('is_subscription_active', false);
+
+      // Folosim Set pentru a număra meșterii unici
+      const uniqueActiveSubscriptions = new Set(activeSubscriptions?.map(sub => sub.craftsman_id));
+      const uniqueExpiredSubscriptions = new Set(expiredSubscriptions?.map(sub => sub.craftsman_id));
 
       setStats({
         totalUsers: users?.length || 0,
         activeListings: activeListings?.length || 0,
-        activeSubscriptions: activeSubscriptions?.length || 0,
-        expiredSubscriptions: expiredSubscriptions?.length || 0
+        activeSubscriptions: uniqueActiveSubscriptions.size,
+        expiredSubscriptions: uniqueExpiredSubscriptions.size
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -72,20 +78,32 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
+      // Obținem doar cel mai recent status pentru fiecare meșter
       const { data: statusesRaw, error: statusError } = await supabase
         .from('craftsman_subscription_status')
-        .select('craftsman_id, subscription_status, subscription_end_date, is_subscription_active');
+        .select('craftsman_id, subscription_status, subscription_end_date, is_subscription_active')
+        .order('subscription_end_date', { ascending: false });
 
       if (statusError) throw statusError;
 
+      // Filtrăm pentru a păstra doar cel mai recent status pentru fiecare meșter
+      const uniqueStatuses = statusesRaw.reduce((acc, current) => {
+        if (!acc.has(current.craftsman_id)) {
+          acc.set(current.craftsman_id, current);
+        }
+        return acc;
+      }, new Map());
+
+      const typedStatuses = Array.from(uniqueStatuses.values()) as SubscriptionStatus[];
+
+      // Obținem doar profilurile pentru meșterii din lista de abonamente
       const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles_with_email')
-        .select('id, first_name, last_name, email');
+        .select('id, first_name, last_name, email')
+        .in('id', typedStatuses.map(s => s.craftsman_id));
 
       if (profilesError) throw profilesError;
 
-      // Folosim type assertion pentru a specifica tipul corect
-      const typedStatuses = statusesRaw as SubscriptionStatus[];
       const typedProfiles = (profiles || []) as Array<{
         id: string;
         first_name: string | null;
