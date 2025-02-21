@@ -50,21 +50,23 @@ export const useSubscriptions = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
+      // Folosim DISTINCT pentru a număra doar meșteri unici
       const { data: statusData } = await supabase
         .from('craftsman_subscription_status')
-        .select('is_subscription_active, craftsman_id');
+        .select('is_subscription_active, craftsman_id')
+        .order('craftsman_id');
 
-      // Calculăm statusurile unice folosind craftsman_id
-      const uniqueStatuses = new Set(statusData?.map(s => s.craftsman_id));
-      const activeSubscriptions = statusData?.filter(s => s.is_subscription_active).length || 0;
-      const expiredSubscriptions = uniqueStatuses.size - activeSubscriptions;
+      if (statusData) {
+        const activeSubscriptions = statusData.filter(s => s.is_subscription_active).length;
+        const expiredSubscriptions = statusData.length - activeSubscriptions;
 
-      setStats({
-        totalUsers: totalUsers || 0,
-        activeListings: activeListings || 0,
-        activeSubscriptions,
-        expiredSubscriptions
-      });
+        setStats({
+          totalUsers: totalUsers || 0,
+          activeListings: activeListings || 0,
+          activeSubscriptions,
+          expiredSubscriptions
+        });
+      }
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
       toast.error('Nu am putut încărca statisticile');
@@ -95,30 +97,35 @@ export const useSubscriptions = () => {
 
       if (statusError) throw statusError;
 
-      // Folosim Map pentru a elimina duplicatele și a păstra doar cel mai recent status
-      const uniqueSubscriptions = new Map();
-      statusData?.forEach(status => {
-        const key = status.craftsman_id;
-        if (!uniqueSubscriptions.has(key) || 
-            new Date(status.subscription_end_date) > new Date(uniqueSubscriptions.get(key).subscription_end_date)) {
-          uniqueSubscriptions.set(key, status);
-        }
-      });
+      // Folosim Set pentru a urmări ID-urile unice ale meșterilor
+      const processedIds = new Set<string>();
+      
+      const formattedSubscriptions: Subscription[] = (statusData || [])
+        .reduce((acc: Subscription[], sub) => {
+          // Verificăm dacă am procesat deja acest meșter
+          if (!processedIds.has(sub.craftsman_id)) {
+            processedIds.add(sub.craftsman_id);
+            
+            const subscription: Subscription = {
+              id: sub.craftsman_id,
+              craftsman_id: sub.craftsman_id,
+              craftsman_name: `${sub.profiles.first_name || ''} ${sub.profiles.last_name || ''}`.trim() || 'N/A',
+              craftsman_email: sub.profiles.email || 'N/A',
+              status: sub.is_subscription_active ? 'active' : 'inactive',
+              end_date: sub.subscription_end_date
+            };
 
-      const formattedSubscriptions: Subscription[] = Array.from(uniqueSubscriptions.values())
-        .map(sub => ({
-          id: sub.craftsman_id as string,
-          craftsman_id: sub.craftsman_id as string,
-          craftsman_name: `${sub.profiles.first_name || ''} ${sub.profiles.last_name || ''}`.trim() || 'N/A',
-          craftsman_email: sub.profiles.email || 'N/A',
-          status: sub.is_subscription_active ? 'active' as const : 'inactive' as const,
-          end_date: sub.subscription_end_date
-        }))
-        .filter(sub => {
-          const searchLower = filters.search.toLowerCase();
-          return sub.craftsman_name.toLowerCase().includes(searchLower) ||
-                 sub.craftsman_email.toLowerCase().includes(searchLower);
-        })
+            // Aplicăm filtrul de căutare
+            const searchLower = filters.search.toLowerCase();
+            if (
+              subscription.craftsman_name.toLowerCase().includes(searchLower) ||
+              subscription.craftsman_email.toLowerCase().includes(searchLower)
+            ) {
+              acc.push(subscription);
+            }
+          }
+          return acc;
+        }, [])
         .sort((a, b) => {
           if (!a.end_date) return 1;
           if (!b.end_date) return -1;
