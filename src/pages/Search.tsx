@@ -66,7 +66,6 @@ const Search = () => {
     queryFn: async () => {
       console.log("Fetching craftsmen...");
       
-      // Primul query pentru a obține profilurile meșterilor
       let query = supabase
         .from("profiles")
         .select(`
@@ -93,7 +92,6 @@ const Search = () => {
         return [];
       }
 
-      // Al doilea query pentru a obține statusul abonamentelor
       const { data: subscriptionStatuses, error: subError } = await supabase
         .from("craftsman_subscription_status")
         .select("*");
@@ -103,7 +101,6 @@ const Search = () => {
         return [];
       }
 
-      // Creăm un obiect pentru a accesa rapid statusurile abonamentelor
       const statusMap: Record<string, boolean> = {};
       subscriptionStatuses.forEach((status: { craftsman_id: string; is_subscription_active: boolean }) => {
         statusMap[status.craftsman_id] = status.is_subscription_active;
@@ -128,10 +125,8 @@ const Search = () => {
           };
         })
         .filter((craftsman) => {
-          // Filtrăm inițial după rating minim
           if ((craftsman.average_rating || 0) < minRating) return false;
 
-          // Apoi verificăm distanța dacă avem locația utilizatorului
           if (userLocation && craftsman.latitude && craftsman.longitude) {
             const distance = calculateDistance(
               userLocation.lat,
@@ -151,7 +146,7 @@ const Search = () => {
   });
 
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // Earth's radius in kilometers
+    const R = 6371;
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
@@ -199,7 +194,7 @@ const Search = () => {
           </Button>
         </div>
       )}
-      <div className="relative flex flex-col md:flex-row h-[calc(100vh-7rem)]">
+      <div className="flex flex-col md:flex-row h-[calc(100vh-7rem)]">
         {(!isMobile || !showMap) && (
           <div className="w-full md:w-96">
             <SearchSidebar
@@ -218,7 +213,7 @@ const Search = () => {
           </div>
         )}
         {(!isMobile || showMap) && (
-          <div className="flex-1 h-full">
+          <div className="flex-1 h-[calc(100vh-7rem)]">
             <Map 
               craftsmen={craftsmen} 
               userLocation={userLocation}
