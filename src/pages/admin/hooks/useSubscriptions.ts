@@ -76,30 +76,37 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      const { data: statuses, error } = await supabase
+      // Folosim două query-uri separate pentru a evita problemele cu tipurile
+      const { data: statusesRaw, error: statusError } = await supabase
         .from('craftsman_subscription_status')
-        .select(`
-          craftsman_id,
-          subscription_status,
-          subscription_end_date,
-          is_subscription_active,
-          profiles (
-            first_name,
-            last_name,
-            email
-          )
-        `);
+        .select('craftsman_id, subscription_status, subscription_end_date, is_subscription_active');
 
-      if (error) throw error;
+      if (statusError) throw statusError;
 
-      const formattedSubscriptions: Subscription[] = (statuses as SubscriptionStatus[])?.map(status => ({
-        id: status.craftsman_id,
-        craftsman_id: status.craftsman_id,
-        craftsman_name: `${status.profiles?.first_name || ''} ${status.profiles?.last_name || ''}`,
-        craftsman_email: status.profiles?.email || 'N/A',
-        status: status.is_subscription_active ? 'active' as const : 'inactive' as const,
-        end_date: status.subscription_end_date
-      })) || [];
+      // Obținem informațiile despre utilizatori separat
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .in('id', statusesRaw?.map(s => s.craftsman_id) || []);
+
+      if (profilesError) throw profilesError;
+
+      // Creăm un map pentru profiluri pentru lookup rapid
+      const profileMap = new Map(
+        profiles?.map(p => [p.id, p]) || []
+      );
+
+      const formattedSubscriptions: Subscription[] = (statusesRaw || []).map(status => {
+        const profile = profileMap.get(status.craftsman_id);
+        return {
+          id: status.craftsman_id,
+          craftsman_id: status.craftsman_id,
+          craftsman_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}` : 'N/A',
+          craftsman_email: profile?.email || 'N/A',
+          status: status.is_subscription_active ? 'active' as const : 'inactive' as const,
+          end_date: status.subscription_end_date
+        };
+      });
 
       setSubscriptions(formattedSubscriptions);
     } catch (error) {
