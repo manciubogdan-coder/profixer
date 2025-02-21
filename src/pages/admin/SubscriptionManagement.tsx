@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -19,10 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 
-type SubscriptionStatusUpdate = {
-  subscription_end_date: string;
-  is_subscription_active: boolean;
-}
+type DbResult<T> = T extends PromiseLike<infer U> ? U : never;
+type SubscriptionStatusUpdate = Database['public']['Views']['craftsman_subscription_status']['Update'];
 
 type CraftsmanSubscriptionStatus = Database['public']['Views']['craftsman_subscription_status']['Row'] & {
   profiles: {
@@ -121,7 +118,7 @@ export const SubscriptionManagement = () => {
       subscriptionsData.forEach(sub => {
         if (!uniqueSubscriptions.has(sub.craftsman_id) && sub.profiles) {
           uniqueSubscriptions.set(sub.craftsman_id, {
-            id: sub.craftsman_id, // Using craftsman_id as id since we don't have a separate id field
+            id: sub.craftsman_id,
             craftsman_id: sub.craftsman_id,
             craftsman_name: `${sub.profiles.first_name} ${sub.profiles.last_name}`,
             craftsman_email: sub.profiles.email,
@@ -142,14 +139,12 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
-      const updateData: SubscriptionStatusUpdate = {
-        subscription_end_date: newDate.toISOString(),
-        is_subscription_active: true
-      };
-
       const { error } = await supabase
         .from('craftsman_subscription_status')
-        .update(updateData)
+        .update({
+          subscription_end_date: newDate.toISOString(),
+          is_subscription_active: true
+        } as SubscriptionStatusUpdate)
         .eq('craftsman_id', subscriptionId);
 
       if (error) throw error;
