@@ -1072,6 +1072,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_craftsman_subscription_status: {
+        Args: {
+          p_craftsman_id: string
+          p_is_active: boolean
+          p_end_date: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       craftsman_type:

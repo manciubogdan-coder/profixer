@@ -136,13 +136,15 @@ export const useSubscriptions = () => {
         if (updateError) throw updateError;
       }
 
-      // Actualizăm statusul în view
+      // Actualizăm statusul direct în view folosind un update normal în loc de RPC
       const { error: viewError } = await supabase
-        .rpc('update_craftsman_subscription_status', {
-          p_craftsman_id: subscriptionId,
-          p_is_active: true,
-          p_end_date: newDate.toISOString()
-        });
+        .from('craftsman_subscription_status')
+        .update({
+          is_subscription_active: true,
+          subscription_end_date: newDate.toISOString(),
+          subscription_status: 'active'
+        })
+        .eq('craftsman_id', subscriptionId);
 
       if (viewError) throw viewError;
 
