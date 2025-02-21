@@ -17,24 +17,20 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search } from "lucide-react";
+import { Database } from "@/integrations/supabase/types";
 
-// Define type for subscription status update
 type SubscriptionStatusUpdate = {
   subscription_end_date: string;
   is_subscription_active: boolean;
 }
 
-interface CraftsmanSubscriptionStatus {
-  id: string;
-  craftsman_id: string;
-  is_subscription_active: boolean;
-  subscription_end_date: string | null;
+type CraftsmanSubscriptionStatus = Database['public']['Views']['craftsman_subscription_status']['Row'] & {
   profiles: {
     first_name: string;
     last_name: string;
     email: string;
   } | null;
-}
+};
 
 interface Subscription {
   id: string;
@@ -103,10 +99,9 @@ export const SubscriptionManagement = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: subscriptionsData, error } = await supabase
         .from('craftsman_subscription_status')
         .select(`
-          id,
           craftsman_id,
           is_subscription_active,
           subscription_end_date,
@@ -115,18 +110,18 @@ export const SubscriptionManagement = () => {
             last_name,
             email
           )
-        `);
+        `) as { data: CraftsmanSubscriptionStatus[] | null; error: any };
 
       if (error) throw error;
 
-      if (!data) return;
+      if (!subscriptionsData) return;
 
       const uniqueSubscriptions = new Map<string, Subscription>();
       
-      data.forEach(sub => {
+      subscriptionsData.forEach(sub => {
         if (!uniqueSubscriptions.has(sub.craftsman_id) && sub.profiles) {
           uniqueSubscriptions.set(sub.craftsman_id, {
-            id: sub.id,
+            id: sub.craftsman_id, // Using craftsman_id as id since we don't have a separate id field
             craftsman_id: sub.craftsman_id,
             craftsman_name: `${sub.profiles.first_name} ${sub.profiles.last_name}`,
             craftsman_email: sub.profiles.email,
@@ -147,13 +142,15 @@ export const SubscriptionManagement = () => {
 
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
+      const updateData: SubscriptionStatusUpdate = {
+        subscription_end_date: newDate.toISOString(),
+        is_subscription_active: true
+      };
+
       const { error } = await supabase
         .from('craftsman_subscription_status')
-        .update({
-          subscription_end_date: newDate.toISOString(),
-          is_subscription_active: true
-        } satisfies SubscriptionStatusUpdate)
-        .eq('id', subscriptionId);
+        .update(updateData)
+        .eq('craftsman_id', subscriptionId);
 
       if (error) throw error;
 
@@ -226,7 +223,7 @@ export const SubscriptionManagement = () => {
         <div className="p-6">
           <h2 className="text-2xl font-bold mb-6">Managementul Abonamentelor</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Gestioneaz�� abonamentele meșterilor
+            Gestionează abonamentele meșterilor
           </p>
 
           <div className="flex items-center mb-6">
