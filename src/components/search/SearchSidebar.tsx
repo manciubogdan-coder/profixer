@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Card } from "@/components/ui/card";
@@ -57,14 +56,13 @@ export const SearchSidebar = ({
     },
   });
 
-  // Filtrăm meșterii pentru a afișa doar pe cei cu abonament activ
   const activeCraftsmen = craftsmen.filter(
     (craftsman) => craftsman.subscription_status?.is_subscription_active === true
   );
 
   return (
-    <div className="w-full md:w-96 p-4 border-r bg-card">
-      <div className="space-y-4">
+    <div className="w-full md:w-96 h-full bg-card border-r">
+      <div className="p-4 space-y-4">
         <Input
           placeholder="Caută după nume..."
           value={searchTerm}
