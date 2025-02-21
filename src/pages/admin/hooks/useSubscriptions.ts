@@ -79,14 +79,19 @@ export const useSubscriptions = () => {
       if (statusError) throw statusError;
 
       const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
+        .from('user_profiles_with_email')
         .select('id, first_name, last_name, email');
 
       if (profilesError) throw profilesError;
 
       // Folosim type assertion pentru a specifica tipul corect
-      const typedProfiles = profiles as UserProfile[];
       const typedStatuses = statusesRaw as SubscriptionStatus[];
+      const typedProfiles = (profiles || []) as Array<{
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        email: string | null;
+      }>;
 
       // Creăm un map pentru profiluri pentru lookup rapid
       const profileMap = new Map(
