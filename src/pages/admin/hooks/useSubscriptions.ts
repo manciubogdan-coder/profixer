@@ -3,6 +3,19 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface Profile {
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+interface SubscriptionData {
+  craftsman_id: string;
+  is_subscription_active: boolean;
+  subscription_end_date: string | null;
+  profiles: Profile | null;
+}
+
 interface Subscription {
   id: string;
   craftsman_id: string;
@@ -79,7 +92,7 @@ export const useSubscriptions = () => {
           craftsman_id,
           is_subscription_active,
           subscription_end_date,
-          profiles:profiles(
+          profiles (
             first_name,
             last_name,
             email
@@ -94,7 +107,7 @@ export const useSubscriptions = () => {
 
       if (statusError) throw statusError;
 
-      const formattedSubscriptions: Subscription[] = (statusData || [])
+      const formattedSubscriptions: Subscription[] = (statusData as SubscriptionData[] || [])
         .map(sub => ({
           id: sub.craftsman_id,
           craftsman_id: sub.craftsman_id,
