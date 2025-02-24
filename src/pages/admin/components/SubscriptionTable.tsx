@@ -43,6 +43,11 @@ export const SubscriptionTable = ({
   statusFilter,
   onStatusFilterChange,
 }: SubscriptionTableProps) => {
+  // Deduplică abonamentele pentru a afișa doar cel mai recent pentru fiecare meșter
+  const uniqueSubscriptions = Array.from(
+    new Map(subscriptions.map(sub => [sub.craftsman_id, sub])).values()
+  );
+
   if (loading) {
     return <div>Se încarcă...</div>;
   }
@@ -73,7 +78,7 @@ export const SubscriptionTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {subscriptions.map((subscription) => (
+          {uniqueSubscriptions.map((subscription) => (
             <TableRow key={subscription.id}>
               <TableCell className="font-medium">
                 {subscription.craftsman_name}
@@ -94,7 +99,7 @@ export const SubscriptionTable = ({
                   date={subscription.end_date ? new Date(subscription.end_date) : undefined}
                   setDate={(date) => {
                     if (date) {
-                      onUpdateDate(subscription.id, date);
+                      onUpdateDate(subscription.craftsman_id, date);
                     }
                   }}
                 >
