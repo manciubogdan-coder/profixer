@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -48,7 +49,6 @@ export const useSubscriptions = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      // Obținem statisticile despre abonamente folosind noua funcție
       const { data: subStats, error: subStatsError } = await supabase.rpc('get_subscription_statistics');
       console.log('Subscription stats received:', subStats);
       
@@ -57,7 +57,6 @@ export const useSubscriptions = () => {
         throw subStatsError;
       }
       
-      // Obținem numărul total de meșteri
       const { count: totalUsers, error: usersError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
@@ -82,7 +81,6 @@ export const useSubscriptions = () => {
 
       console.log('Active listings:', activeListings);
 
-      // Verificăm dacă avem date și accesăm primul element
       if (subStats && subStats[0]) {
         const newStats = {
           totalUsers: totalUsers || 0,
@@ -103,27 +101,43 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      let query = supabase
+      // Întâi luăm toți meșterii
+      const { data: professionals, error: profError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .eq('role', 'professional');
+
+      if (profError) throw profError;
+
+      // Apoi luăm statusul abonamentelor
+      const { data: statusData, error: statusError } = await supabase
         .from('craftsman_subscription_status_latest')
         .select('*');
 
-      if (filters.status !== 'all') {
-        query = query.eq('is_subscription_active', filters.status === 'active');
-      }
-
-      const { data: statusData, error: statusError } = await query;
-
       if (statusError) throw statusError;
 
-      const formattedSubscriptions: Subscription[] = (statusData as SubscriptionData[] || [])
-        .map(sub => ({
-          id: sub.craftsman_id,
-          craftsman_id: sub.craftsman_id,
-          craftsman_name: `${sub.first_name || ''} ${sub.last_name || ''}`.trim() || 'N/A',
-          craftsman_email: sub.email || 'N/A',
-          status: sub.is_subscription_active ? 'active' as const : 'inactive' as const,
-          end_date: sub.subscription_end_date
-        }))
+      // Creăm un map pentru statusurile de abonament
+      const statusMap = new Map(
+        statusData?.map(status => [status.craftsman_id, status]) || []
+      );
+
+      // Combinăm datele
+      const formattedSubscriptions: Subscription[] = professionals
+        .map(prof => {
+          const subscriptionStatus = statusMap.get(prof.id);
+          return {
+            id: prof.id,
+            craftsman_id: prof.id,
+            craftsman_name: `${prof.first_name || ''} ${prof.last_name || ''}`.trim() || 'N/A',
+            craftsman_email: prof.email || 'N/A',
+            status: subscriptionStatus?.is_subscription_active ? 'active' : 'inactive',
+            end_date: subscriptionStatus?.subscription_end_date || null
+          };
+        })
+        .filter(sub => {
+          if (filters.status === 'all') return true;
+          return filters.status === sub.status;
+        })
         .filter(sub => {
           if (!filters.search) return true;
           const searchLower = filters.search.toLowerCase();
