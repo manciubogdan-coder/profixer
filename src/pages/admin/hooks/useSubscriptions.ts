@@ -101,9 +101,9 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Întâi luăm toți meșterii
+      // Întâi luăm toți meșterii din user_profiles_with_email pentru a avea și email-ul
       const { data: professionals, error: profError } = await supabase
-        .from('profiles')
+        .from('user_profiles_with_email')
         .select('id, first_name, last_name, email')
         .eq('role', 'professional');
 
@@ -121,36 +121,34 @@ export const useSubscriptions = () => {
         statusData?.map(status => [status.craftsman_id, status]) || []
       );
 
-      // Combinăm datele
-      const formattedSubscriptions: Subscription[] = professionals
-        .map(prof => {
-          const subscriptionStatus = statusMap.get(prof.id);
-          return {
-            id: prof.id,
-            craftsman_id: prof.id,
-            craftsman_name: `${prof.first_name || ''} ${prof.last_name || ''}`.trim() || 'N/A',
-            craftsman_email: prof.email || 'N/A',
-            status: subscriptionStatus?.is_subscription_active ? 'active' : 'inactive',
-            end_date: subscriptionStatus?.subscription_end_date || null
-          };
-        })
-        .filter(sub => {
-          if (filters.status === 'all') return true;
-          return filters.status === sub.status;
-        })
-        .filter(sub => {
-          if (!filters.search) return true;
-          const searchLower = filters.search.toLowerCase();
-          return (
-            sub.craftsman_name.toLowerCase().includes(searchLower) ||
-            sub.craftsman_email.toLowerCase().includes(searchLower)
-          );
-        })
-        .sort((a, b) => {
-          if (!a.end_date) return 1;
-          if (!b.end_date) return -1;
-          return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
-        });
+      // Combinăm datele și asigurăm-ne că respectăm tipul Subscription
+      const formattedSubscriptions: Subscription[] = (professionals || []).map(prof => {
+        const subscriptionStatus = statusMap.get(prof.id);
+        const status: "active" | "inactive" = subscriptionStatus?.is_subscription_active ? "active" : "inactive";
+        
+        return {
+          id: prof.id,
+          craftsman_id: prof.id,
+          craftsman_name: `${prof.first_name || ''} ${prof.last_name || ''}`.trim() || 'N/A',
+          craftsman_email: prof.email || 'N/A',
+          status,
+          end_date: subscriptionStatus?.subscription_end_date || null
+        };
+      }).filter(sub => {
+        if (filters.status === 'all') return true;
+        return filters.status === sub.status;
+      }).filter(sub => {
+        if (!filters.search) return true;
+        const searchLower = filters.search.toLowerCase();
+        return (
+          sub.craftsman_name.toLowerCase().includes(searchLower) ||
+          sub.craftsman_email.toLowerCase().includes(searchLower)
+        );
+      }).sort((a, b) => {
+        if (!a.end_date) return 1;
+        if (!b.end_date) return -1;
+        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
+      });
 
       setSubscriptions(formattedSubscriptions);
     } catch (error) {
