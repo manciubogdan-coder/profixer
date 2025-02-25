@@ -42,9 +42,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } else {
         setUser(null);
-        if (window.location.pathname !== "/auth") {
-          navigate("/auth");
-        }
       }
       setLoading(false);
     });
