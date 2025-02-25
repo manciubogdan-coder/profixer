@@ -25,10 +25,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      if (!session?.user && window.location.pathname !== "/auth") {
-        navigate("/auth");
-      }
     });
 
     // Listen for auth changes
