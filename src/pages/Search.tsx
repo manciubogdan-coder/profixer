@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { SearchSidebar } from "@/components/search/SearchSidebar";
@@ -86,19 +87,13 @@ const Search = () => {
 
       const { data: craftsmenData, error } = await query;
 
-      if (error) {
-        console.error("Error fetching craftsmen:", error);
-        return [];
-      }
+      if (error) throw error;
 
       const { data: subscriptionStatuses, error: subError } = await supabase
         .from("craftsman_subscription_status_latest")
         .select("*");
 
-      if (subError) {
-        console.error("Error fetching subscription statuses:", subError);
-        return [];
-      }
+      if (subError) throw subError;
 
       const statusMap: Record<string, boolean> = {};
       subscriptionStatuses.forEach((status) => {
