@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -34,6 +35,10 @@ interface SubscriptionTableProps {
   loading: boolean;
   statusFilter: string;
   onStatusFilterChange: (value: string) => void;
+  nameFilter: string;
+  onNameFilterChange: (value: string) => void;
+  emailFilter: string;
+  onEmailFilterChange: (value: string) => void;
 }
 
 export const SubscriptionTable = ({
@@ -42,29 +47,44 @@ export const SubscriptionTable = ({
   loading,
   statusFilter,
   onStatusFilterChange,
+  nameFilter,
+  onNameFilterChange,
+  emailFilter,
+  onEmailFilterChange,
 }: SubscriptionTableProps) => {
-  // Deduplică abonamentele pentru a afișa doar cel mai recent pentru fiecare meșter
-  const uniqueSubscriptions = Array.from(
-    new Map(subscriptions.map(sub => [sub.craftsman_id, sub])).values()
-  );
-
   if (loading) {
     return <div>Se încarcă...</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4">
-        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtrează după status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toate</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap gap-4">
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="Filtrează după nume..."
+            value={nameFilter}
+            onChange={(e) => onNameFilterChange(e.target.value)}
+          />
+        </div>
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder="Filtrează după email..."
+            value={emailFilter}
+            onChange={(e) => onEmailFilterChange(e.target.value)}
+          />
+        </div>
+        <div className="w-[180px]">
+          <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filtrează după status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toate</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Table>
@@ -78,7 +98,7 @@ export const SubscriptionTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {uniqueSubscriptions.map((subscription) => (
+          {subscriptions.map((subscription) => (
             <TableRow key={subscription.id}>
               <TableCell className="font-medium">
                 {subscription.craftsman_name}

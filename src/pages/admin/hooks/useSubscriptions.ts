@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,6 +31,8 @@ interface DashboardStats {
 interface Filters {
   status: "all" | "active" | "inactive";
   search: string;
+  name: string;
+  email: string;
 }
 
 export const useSubscriptions = () => {
@@ -43,7 +46,9 @@ export const useSubscriptions = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     status: "all",
-    search: ""
+    search: "",
+    name: "",
+    email: ""
   });
 
   const fetchDashboardStats = async () => {
@@ -154,16 +159,17 @@ export const useSubscriptions = () => {
           return subscription;
         })
         .filter(sub => {
-          const statusMatch = filters.status === 'all' || filters.status === sub.status;
-          return statusMatch;
-        })
-        .filter(sub => {
-          if (!filters.search) return true;
-          const searchLower = filters.search.toLowerCase();
-          const matches = 
-            sub.craftsman_name.toLowerCase().includes(searchLower) ||
-            sub.craftsman_email.toLowerCase().includes(searchLower);
-          return matches;
+          if (filters.status !== 'all' && filters.status !== sub.status) return false;
+          if (filters.name && !sub.craftsman_name.toLowerCase().includes(filters.name.toLowerCase())) return false;
+          if (filters.email && !sub.craftsman_email.toLowerCase().includes(filters.email.toLowerCase())) return false;
+          if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            if (!sub.craftsman_name.toLowerCase().includes(searchLower) &&
+                !sub.craftsman_email.toLowerCase().includes(searchLower)) {
+              return false;
+            }
+          }
+          return true;
         })
         .sort((a, b) => {
           if (!a.end_date) return 1;
