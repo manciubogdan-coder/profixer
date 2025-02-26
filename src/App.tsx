@@ -25,6 +25,8 @@ import { Terms } from "@/pages/legal/Terms";
 import { Cookies } from "@/pages/legal/Cookies";
 import { GDPR } from "@/pages/legal/GDPR";
 import { ANPC } from "@/pages/legal/ANPC";
+import { About } from "@/pages/About";
+import { Contact } from "@/pages/Contact";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +56,10 @@ function App() {
             <Route path="/subscription/activate" element={<ActivateSubscription />} />
             <Route path="/subscription/checkout" element={<Checkout />} />
             <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+            
+            {/* Static pages */}
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
             
             {/* Legal routes */}
             <Route path="/privacy" element={<Privacy />} />
