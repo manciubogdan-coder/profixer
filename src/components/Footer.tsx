@@ -61,24 +61,24 @@ export const Footer = () => {
                   href="https://anpc.ro/ce-este-sol/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block"
+                  className="inline-block bg-white p-2 rounded"
                 >
                   <img 
                     src="/anpc-sol.jpeg" 
                     alt="ANPC SOL" 
-                    className="h-16 object-contain"
+                    className="h-20 object-contain"
                   />
                 </a>
                 <a 
                   href="https://ec.europa.eu/consumers/odr"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block"
+                  className="inline-block bg-white p-2 rounded"
                 >
                   <img 
                     src="/sol-eu.png" 
                     alt="SOL EU" 
-                    className="h-16 object-contain"
+                    className="h-20 object-contain"
                   />
                 </a>
               </div>

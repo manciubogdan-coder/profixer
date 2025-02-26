@@ -20,6 +20,11 @@ import { SubscriptionManagement } from "@/pages/admin/SubscriptionManagement";
 import ActivateSubscription from "@/pages/subscription/ActivateSubscription";
 import Checkout from "@/pages/subscription/Checkout";
 import SubscriptionSuccess from "@/pages/subscription/SubscriptionSuccess";
+import { Privacy } from "@/pages/legal/Privacy";
+import { Terms } from "@/pages/legal/Terms";
+import { Cookies } from "@/pages/legal/Cookies";
+import { GDPR } from "@/pages/legal/GDPR";
+import { ANPC } from "@/pages/legal/ANPC";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,6 +54,13 @@ function App() {
             <Route path="/subscription/activate" element={<ActivateSubscription />} />
             <Route path="/subscription/checkout" element={<Checkout />} />
             <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+            
+            {/* Legal routes */}
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/cookies" element={<Cookies />} />
+            <Route path="/gdpr" element={<GDPR />} />
+            <Route path="/anpc" element={<ANPC />} />
             
             {/* Admin routes */}
             <Route path="/admin" element={<AdminLayout />}>
