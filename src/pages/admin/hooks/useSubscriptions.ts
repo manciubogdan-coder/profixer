@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,6 +25,8 @@ interface DashboardStats {
   activeListings: number;
   activeSubscriptions: number;
   expiredSubscriptions: number;
+  totalClients: number;
+  totalProfessionals: number;
 }
 
 interface Filters {
@@ -41,7 +42,9 @@ export const useSubscriptions = () => {
     totalUsers: 0,
     activeListings: 0,
     activeSubscriptions: 0,
-    expiredSubscriptions: 0
+    expiredSubscriptions: 0,
+    totalClients: 0,
+    totalProfessionals: 0
   });
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
@@ -53,86 +56,70 @@ export const useSubscriptions = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      const { data: subStats, error: subStatsError } = await supabase.rpc('get_subscription_statistics');
-      console.log('Subscription stats received:', subStats);
-      
-      if (subStatsError) {
-        console.error('Error fetching subscription stats:', subStatsError);
-        throw subStatsError;
-      }
-      
-      const { count: totalUsers, error: usersError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'professional');
+      const { count: totalUsers } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true });
 
-      if (usersError) {
-        console.error('Error fetching total users:', usersError);
-        throw usersError;
-      }
+      const { count: totalClients } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "client");
 
-      console.log('Total users:', totalUsers);
+      const { count: totalProfessionals } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .eq("role", "professional");
 
-      const { count: activeListings, error: listingsError } = await supabase
-        .from('job_listings')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
+      const { count: activeListings } = await supabase
+        .from("job_listings")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "open");
 
-      if (listingsError) {
-        console.error('Error fetching active listings:', listingsError);
-        throw listingsError;
-      }
+      const { data: subStats } = await supabase
+        .from("subscription_statistics")
+        .select("*")
+        .single();
 
-      console.log('Active listings:', activeListings);
-
-      if (subStats && subStats[0]) {
-        const newStats = {
-          totalUsers: totalUsers || 0,
-          activeListings: activeListings || 0,
-          activeSubscriptions: Number(subStats[0].active_subscriptions) || 0,
-          expiredSubscriptions: Number(subStats[0].expired_subscriptions) || 0
-        };
-        console.log('Setting new stats:', newStats);
-        setStats(newStats);
-      } else {
-        console.log('No subscription stats available');
-      }
+      setStats({
+        totalUsers: totalUsers || 0,
+        totalClients: totalClients || 0,
+        totalProfessionals: totalProfessionals || 0,
+        activeListings: activeListings || 0,
+        activeSubscriptions: subStats?.active_subscriptions || 0,
+        expiredSubscriptions: subStats?.expired_subscriptions || 0
+      });
     } catch (error) {
-      console.error('Error in fetchDashboardStats:', error);
-      toast.error('Nu am putut încărca statisticile');
+      console.error("Error fetching dashboard stats:", error);
+      toast.error("Nu am putut încărca statisticile");
     }
   };
 
   const fetchSubscriptions = async () => {
     try {
       const { data: professionals, error: profError } = await supabase
-        .from('user_profiles_with_email')
-        .select('*')
-        .eq('role', 'professional');
-
-      console.log('Professional craftsmen fetched:', professionals?.length, 'total');
+        .from("user_profiles_with_email")
+        .select("*")
+        .eq("role", "professional");
 
       if (profError) {
-        console.error('Error fetching professionals:', profError);
+        console.error("Error fetching professionals:", profError);
         throw profError;
       }
 
       if (!professionals || professionals.length === 0) {
-        console.log('No professional craftsmen found in the database');
+        console.log("No professional craftsmen found in the database");
         setSubscriptions([]);
         setLoading(false);
         return;
       }
 
       const { data: statusData, error: statusError } = await supabase
-        .from('craftsman_subscription_status_latest')
-        .select('*')
-        .in('craftsman_id', professionals.map(p => p.id));
-
-      console.log('Subscription status data for craftsmen:', statusData?.length, 'records');
+        .from("craftsman_subscription_status_latest")
+        .select("*")
+        .in("craftsman_id", professionals.map(p => p.id));
 
       if (statusError) {
-        console.error('Error fetching subscription status:', statusError);
+        console.error("Error fetching subscription status:", statusError);
         throw statusError;
       }
 
