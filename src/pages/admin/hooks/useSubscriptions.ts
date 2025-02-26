@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -101,13 +100,12 @@ export const useSubscriptions = () => {
 
   const fetchSubscriptions = async () => {
     try {
-      // Întâi luăm toți meșterii din user_profiles_with_email pentru a avea și email-ul
       const { data: professionals, error: profError } = await supabase
         .from('user_profiles_with_email')
         .select('*')
         .eq('role', 'professional');
 
-      console.log('Professionals fetched:', professionals);
+      console.log('Professional craftsmen fetched:', professionals?.length, 'total');
 
       if (profError) {
         console.error('Error fetching professionals:', profError);
@@ -115,73 +113,65 @@ export const useSubscriptions = () => {
       }
 
       if (!professionals || professionals.length === 0) {
-        console.log('No professionals found in the database');
+        console.log('No professional craftsmen found in the database');
         setSubscriptions([]);
         setLoading(false);
         return;
       }
 
-      // Apoi luăm statusul abonamentelor
       const { data: statusData, error: statusError } = await supabase
         .from('craftsman_subscription_status_latest')
-        .select('*');
+        .select('*')
+        .in('craftsman_id', professionals.map(p => p.id));
 
-      console.log('Subscription status data:', statusData);
+      console.log('Subscription status data for craftsmen:', statusData?.length, 'records');
 
       if (statusError) {
         console.error('Error fetching subscription status:', statusError);
         throw statusError;
       }
 
-      // Creăm un map pentru statusurile de abonament
       const statusMap = new Map(
         statusData?.map(status => [status.craftsman_id, status]) || []
       );
 
-      console.log('Status map:', Object.fromEntries(statusMap));
+      const formattedSubscriptions: Subscription[] = professionals
+        .filter(prof => prof.role === 'professional')
+        .map(prof => {
+          const subscriptionStatus = statusMap.get(prof.id);
+          const status: "active" | "inactive" = subscriptionStatus?.is_subscription_active ? "active" : "inactive";
+          
+          const subscription = {
+            id: prof.id,
+            craftsman_id: prof.id,
+            craftsman_name: `${prof.first_name || ''} ${prof.last_name || ''}`.trim() || 'N/A',
+            craftsman_email: prof.email || 'N/A',
+            status,
+            end_date: subscriptionStatus?.subscription_end_date || null
+          };
 
-      // Combinăm datele și asigurăm-ne că respectăm tipul Subscription
-      const formattedSubscriptions: Subscription[] = professionals.map(prof => {
-        const subscriptionStatus = statusMap.get(prof.id);
-        const status: "active" | "inactive" = subscriptionStatus?.is_subscription_active ? "active" : "inactive";
-        
-        const subscription = {
-          id: prof.id,
-          craftsman_id: prof.id,
-          craftsman_name: `${prof.first_name || ''} ${prof.last_name || ''}`.trim() || 'N/A',
-          craftsman_email: prof.email || 'N/A',
-          status,
-          end_date: subscriptionStatus?.subscription_end_date || null
-        };
-
-        console.log('Formatted subscription for craftsman:', subscription);
-        return subscription;
-      }).filter(sub => {
-        const statusMatch = filters.status === 'all' || filters.status === sub.status;
-        console.log(`Status filter for ${sub.craftsman_name}:`, {
-          filterStatus: filters.status,
-          subStatus: sub.status,
-          matches: statusMatch
+          console.log('Formatted subscription for craftsman:', prof.first_name, prof.last_name);
+          return subscription;
+        })
+        .filter(sub => {
+          const statusMatch = filters.status === 'all' || filters.status === sub.status;
+          return statusMatch;
+        })
+        .filter(sub => {
+          if (!filters.search) return true;
+          const searchLower = filters.search.toLowerCase();
+          const matches = 
+            sub.craftsman_name.toLowerCase().includes(searchLower) ||
+            sub.craftsman_email.toLowerCase().includes(searchLower);
+          return matches;
+        })
+        .sort((a, b) => {
+          if (!a.end_date) return 1;
+          if (!b.end_date) return -1;
+          return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
         });
-        return statusMatch;
-      }).filter(sub => {
-        if (!filters.search) return true;
-        const searchLower = filters.search.toLowerCase();
-        const matches = 
-          sub.craftsman_name.toLowerCase().includes(searchLower) ||
-          sub.craftsman_email.toLowerCase().includes(searchLower);
-        console.log(`Search filter for ${sub.craftsman_name}:`, {
-          search: filters.search,
-          matches
-        });
-        return matches;
-      }).sort((a, b) => {
-        if (!a.end_date) return 1;
-        if (!b.end_date) return -1;
-        return new Date(b.end_date).getTime() - new Date(a.end_date).getTime();
-      });
 
-      console.log('Final formatted subscriptions:', formattedSubscriptions);
+      console.log('Final formatted subscriptions:', formattedSubscriptions.length, 'craftsmen');
       setSubscriptions(formattedSubscriptions);
     } catch (error) {
       console.error('Error fetching subscriptions:', error);
