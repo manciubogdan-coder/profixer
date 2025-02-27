@@ -1,5 +1,5 @@
 
-import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar } from "lucide-react";
+import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
