@@ -3,8 +3,19 @@ import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, TrendingU
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+// Definim un tip pentru statisticile platformei
+interface PlatformStatistics {
+  total_clients: number;
+  total_craftsmen: number;
+  avg_rating: number;
+  total_messages: number;
+  total_jobs?: number;
+  new_jobs_30d?: number;
+  avg_response_time?: string;
+}
+
 export const Statistics = () => {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading } = useQuery<PlatformStatistics | null>({
     queryKey: ["platform-statistics"],
     queryFn: async () => {
       console.log("Fetching platform statistics...");
@@ -45,21 +56,16 @@ export const Statistics = () => {
       // Get average response time (dummy data for now, would need more complex query)
       const avgResponseTime = "5.2 ore";
       
-      console.log("Fetched statistics:", { 
+      const result: PlatformStatistics = { 
         ...platformStats, 
-        total_messages: totalMessages,
-        total_jobs: totalJobs || 0,
-        new_jobs_30d: newJobs || 0,
-        avg_response_time: avgResponseTime
-      });
-      
-      return { 
-        ...platformStats, 
-        total_messages: totalMessages,
+        total_messages: totalMessages || 0,
         total_jobs: totalJobs || 0,
         new_jobs_30d: newJobs || 0,
         avg_response_time: avgResponseTime
       };
+      
+      console.log("Fetched statistics:", result);
+      return result;
     }
   });
 
