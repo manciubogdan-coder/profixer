@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { LoaderCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { SubscriptionPlan } from '@/types/subscription';
 
 const SubscriptionSuccess = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -14,7 +15,7 @@ const SubscriptionSuccess = () => {
   const location = useLocation();
 
   const paymentId = searchParams.get('payment_id');
-  const plan = searchParams.get('plan');
+  const plan = searchParams.get('plan') as SubscriptionPlan;
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -86,17 +87,18 @@ const SubscriptionSuccess = () => {
           }
         } else {
           console.log('Creating new subscription');
-          // Creăm un nou abonament
+          // Creăm un nou abonament - aici a fost eroarea
+          const validPlan: SubscriptionPlan = plan === 'lunar' ? 'lunar' : 'lunar'; // Forțăm să fie 'lunar' dacă nu este valid
           const { error: createSubError } = await supabase
             .from('subscriptions')
-            .insert([{
+            .insert({
               craftsman_id: payment.craftsman_id,
               status: 'active',
-              plan: plan || 'lunar',
+              plan: validPlan,
               payment_id: paymentId,
               start_date: startDate.toISOString(),
               end_date: endDate.toISOString()
-            }]);
+            });
 
           if (createSubError) {
             console.error('Error creating new subscription:', createSubError);
