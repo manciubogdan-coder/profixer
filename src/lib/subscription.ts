@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { SubscriptionPlan } from "@/types/subscription";
 
+// Vom folosi doar planul lunar deocamdată
 export const SUBSCRIPTION_PRICES = {
   lunar: 99,
 } as const;
