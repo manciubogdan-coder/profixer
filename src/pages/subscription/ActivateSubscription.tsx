@@ -16,12 +16,16 @@ import {
   Bell,
   Star,
   Phone,
+  Loader2
 } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { toast } from "sonner";
 
 const ActivateSubscription = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   const features = [
     {
@@ -61,8 +65,15 @@ const ActivateSubscription = () => {
     },
   ];
 
-  const handleSubscribe = () => {
-    navigate(`/subscription/checkout?plan=lunar`);
+  const handleSubscribe = async () => {
+    try {
+      setIsLoading(true);
+      navigate(`/subscription/checkout?plan=lunar`);
+    } catch (error) {
+      console.error("Error navigating to checkout:", error);
+      toast.error("A apărut o eroare. Vă rugăm încercați din nou.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -97,8 +108,16 @@ const ActivateSubscription = () => {
             size="lg"
             className="w-full text-lg py-6"
             onClick={handleSubscribe}
+            disabled={isLoading}
           >
-            Activează Abonament
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Se procesează...
+              </>
+            ) : (
+              'Activează Abonament'
+            )}
           </Button>
         </div>
       </div>
