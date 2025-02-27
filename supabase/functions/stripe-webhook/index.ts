@@ -22,10 +22,10 @@ serve(async (req) => {
     // Verificăm că am primit un signature valid
     if (!signature) {
       console.error('No Stripe signature found');
-      return new Response('No Stripe signature found', { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return new Response(
+        JSON.stringify({ error: 'No Stripe signature found' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Citim body-ul requestului
@@ -99,9 +99,9 @@ serve(async (req) => {
       // Preluăm informații despre subscripție
       const { data: subscriptionData, error: subSelectError } = await supabase
         .from('subscriptions')
-        .select('plan')
+        .select('plan, id')
         .eq('payment_id', paymentId)
-        .single();
+        .maybeSingle();
 
       if (subSelectError && subSelectError.code !== 'PGRST116') {
         console.error('Error getting subscription data:', subSelectError);
@@ -110,56 +110,54 @@ serve(async (req) => {
 
       const plan = subscriptionData?.plan || 'lunar';
       
-      // Actualizăm abonamentul
-      const { data: subscriptionUpdateData, error: subscriptionError } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'active',
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString()
-        })
-        .eq('payment_id', paymentId)
-        .select()
-        .single();
-
-      if (subscriptionError) {
-        console.error('Error updating subscription:', subscriptionError);
-        
-        // Verificăm dacă abonamentul există deja
-        const { data: existingSub } = await supabase
+      if (subscriptionData?.id) {
+        // Actualizăm abonamentul existent
+        console.log('Updating existing subscription ID:', subscriptionData.id);
+        const { data: subscriptionUpdateData, error: subscriptionError } = await supabase
           .from('subscriptions')
-          .select('id, craftsman_id')
-          .eq('payment_id', paymentId)
-          .maybeSingle();
+          .update({
+            status: 'active',
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString()
+          })
+          .eq('id', subscriptionData.id)
+          .select()
+          .single();
 
-        if (!existingSub) {
-          console.log('No subscription found with this payment ID, creating new one');
-          
-          // Creăm un nou abonament
-          const { error: createSubError } = await supabase
-            .from('subscriptions')
-            .insert([{
-              craftsman_id: paymentData.craftsman_id,
-              status: 'active',
-              plan,
-              payment_id: paymentId,
-              start_date: startDate.toISOString(),
-              end_date: endDate.toISOString()
-            }]);
-
-          if (createSubError) {
-            console.error('Error creating new subscription:', createSubError);
-            return new Response(
-              JSON.stringify({ error: `Error creating subscription: ${createSubError.message}` }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-          }
+        if (subscriptionError) {
+          console.error('Error updating subscription:', subscriptionError);
+        } else {
+          console.log('Subscription updated successfully:', subscriptionUpdateData);
         }
       } else {
-        console.log('Subscription updated successfully:', subscriptionUpdateData);
+        // Creăm un nou abonament
+        console.log('Creating new subscription for craftsman:', paymentData.craftsman_id);
+        const { data: newSub, error: createSubError } = await supabase
+          .from('subscriptions')
+          .insert([{
+            craftsman_id: paymentData.craftsman_id,
+            status: 'active',
+            plan,
+            payment_id: paymentId,
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString()
+          }])
+          .select()
+          .single();
+
+        if (createSubError) {
+          console.error('Error creating new subscription:', createSubError);
+          return new Response(
+            JSON.stringify({ error: `Error creating subscription: ${createSubError.message}` }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } else {
+          console.log('New subscription created successfully:', newSub);
+        }
       }
 
       // Actualizăm manual și tabela de status pentru a fi siguri
+      console.log('Force updating craftsman subscription status via RPC');
       const { error: statusUpdateError } = await supabase
         .rpc('update_craftsman_subscription_status', {
           p_craftsman_id: paymentData.craftsman_id,

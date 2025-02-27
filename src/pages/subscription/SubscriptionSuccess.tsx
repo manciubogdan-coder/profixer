@@ -40,38 +40,84 @@ const SubscriptionSuccess = () => {
 
         console.log('Payment status:', payment.status);
 
+        // Actualizăm manual plata dacă nu este deja completată
         if (payment.status !== 'completed') {
-          console.log('Payment not completed yet, checking status via RPC');
-          
-          // Forțăm actualizarea stării abonamentului prin RPC
-          const { error: statusUpdateError } = await supabase
-            .rpc('update_craftsman_subscription_status', {
-              p_craftsman_id: payment.craftsman_id,
-              p_is_active: true,
-              p_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 zile
-            });
-
-          if (statusUpdateError) {
-            console.error('Error updating subscription status:', statusUpdateError);
-          } else {
-            console.log('Successfully updated subscription status via RPC');
+          console.log('Updating payment status manually');
+          const { error: paymentUpdateError } = await supabase
+            .from('payments')
+            .update({ status: 'completed' })
+            .eq('id', paymentId);
+            
+          if (paymentUpdateError) {
+            console.error('Error updating payment status:', paymentUpdateError);
           }
         }
 
-        // Verificăm abonamentul
-        const { data: subscription, error: subscriptionError } = await supabase
+        // Creăm date pentru abonament
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 30); // Adăugăm 30 de zile pentru abonament lunar
+
+        // Verificăm abonamentul existent
+        const { data: existingSub, error: existingSubError } = await supabase
           .from('subscriptions')
-          .select('status, end_date')
+          .select('*')
           .eq('payment_id', paymentId)
           .maybeSingle();
 
-        if (subscriptionError && subscriptionError.code !== 'PGRST116') {
-          console.error('Error checking subscription:', subscriptionError);
+        if (existingSubError && existingSubError.code !== 'PGRST116') {
+          console.error('Error checking existing subscription:', existingSubError);
         }
 
-        console.log('Subscription data:', subscription);
+        if (existingSub) {
+          console.log('Updating existing subscription');
+          // Actualizăm abonamentul existent
+          const { error: updateSubError } = await supabase
+            .from('subscriptions')
+            .update({
+              status: 'active',
+              start_date: startDate.toISOString(),
+              end_date: endDate.toISOString()
+            })
+            .eq('id', existingSub.id);
 
-        // Chiar dacă nu găsim abonamentul, continuăm - webhook-ul ar trebui să-l creeze
+          if (updateSubError) {
+            console.error('Error updating subscription:', updateSubError);
+          }
+        } else {
+          console.log('Creating new subscription');
+          // Creăm un nou abonament
+          const { error: createSubError } = await supabase
+            .from('subscriptions')
+            .insert([{
+              craftsman_id: payment.craftsman_id,
+              status: 'active',
+              plan: plan || 'lunar',
+              payment_id: paymentId,
+              start_date: startDate.toISOString(),
+              end_date: endDate.toISOString()
+            }]);
+
+          if (createSubError) {
+            console.error('Error creating new subscription:', createSubError);
+          }
+        }
+
+        // Forțăm actualizarea stării abonamentului prin RPC
+        console.log('Forcing subscription status update via RPC');
+        const { error: statusUpdateError } = await supabase
+          .rpc('update_craftsman_subscription_status', {
+            p_craftsman_id: payment.craftsman_id,
+            p_is_active: true,
+            p_end_date: endDate.toISOString()
+          });
+
+        if (statusUpdateError) {
+          console.error('Error updating subscription status via RPC:', statusUpdateError);
+        } else {
+          console.log('Successfully updated subscription status via RPC');
+        }
+
         setIsLoading(false);
         
         // Redirecționăm către profil după 3 secunde
