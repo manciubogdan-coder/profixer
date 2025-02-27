@@ -1,7 +1,10 @@
 
-import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, TrendingUp, Clock } from "lucide-react";
+import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, TrendingUp, Clock, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from 'xlsx';
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 // Definim un tip pentru statisticile platformei
 interface PlatformStatistics {
@@ -12,6 +15,10 @@ interface PlatformStatistics {
   total_jobs?: number;
   new_jobs_30d?: number;
   avg_response_time?: string;
+  conversion_rate?: number;
+  retention_rate?: number;
+  revenue_monthly?: number;
+  avg_order_value?: number;
 }
 
 export const Statistics = () => {
@@ -56,18 +63,96 @@ export const Statistics = () => {
       // Get average response time (dummy data for now, would need more complex query)
       const avgResponseTime = "5.2 ore";
       
+      // Valori demo pentru noile statistici
+      const conversionRate = 76; // 76%
+      const retentionRate = 83; // 83%
+      const revenueMonthly = 15400; // 15,400 RON
+      const avgOrderValue = 450; // 450 RON
+      
       const result: PlatformStatistics = { 
         ...platformStats, 
         total_messages: totalMessages || 0,
         total_jobs: totalJobs || 0,
         new_jobs_30d: newJobs || 0,
-        avg_response_time: avgResponseTime
+        avg_response_time: avgResponseTime,
+        conversion_rate: conversionRate,
+        retention_rate: retentionRate,
+        revenue_monthly: revenueMonthly,
+        avg_order_value: avgOrderValue
       };
       
       console.log("Fetched statistics:", result);
       return result;
     }
   });
+
+  const exportToExcel = () => {
+    if (!stats) {
+      toast.error("Nu există date pentru export");
+      return;
+    }
+
+    // Creăm un obiect potrivit pentru export
+    const exportData = [
+      {
+        'Indicator': 'Clienți Mulțumiți',
+        'Valoare': stats.total_clients
+      },
+      {
+        'Indicator': 'Rating Mediu',
+        'Valoare': stats.avg_rating?.toFixed(1) + '/5'
+      },
+      {
+        'Indicator': 'Meșteri Verificați',
+        'Valoare': stats.total_craftsmen
+      },
+      {
+        'Indicator': 'Mesaje Trimise',
+        'Valoare': stats.total_messages
+      },
+      {
+        'Indicator': 'Lucrări Totale', 
+        'Valoare': stats.total_jobs
+      },
+      {
+        'Indicator': 'Lucrări Noi (30 zile)',
+        'Valoare': stats.new_jobs_30d
+      },
+      {
+        'Indicator': 'Timp Răspuns Mediu',
+        'Valoare': stats.avg_response_time
+      },
+      {
+        'Indicator': 'Rată de Conversie',
+        'Valoare': stats.conversion_rate + '%'
+      },
+      {
+        'Indicator': 'Rată de Retenție',
+        'Valoare': stats.retention_rate + '%'
+      },
+      {
+        'Indicator': 'Venit Lunar',
+        'Valoare': stats.revenue_monthly + ' RON'
+      },
+      {
+        'Indicator': 'Valoare Medie Comandă',
+        'Valoare': stats.avg_order_value + ' RON'
+      }
+    ];
+
+    // Creăm un workbook și adăugăm datele
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Statistici");
+    
+    // Generăm numele fișierului cu data curentă
+    const fileName = `Statistici_ProFixer_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Salvăm fișierul
+    XLSX.writeFile(wb, fileName);
+    
+    toast.success("Statisticile au fost exportate cu succes!");
+  };
 
   const statisticsData = [
     {
@@ -107,9 +192,24 @@ export const Statistics = () => {
     },
     {
       icon: TrendingUp,
-      value: "76%",
+      value: `${stats?.conversion_rate || 0}%`,
       label: "Rată de Conversie",
     },
+    {
+      icon: TrendingUp,
+      value: `${stats?.retention_rate || 0}%`,
+      label: "Rată de Retenție",
+    },
+    {
+      icon: TrendingUp,
+      value: `${stats?.revenue_monthly || 0} RON`,
+      label: "Venit Lunar",
+    },
+    {
+      icon: TrendingUp,
+      value: `${stats?.avg_order_value || 0} RON`,
+      label: "Valoare Medie Comandă",
+    }
   ];
 
   if (isLoading) {
@@ -117,7 +217,7 @@ export const Statistics = () => {
       <div className="py-20">
         <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
               <div key={i} className="animate-pulse">
                 <div className="h-32 bg-muted rounded-xl"></div>
               </div>
@@ -133,6 +233,13 @@ export const Statistics = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-background to-background" />
       
       <div className="container mx-auto relative z-10">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold">Statistici Platformă</h2>
+          <Button variant="outline" onClick={exportToExcel}>
+            <Download className="mr-2 h-4 w-4" /> Export Excel
+          </Button>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {statisticsData.map((stat, index) => (
             <div
