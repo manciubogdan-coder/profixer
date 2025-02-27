@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import RomaniaMap from "./maps/RomaniaMap";
 
 // Definim un tip pentru statisticile platformei
 interface PlatformStatistics {
@@ -269,7 +270,7 @@ export const Statistics = () => {
           ))}
         </div>
 
-        {/* Hartă cu distribuția județelor - placehoder până implementăm harta interactivă completă*/}
+        {/* Hartă cu distribuția județelor */}
         <div className="mt-10">
           <h3 className="text-2xl font-bold mb-6">Distribuția pe Județe</h3>
           
@@ -298,12 +299,14 @@ export const Statistics = () => {
               </div>
             </div>
 
-            <div className="relative w-full h-[500px] flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <p>Hartă interactivă</p>
-                <p className="text-sm mt-2">Pentru implementarea detaliată a hărții interactive a României, va fi nevoie să integrăm un SVG complet cu conturul județelor.</p>
-                <p className="text-sm mt-2">Datele sunt disponibile în export-ul Excel</p>
-              </div>
+            <div className="relative w-full h-[500px]">
+              {stats?.users_by_county ? (
+                <RomaniaMap countiesData={stats.users_by_county} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+                  <p>Nu sunt date disponibile pentru afișarea hărții</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
