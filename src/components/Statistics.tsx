@@ -1,5 +1,5 @@
 
-import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, Download, User, Hammer, Filter, BarChart } from "lucide-react";
+import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, Download, User, Hammer, Filter, BarChart as BarChartIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
@@ -39,6 +39,7 @@ import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import { subMonths, format, startOfMonth, endOfMonth, subYears, parseISO } from "date-fns";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Bar, BarChart } from "recharts";
+import { useSubscriptions, HistoricalStats } from "@/pages/admin/hooks/useSubscriptions";
 
 // Definim un tip pentru statisticile platformei
 interface PlatformStatistics {
@@ -50,15 +51,6 @@ interface PlatformStatistics {
   new_jobs_30d?: number;
   total_users?: number;
   users_by_county?: Record<string, { total: number, clients: number, craftsmen: number }>;
-}
-
-interface HistoricalData {
-  date: string;
-  total_users: number;
-  total_clients: number;
-  total_craftsmen: number;
-  total_messages: number;
-  total_jobs: number;
 }
 
 // Funcție pentru normalizarea numelor de județe
@@ -76,6 +68,7 @@ export const Statistics = () => {
     to: new Date()
   });
   const [statisticType, setStatisticType] = useState<string>("users");
+  const { fetchHistoricalStats } = useSubscriptions();
   
   const form = useForm({
     defaultValues: {
@@ -175,8 +168,8 @@ export const Statistics = () => {
     }
   });
 
-  // Obținem date istorice pentru grafic (simulare aici - real ar veni dintr-un API)
-  const { data: historicalData, isLoading: isLoadingHistorical } = useQuery<HistoricalData[]>({
+  // Obținem date istorice reale din baza de date
+  const { data: historicalData, isLoading: isLoadingHistorical } = useQuery<HistoricalStats[]>({
     queryKey: ["historical-statistics", dateRange],
     queryFn: async () => {
       console.log("Fetching historical statistics...");
@@ -184,48 +177,7 @@ export const Statistics = () => {
         return [];
       }
 
-      // În mod normal, aici ar fi un apel API real către Supabase pentru a obține datele istorice
-      // Pentru simulare, generăm date de test pentru perioada selectată
-      
-      // Creăm o matrice cu toate lunile din intervalul selectat
-      const months = [];
-      let currentDate = new Date(dateRange.from);
-      const endDate = new Date(dateRange.to);
-      
-      while (currentDate <= endDate) {
-        months.push(new Date(currentDate));
-        currentDate.setMonth(currentDate.getMonth() + 1);
-      }
-      
-      // Generăm date de test pentru fiecare lună
-      const mockData = months.map(date => {
-        // Folosim data lunii pentru a genera numere pseudo-aleatorii dar constante
-        const seed = date.getMonth() + date.getFullYear();
-        
-        // Folosind seedul, generăm valori care par a avea o evoluție în timp
-        const baseUsers = 500 + seed * 50;
-        const baseClients = 300 + seed * 30;
-        const baseCraftsmen = 200 + seed * 20;
-        const baseMessages = 1000 + seed * 150;
-        const baseJobs = 100 + seed * 15;
-        
-        // Adăugăm un factor aleatoriu pentru a simula fluctuații
-        const randomFactor = 0.8 + Math.sin(seed) * 0.2;
-        
-        return {
-          date: format(date, 'MMM yyyy'),
-          month: date.getMonth(),
-          year: date.getFullYear(),
-          timestamp: date.getTime(),
-          total_users: Math.round(baseUsers * randomFactor),
-          total_clients: Math.round(baseClients * randomFactor),
-          total_craftsmen: Math.round(baseCraftsmen * randomFactor),
-          total_messages: Math.round(baseMessages * randomFactor),
-          total_jobs: Math.round(baseJobs * randomFactor)
-        };
-      }).sort((a, b) => a.timestamp - b.timestamp);
-      
-      return mockData;
+      return await fetchHistoricalStats(dateRange.from, dateRange.to);
     }
   });
 
@@ -722,7 +674,7 @@ export const Statistics = () => {
                     size="sm"
                     onClick={() => setStatisticType('activity')}
                   >
-                    <BarChart className="mr-2 h-4 w-4" /> Activitate
+                    <BarChartIcon className="mr-2 h-4 w-4" /> Activitate
                   </Button>
                 </div>
                 

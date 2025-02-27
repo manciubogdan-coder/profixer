@@ -37,6 +37,15 @@ interface Filters {
   email: string;
 }
 
+export interface HistoricalStats {
+  date: string;
+  total_users: number;
+  total_clients: number;
+  total_craftsmen: number;
+  total_messages: number;
+  total_jobs: number;
+}
+
 export const useSubscriptions = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
@@ -175,6 +184,139 @@ export const useSubscriptions = () => {
     }
   };
 
+  // Adăugăm o funcție pentru a obține date istorice în funcție de intervalul de date
+  const fetchHistoricalStats = async (startDate?: Date, endDate?: Date): Promise<HistoricalStats[]> => {
+    try {
+      console.log("Fetching historical data from:", startDate, "to:", endDate);
+      
+      // Obținem utilizatorii înregistrați în timp
+      const { data: userTimeline, error: userError } = await supabase
+        .from('profiles')
+        .select('created_at, role')
+        .order('created_at', { ascending: true });
+      
+      if (userError) throw userError;
+      
+      // Obținem mesajele în timp
+      const { data: messageTimeline, error: messageError } = await supabase
+        .from('messages')
+        .select('created_at')
+        .order('created_at', { ascending: true });
+      
+      if (messageError) throw messageError;
+      
+      // Obținem lucrările în timp
+      const { data: jobTimeline, error: jobError } = await supabase
+        .from('job_listings')
+        .select('created_at')
+        .order('created_at', { ascending: true });
+      
+      if (jobError) throw jobError;
+      
+      // Creăm o mapare a lunilor cu date agregate
+      const monthlyData = new Map<string, HistoricalStats>();
+      
+      // Funcția pentru a grupa pe luni
+      const aggregateByMonth = (date: string) => {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      };
+      
+      // Inițializăm luna de start pentru a avea toate lunile în interval
+      let startMonth = startDate ? 
+          new Date(startDate.getFullYear(), startDate.getMonth(), 1) : 
+          userTimeline.length > 0 ? new Date(userTimeline[0].created_at) : new Date();
+          
+      const endMonth = endDate ? 
+          new Date(endDate.getFullYear(), endDate.getMonth(), 1) : 
+          new Date();
+      
+      // Creăm intrări pentru toate lunile din interval
+      while (startMonth <= endMonth) {
+        const monthKey = `${startMonth.getFullYear()}-${String(startMonth.getMonth() + 1).padStart(2, '0')}`;
+        const monthName = format(startMonth, 'MMM yyyy');
+        
+        monthlyData.set(monthKey, {
+          date: monthName,
+          total_users: 0,
+          total_clients: 0,
+          total_craftsmen: 0,
+          total_messages: 0,
+          total_jobs: 0
+        });
+        
+        startMonth.setMonth(startMonth.getMonth() + 1);
+      }
+      
+      // Agregăm utilizatorii pe luni
+      let runningTotalUsers = 0;
+      let runningTotalClients = 0;
+      let runningTotalCraftsmen = 0;
+      
+      userTimeline.forEach(user => {
+        const monthKey = aggregateByMonth(user.created_at);
+        if (monthlyData.has(monthKey)) {
+          runningTotalUsers++;
+          
+          if (user.role === 'client') {
+            runningTotalClients++;
+          } else if (user.role === 'professional') {
+            runningTotalCraftsmen++;
+          }
+          
+          // Actualizăm toate lunile de la această dată încolo
+          for (const [key, value] of monthlyData.entries()) {
+            if (key >= monthKey) {
+              monthlyData.set(key, {
+                ...value,
+                total_users: runningTotalUsers,
+                total_clients: runningTotalClients,
+                total_craftsmen: runningTotalCraftsmen
+              });
+            }
+          }
+        }
+      });
+      
+      // Agregăm mesajele pe luni
+      messageTimeline.forEach(message => {
+        const monthKey = aggregateByMonth(message.created_at);
+        if (monthlyData.has(monthKey)) {
+          const data = monthlyData.get(monthKey)!;
+          monthlyData.set(monthKey, {
+            ...data,
+            total_messages: data.total_messages + 1
+          });
+        }
+      });
+      
+      // Agregăm lucrările pe luni
+      jobTimeline.forEach(job => {
+        const monthKey = aggregateByMonth(job.created_at);
+        if (monthlyData.has(monthKey)) {
+          const data = monthlyData.get(monthKey)!;
+          monthlyData.set(monthKey, {
+            ...data,
+            total_jobs: data.total_jobs + 1
+          });
+        }
+      });
+      
+      // Convertim Map în array și sortăm cronologic
+      return Array.from(monthlyData.values())
+        .sort((a, b) => {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          return dateA.getTime() - dateB.getTime();
+        });
+      
+    } catch (error) {
+      console.error('Error fetching historical stats:', error);
+      toast.error('Nu am putut încărca datele istorice');
+      return [];
+    }
+  };
+
   const updateSubscriptionDate = async (subscriptionId: string, newDate: Date) => {
     try {
       const { error: rpcError } = await supabase
@@ -215,5 +357,6 @@ export const useSubscriptions = () => {
     updateSubscriptionDate,
     filters,
     setFilters,
+    fetchHistoricalStats,
   };
 };
