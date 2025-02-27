@@ -18,6 +18,12 @@ interface PlatformStatistics {
   users_by_county?: Record<string, { total: number, clients: number, craftsmen: number }>;
 }
 
+// Funcție pentru normalizarea numelor de județe
+const normalizeCountyName = (county: string): string => {
+  // Standardizăm numele județului (prima literă mare, restul mici)
+  return county.trim().charAt(0).toUpperCase() + county.trim().slice(1).toLowerCase();
+};
+
 export const Statistics = () => {
   const { data: stats, isLoading } = useQuery<PlatformStatistics | null>({
     queryKey: ["platform-statistics"],
@@ -76,22 +82,24 @@ export const Statistics = () => {
         console.error("Error fetching users by county:", countyError);
       }
 
-      // Process users by county
+      // Process users by county with normalization
       const countiesStat: Record<string, { total: number, clients: number, craftsmen: number }> = {};
       
       usersByCounty?.forEach(user => {
         if (!user.county) return;
         
-        if (!countiesStat[user.county]) {
-          countiesStat[user.county] = { total: 0, clients: 0, craftsmen: 0 };
+        const normalizedCounty = normalizeCountyName(user.county);
+        
+        if (!countiesStat[normalizedCounty]) {
+          countiesStat[normalizedCounty] = { total: 0, clients: 0, craftsmen: 0 };
         }
         
-        countiesStat[user.county].total += 1;
+        countiesStat[normalizedCounty].total += 1;
         
         if (user.role === 'client') {
-          countiesStat[user.county].clients += 1;
+          countiesStat[normalizedCounty].clients += 1;
         } else if (user.role === 'professional') {
-          countiesStat[user.county].craftsmen += 1;
+          countiesStat[normalizedCounty].craftsmen += 1;
         }
       });
       
@@ -215,13 +223,6 @@ export const Statistics = () => {
     }
   ];
 
-  // Sortăm județele după numărul total de utilizatori
-  const sortedCounties = stats?.users_by_county 
-    ? Object.entries(stats.users_by_county)
-        .sort((a, b) => b[1].total - a[1].total)
-        .slice(0, 8) // Luăm doar primele 8 județe pentru afișare
-    : [];
-
   if (isLoading) {
     return (
       <div className="py-20">
@@ -268,37 +269,44 @@ export const Statistics = () => {
           ))}
         </div>
 
-        {/* Secțiunea pentru distribuția pe județe */}
-        {sortedCounties.length > 0 && (
-          <>
-            <h3 className="text-2xl font-bold mb-6">Top Județe</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              {sortedCounties.map(([county, data], index) => (
-                <div
-                  key={county}
-                  className="p-6 rounded-xl backdrop-blur-md bg-white/5 border border-white/10 
-                             hover:bg-white/10 transition-all duration-300"
-                >
-                  <h4 className="text-xl font-semibold mb-3">{county}</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total:</span>
-                      <span className="font-medium">{data.total}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Clienți:</span>
-                      <span className="font-medium">{data.clients}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Meșteri:</span>
-                      <span className="font-medium">{data.craftsmen}</span>
-                    </div>
-                  </div>
+        {/* Hartă cu distribuția județelor - placehoder până implementăm harta interactivă completă*/}
+        <div className="mt-10">
+          <h3 className="text-2xl font-bold mb-6">Distribuția pe Județe</h3>
+          
+          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+            <div className="flex flex-wrap justify-between mb-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-primary/20 rounded"></div>
+                  <span className="text-sm">1-10 utilizatori</span>
                 </div>
-              ))}
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-primary/40 rounded"></div>
+                  <span className="text-sm">11-50 utilizatori</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-primary/60 rounded"></div>
+                  <span className="text-sm">51-100 utilizatori</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-primary/80 rounded"></div>
+                  <span className="text-sm">101+ utilizatori</span>
+                </div>
+              </div>
             </div>
-          </>
-        )}
+
+            <div className="relative w-full h-[500px] flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <p>Hartă interactivă</p>
+                <p className="text-sm mt-2">Pentru implementarea detaliată a hărții interactive a României, va fi nevoie să integrăm un SVG complet cu conturul județelor.</p>
+                <p className="text-sm mt-2">Datele sunt disponibile în export-ul Excel</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
