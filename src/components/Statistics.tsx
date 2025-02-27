@@ -402,7 +402,6 @@ export const Statistics = () => {
                     <TableHead className="text-right">Total Utilizatori</TableHead>
                     <TableHead className="text-right">Clienți</TableHead>
                     <TableHead className="text-right">Meșteri</TableHead>
-                    <TableHead className="text-right">Acțiuni</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -411,25 +410,18 @@ export const Statistics = () => {
                       <TableRow 
                         key={county.name}
                         className={selectedCounties.includes(county.name) ? "bg-primary/10" : ""}
+                        onClick={() => toggleCountySelection(county.name)}
+                        style={{ cursor: 'pointer' }}
                       >
                         <TableCell className="font-medium">{county.name}</TableCell>
                         <TableCell className="text-right">{county.total}</TableCell>
                         <TableCell className="text-right">{county.clients}</TableCell>
                         <TableCell className="text-right">{county.craftsmen}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant={selectedCounties.includes(county.name) ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => toggleCountySelection(county.name)}
-                          >
-                            {selectedCounties.includes(county.name) ? "Deselectează" : "Selectează"}
-                          </Button>
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
                         Nu există date disponibile pentru județe
                       </TableCell>
                     </TableRow>
