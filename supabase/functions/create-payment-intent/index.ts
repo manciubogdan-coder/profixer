@@ -1,37 +1,54 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import Stripe from 'https://esm.sh/stripe@13.6.0'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { corsHeaders } from "../_shared/cors.ts";
+import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+  httpClient: Stripe.createFetchHttpClient(),
+});
+
+console.log("Stripe Webhook Secret: " + Deno.env.get('STRIPE_WEBHOOK_SECRET'));
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-      apiVersion: '2023-10-16',
-    });
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const { craftsman_id, plan = 'lunar' } = await req.json();
-    console.log('Creating payment session for:', craftsman_id, plan);
+    // Get request body
+    const { craftsman_id, plan } = await req.json();
+    console.log(`Creating payment intent for craftsman: ${craftsman_id}, plan: ${plan}`);
 
     if (!craftsman_id) {
-      throw new Error('Craftsman ID is required');
+      return new Response(
+        JSON.stringify({ error: 'Missing craftsman_id' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Verificăm dacă utilizatorul are deja un abonament activ
-    const { data: existingSubscription, error: subscriptionError } = await supabase
+    // Check if craftsman exists
+    const { data: craftsman, error: craftsmanError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', craftsman_id)
+      .single();
+
+    if (craftsmanError || !craftsman) {
+      console.error('Error fetching craftsman:', craftsmanError);
+      return new Response(
+        JSON.stringify({ error: 'Craftsman not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if craftsman already has an active subscription
+    const { data: activeSubscription, error: subscriptionError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('craftsman_id', craftsman_id)
@@ -39,57 +56,125 @@ serve(async (req) => {
       .gt('end_date', new Date().toISOString())
       .maybeSingle();
 
-    if (subscriptionError) {
-      console.error('Error checking subscription:', subscriptionError);
-      throw new Error('Nu am putut verifica starea abonamentului');
+    if (activeSubscription) {
+      console.log('Craftsman already has an active subscription:', activeSubscription);
+      return new Response(
+        JSON.stringify({ error: 'Ai deja un abonament activ care va expira la ' + new Date(activeSubscription.end_date).toLocaleDateString() }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    if (existingSubscription) {
-      throw new Error('Ai deja un abonament activ');
+    // Get price from the subscription plan
+    let amount = 0;
+    if (plan === 'lunar') {
+      amount = 99; // RON
+    } else {
+      return new Response(
+        JSON.stringify({ error: 'Invalid subscription plan' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const baseUrl = req.headers.get('origin') || 'http://localhost:5173';
+    // Create a new payment record
+    const { data: payment, error: paymentError } = await supabase
+      .from('payments')
+      .insert([
+        {
+          craftsman_id,
+          amount,
+          currency: 'RON',
+          status: 'pending'
+        }
+      ])
+      .select()
+      .single();
 
-    // Creăm doar sesiunea Stripe, fără alte operații în baza de date
+    if (paymentError) {
+      console.error('Error creating payment record:', paymentError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create payment record' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Created payment record:', payment);
+
+    // Create a checkout session
+    const success_url = `https://profixer.ro/subscription/success?payment_id=${payment.id}&plan=${plan}`;
+    const cancel_url = 'https://profixer.ro/subscription/activate';
+
+    console.log(`Success URL: ${success_url}`);
+    console.log(`Cancel URL: ${cancel_url}`);
+
+    // Create a temporary subscription record linked to the payment
+    const { error: subscriptionInsertError } = await supabase
+      .from('subscriptions')
+      .insert([
+        {
+          craftsman_id,
+          status: 'inactive',
+          plan,
+          payment_id: payment.id,
+          start_date: new Date().toISOString(),
+          end_date: null,
+        }
+      ]);
+
+    if (subscriptionInsertError) {
+      console.error('Error creating temporary subscription record:', subscriptionInsertError);
+      // Continue anyway, not critical
+    }
+
+    // Create a Stripe checkout session
     const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
       payment_method_types: ['card'],
-      client_reference_id: craftsman_id,
       line_items: [
         {
-          price: 'price_1QtCAwDYsHU2MI0ngpwkeHep',
+          price_data: {
+            currency: 'ron',
+            product_data: {
+              name: `Abonament Profixer ${plan === 'lunar' ? 'Lunar' : 'Anual'}`,
+              description: `Abonament Profixer ${plan === 'lunar' ? 'Lunar' : 'Anual'} - acces la toate funcționalitățile platformei`,
+            },
+            unit_amount: amount * 100, // Stripe expects amount in smallest currency unit (bani)
+          },
           quantity: 1,
         },
       ],
-      success_url: `${baseUrl}/subscription/success`,
-      cancel_url: `${baseUrl}/subscription/activate`,
-      currency: 'ron',
-      billing_address_collection: 'required',
-      phone_number_collection: {
-        enabled: true,
-      },
+      mode: 'payment',
+      success_url,
+      cancel_url,
+      client_reference_id: payment.id,
+      customer_email: craftsman.email,
       metadata: {
+        payment_id: payment.id,
+        craftsman_id,
         plan,
       },
     });
 
-    console.log('Created Stripe session:', session.id);
+    console.log('Created Stripe checkout session:', session.id);
+
+    // Update payment record with Stripe session ID
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({ stripe_payment_id: session.id })
+      .eq('id', payment.id);
+
+    if (updateError) {
+      console.error('Error updating payment record with Stripe session ID:', updateError);
+      // Continue anyway
+    }
 
     return new Response(
       JSON.stringify({ url: session.url }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      },
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

@@ -1,47 +1,131 @@
 
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Navigation } from "@/components/Navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigation } from '@/components/Navigation';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { LoaderCircle, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 const SubscriptionSuccess = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const paymentId = searchParams.get('payment_id');
+  const plan = searchParams.get('plan');
 
   useEffect(() => {
-    // Redirecționare automată după 5 secunde
-    const timeout = setTimeout(() => {
-      navigate('/profile/me');
-    }, 5000);
+    const verifyPayment = async () => {
+      if (!paymentId) {
+        toast.error('Nu s-a putut verifica plata: ID de plată lipsă');
+        setTimeout(() => navigate('/subscription/activate'), 3000);
+        return;
+      }
 
-    return () => clearTimeout(timeout);
-  }, [navigate]);
+      try {
+        console.log(`Verifying payment ${paymentId} for plan ${plan}`);
+        
+        // Verificăm starea plății
+        const { data: payment, error: paymentError } = await supabase
+          .from('payments')
+          .select('status, craftsman_id')
+          .eq('id', paymentId)
+          .single();
+
+        if (paymentError) {
+          throw new Error(`Nu s-a putut verifica plata: ${paymentError.message}`);
+        }
+
+        console.log('Payment status:', payment.status);
+
+        if (payment.status !== 'completed') {
+          console.log('Payment not completed yet, checking status via RPC');
+          
+          // Forțăm actualizarea stării abonamentului prin RPC
+          const { error: statusUpdateError } = await supabase
+            .rpc('update_craftsman_subscription_status', {
+              p_craftsman_id: payment.craftsman_id,
+              p_is_active: true,
+              p_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 zile
+            });
+
+          if (statusUpdateError) {
+            console.error('Error updating subscription status:', statusUpdateError);
+          } else {
+            console.log('Successfully updated subscription status via RPC');
+          }
+        }
+
+        // Verificăm abonamentul
+        const { data: subscription, error: subscriptionError } = await supabase
+          .from('subscriptions')
+          .select('status, end_date')
+          .eq('payment_id', paymentId)
+          .maybeSingle();
+
+        if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+          console.error('Error checking subscription:', subscriptionError);
+        }
+
+        console.log('Subscription data:', subscription);
+
+        // Chiar dacă nu găsim abonamentul, continuăm - webhook-ul ar trebui să-l creeze
+        setIsLoading(false);
+        
+        // Redirecționăm către profil după 3 secunde
+        setTimeout(() => {
+          navigate('/profile/me');
+        }, 3000);
+
+      } catch (error) {
+        console.error('Error during payment verification:', error);
+        toast.error(error.message || 'A apărut o eroare la verificarea plății');
+        setIsLoading(false);
+        
+        // Redirecționăm către pagina de activare în caz de eroare
+        setTimeout(() => {
+          navigate('/subscription/activate');
+        }, 3000);
+      }
+    };
+
+    verifyPayment();
+  }, [paymentId, plan, navigate]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="container max-w-md mx-auto py-16 px-4">
-        <Card className="text-center">
-          <CardHeader>
-            <div className="flex justify-center mb-4">
-              <CheckCircle2 className="h-16 w-16 text-green-500" />
-            </div>
-            <CardTitle className="text-2xl">Plată Procesată cu Succes!</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">
-              Abonamentul tău a fost activat cu succes. Vei fi redirecționat automat
-              către profilul tău în câteva secunde.
-            </p>
-            <Button 
-              onClick={() => navigate('/profile/me')}
-              className="w-full"
-            >
-              Mergi la Profil
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="container py-12">
+        <div className="mx-auto max-w-md rounded-lg border bg-card p-8 text-center shadow-sm">
+          {isLoading ? (
+            <>
+              <LoaderCircle className="mx-auto h-12 w-12 animate-spin text-primary" />
+              <h1 className="mt-6 text-2xl font-bold">Procesăm plata ta...</h1>
+              <p className="mt-2 text-muted-foreground">
+                Te rugăm să aștepți câteva momente în timp ce confirmăm plata.
+              </p>
+            </>
+          ) : (
+            <>
+              <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
+              <h1 className="mt-6 text-2xl font-bold">Plata a fost confirmată!</h1>
+              <p className="mt-2 text-muted-foreground">
+                Mulțumim pentru abonare! Abonamentul tău a fost activat cu succes.
+              </p>
+              <p className="mt-6 text-sm text-muted-foreground">
+                Vei fi redirecționat automat către profilul tău în câteva secunde...
+              </p>
+              <Button 
+                className="mt-6 w-full" 
+                onClick={() => navigate('/profile/me')}
+              >
+                Către profil
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

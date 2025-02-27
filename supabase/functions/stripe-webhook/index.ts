@@ -1,182 +1,165 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import Stripe from 'https://esm.sh/stripe@11.18.0'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2022-11-15',
+  httpClient: Stripe.createFetchHttpClient(),
 });
 
-const WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
 
 serve(async (req) => {
-  console.log('Webhook called with method:', req.method);
-  console.log('Request URL:', req.url);
-  console.log('Headers:', Object.fromEntries(req.headers.entries()));
-  
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: corsHeaders,
-      status: 204,
-    });
-  }
-
   const signature = req.headers.get('stripe-signature');
   
-  if (!signature) {
-    console.error('No stripe signature found in headers');
-    return new Response('Webhook Error: No Stripe signature', { 
-      headers: corsHeaders,
-      status: 400 
-    });
-  }
-
-  if (!WEBHOOK_SECRET) {
-    console.error('No webhook secret configured');
-    return new Response('Webhook Error: No webhook secret configured', { 
-      headers: corsHeaders,
-      status: 500 
-    });
-  }
-
   try {
-    const body = await req.text();
-    console.log('Received webhook body:', body);
-    let event;
-
-    console.log('Attempting to verify webhook signature...');
-    console.log('Webhook secret present:', !!WEBHOOK_SECRET);
-    console.log('Webhook secret length:', WEBHOOK_SECRET.length);
-    console.log('Signature received:', signature);
-
-    try {
-      // Folosim constructEvent în loc de constructEventAsync pentru versiunea mai veche
-      event = stripe.webhooks.constructEvent(body, signature, WEBHOOK_SECRET);
-      console.log('Webhook signature verified successfully');
-    } catch (err) {
-      console.error(`Webhook signature verification failed:`, err);
-      console.error('Received body:', body);
-      return new Response(`Webhook Error: ${err.message}`, { 
-        headers: corsHeaders,
-        status: 400 
-      });
+    // Verificăm că am primit un signature valid
+    if (!signature) {
+      console.error('No Stripe signature found');
+      return new Response('No Stripe signature found', { status: 400 });
     }
 
-    console.log('Received Stripe webhook event:', event.type);
-    console.log('Event data:', JSON.stringify(event.data.object, null, 2));
+    // Citim body-ul requestului
+    const body = await req.text();
+    console.log('Received webhook. Processing...');
+    
+    // Verificăm semnătura
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    } catch (err) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
+    }
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    console.log(`Webhook event type: ${event.type}`);
 
+    // Creăm clientul Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Procesăm evenimentul
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      console.log('Processing completed payment session:', session.id);
+      console.log('Payment successful, processing checkout session:', session.id);
 
-      const craftsman_id = session.client_reference_id;
-      const plan = session.metadata?.plan || 'lunar';
-
-      if (!craftsman_id) {
-        console.error('No craftsman_id found in session');
-        return new Response('No craftsman_id found', { 
-          headers: corsHeaders,
-          status: 400 
-        });
+      // Preluăm ID-ul plății din client_reference_id sau metadata
+      const paymentId = session.client_reference_id || session.metadata?.payment_id;
+      
+      if (!paymentId) {
+        console.error('No payment ID found in the session');
+        return new Response('No payment ID found in the session', { status: 400 });
       }
 
-      console.log('Creating payment record for craftsman:', craftsman_id);
+      console.log(`Processing payment ID: ${paymentId}`);
 
-      // Creăm plata
-      const { data: payment, error: paymentError } = await supabaseClient
+      // Actualizăm starea plății
+      const { data: paymentData, error: paymentError } = await supabase
         .from('payments')
-        .insert({
-          craftsman_id,
-          amount: session.amount_total / 100, // Convertim din cenți în RON
-          currency: session.currency.toUpperCase(),
+        .update({ 
           status: 'completed',
-          stripe_payment_id: session.id,
-          stripe_customer_id: session.customer
+          stripe_customer_id: session.customer,
         })
-        .select()
+        .eq('id', paymentId)
+        .select('craftsman_id, id')
         .single();
 
       if (paymentError) {
-        console.error('Error creating payment:', paymentError);
-        return new Response('Error creating payment: ' + paymentError.message, { 
-          headers: corsHeaders,
-          status: 500 
-        });
+        console.error('Error updating payment status:', paymentError);
+        return new Response(`Error updating payment: ${paymentError.message}`, { status: 500 });
       }
 
-      console.log('Payment created:', payment.id);
+      console.log('Payment updated successfully:', paymentData);
 
-      // Calculăm data de sfârșit
+      // Acum să calculăm data de sfârșit a abonamentului
       const startDate = new Date();
+      // Presupunem abonament lunar (adăugăm 30 de zile)
       const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + (plan === 'lunar' ? 1 : 12));
+      endDate.setDate(endDate.getDate() + 30);
 
-      console.log('Creating subscription with dates:', {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      });
-
-      // Creăm abonamentul
-      const { data: subscription, error: subscriptionError } = await supabaseClient
+      // Preluăm informații despre subscripție
+      const { data: subscriptionData, error: subSelectError } = await supabase
         .from('subscriptions')
-        .insert({
-          craftsman_id,
-          payment_id: payment.id,
+        .select('plan')
+        .eq('payment_id', paymentId)
+        .single();
+
+      if (subSelectError && subSelectError.code !== 'PGRST116') {
+        console.error('Error getting subscription data:', subSelectError);
+        // Continuăm totuși, nu e critic
+      }
+
+      const plan = subscriptionData?.plan || 'lunar';
+      
+      // Actualizăm abonamentul
+      const { data: subscriptionUpdateData, error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .update({
           status: 'active',
-          plan,
-          stripe_subscription_id: session.subscription,
           start_date: startDate.toISOString(),
           end_date: endDate.toISOString()
         })
+        .eq('payment_id', paymentId)
         .select()
         .single();
 
       if (subscriptionError) {
-        console.error('Error creating subscription:', subscriptionError);
-        return new Response('Error creating subscription: ' + subscriptionError.message, { 
-          headers: corsHeaders,
-          status: 500 
-        });
-      }
+        console.error('Error updating subscription:', subscriptionError);
+        
+        // Verificăm dacă abonamentul există deja
+        const { data: existingSub } = await supabase
+          .from('subscriptions')
+          .select('id, craftsman_id')
+          .eq('payment_id', paymentId)
+          .maybeSingle();
 
-      console.log('Subscription created successfully:', subscription.id);
+        if (!existingSub) {
+          console.log('No subscription found with this payment ID, creating new one');
+          
+          // Creăm un nou abonament
+          const { error: createSubError } = await supabase
+            .from('subscriptions')
+            .insert([{
+              craftsman_id: paymentData.craftsman_id,
+              status: 'active',
+              plan,
+              payment_id: paymentId,
+              start_date: startDate.toISOString(),
+              end_date: endDate.toISOString()
+            }]);
 
-      // Verificăm dacă abonamentul a fost într-adevăr creat și este activ
-      const { data: verifySubscription, error: verifyError } = await supabaseClient
-        .from('subscriptions')
-        .select('*')
-        .eq('id', subscription.id)
-        .single();
-
-      if (verifyError) {
-        console.error('Error verifying subscription:', verifyError);
+          if (createSubError) {
+            console.error('Error creating new subscription:', createSubError);
+            return new Response(`Error creating subscription: ${createSubError.message}`, { status: 500 });
+          }
+        }
       } else {
-        console.log('Verified subscription status:', verifySubscription.status);
+        console.log('Subscription updated successfully:', subscriptionUpdateData);
       }
+
+      // Actualizăm manual și tabela de status pentru a fi siguri
+      const { error: statusUpdateError } = await supabase
+        .rpc('update_craftsman_subscription_status', {
+          p_craftsman_id: paymentData.craftsman_id,
+          p_is_active: true,
+          p_end_date: endDate.toISOString()
+        });
+
+      if (statusUpdateError) {
+        console.error('Error updating craftsman subscription status:', statusUpdateError);
+        // Continuăm totuși
+      } else {
+        console.log('Craftsman subscription status updated successfully');
+      }
+
+      return new Response(JSON.stringify({ success: true }), { status: 200 });
     }
 
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
-    });
-
-  } catch (err) {
-    console.error('Error processing webhook:', err);
-    return new Response(`Webhook Error: ${err.message}`, { 
-      headers: corsHeaders,
-      status: 400 
-    });
+    // Pentru orice alt tip de eveniment, doar confirmăm primirea
+    return new Response(JSON.stringify({ received: true }), { status: 200 });
+  } catch (error) {
+    console.error(`Error processing webhook: ${error.message}`);
+    return new Response(`Error processing webhook: ${error.message}`, { status: 500 });
   }
 });
