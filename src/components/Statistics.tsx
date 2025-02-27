@@ -218,6 +218,41 @@ export const Statistics = () => {
     toast.success("Statisticile au fost exportate cu succes!");
   };
 
+  // Funcție pentru exportarea doar a județelor selectate sau afișate
+  const exportCountiesToExcel = () => {
+    if (!stats?.users_by_county) {
+      toast.error("Nu există date despre județe pentru export");
+      return;
+    }
+
+    // Creăm un workbook nou
+    const wb = XLSX.utils.book_new();
+
+    // Pregătim datele pentru export - fie județele selectate, fie cele afișate în prezent
+    const countiesToExport = filteredCounties.map(county => ({
+      'Județ': county.name,
+      'Total Utilizatori': county.total,
+      'Clienți': county.clients,
+      'Meșteri': county.craftsmen
+    }));
+
+    // Adăugăm foaia cu județe
+    const ws = XLSX.utils.json_to_sheet(countiesToExport);
+    XLSX.utils.book_append_sheet(wb, ws, "Județe");
+    
+    // Generăm numele fișierului
+    const fileName = selectedCounties.length > 0
+      ? `Judete_Selectate_${new Date().toISOString().split('T')[0]}.xlsx`
+      : `Top_Judete_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Salvăm fișierul
+    XLSX.writeFile(wb, fileName);
+    
+    toast.success(selectedCounties.length > 0
+      ? "Județele selectate au fost exportate cu succes!"
+      : "Lista de județe a fost exportată cu succes!");
+  };
+
   const statisticsData = [
     {
       icon: Users,
@@ -318,7 +353,7 @@ export const Statistics = () => {
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold">Statistici Platformă</h2>
           <Button variant="outline" onClick={exportToExcel}>
-            <Download className="mr-2 h-4 w-4" /> Export Excel
+            <Download className="mr-2 h-4 w-4" /> Export Toate Statisticile
           </Button>
         </div>
         
@@ -342,7 +377,12 @@ export const Statistics = () => {
 
         {/* Lista județelor */}
         <div className="mt-10">
-          <h3 className="text-2xl font-bold mb-6">Distribuția pe Județe</h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-bold">Distribuția pe Județe</h3>
+            <Button variant="outline" onClick={exportCountiesToExcel}>
+              <Download className="mr-2 h-4 w-4" /> Export Județe {selectedCounties.length > 0 ? 'Selectate' : ''}
+            </Button>
+          </div>
           
           <div className="bg-white/5 border border-white/10 rounded-xl p-6">
             <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
