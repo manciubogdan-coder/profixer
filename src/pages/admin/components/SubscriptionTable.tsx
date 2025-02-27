@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Calendar } from "lucide-react";
+import { Calendar, Download } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import * as XLSX from 'xlsx';
+import { toast } from "sonner";
 
 interface Subscription {
   id: string;
@@ -56,6 +58,31 @@ export const SubscriptionTable = ({
     return <div>Se încarcă...</div>;
   }
 
+  const exportToExcel = () => {
+    // Creăm un workbook nou
+    const wb = XLSX.utils.book_new();
+
+    // Pregătim datele pentru export
+    const exportData = subscriptions.map(sub => ({
+      'Nume': sub.craftsman_name,
+      'Email': sub.craftsman_email,
+      'Status': sub.status === 'active' ? 'Activ' : 'Inactiv',
+      'Data Expirării': sub.end_date ? new Date(sub.end_date).toLocaleDateString('ro-RO') : 'Nesetat'
+    }));
+
+    // Adăugăm foaia cu date
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(wb, ws, "Abonamente");
+    
+    // Generăm numele fișierului cu data curentă
+    const fileName = `Abonamente_ProFixer_${new Date().toISOString().split('T')[0]}.xlsx`;
+    
+    // Salvăm fișierul
+    XLSX.writeFile(wb, fileName);
+    
+    toast.success("Lista de abonamente a fost exportată cu succes!");
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4 mb-4">
@@ -85,6 +112,9 @@ export const SubscriptionTable = ({
             </SelectContent>
           </Select>
         </div>
+        <Button variant="outline" onClick={exportToExcel}>
+          <Download className="h-4 w-4 mr-2" /> Export Excel
+        </Button>
       </div>
 
       <Table>
