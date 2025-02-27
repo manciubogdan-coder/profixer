@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { corsHeaders } from "../_shared/cors.ts";
 import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -10,13 +11,21 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+  
   const signature = req.headers.get('stripe-signature');
   
   try {
     // Verificăm că am primit un signature valid
     if (!signature) {
       console.error('No Stripe signature found');
-      return new Response('No Stripe signature found', { status: 400 });
+      return new Response('No Stripe signature found', { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Citim body-ul requestului
@@ -29,7 +38,10 @@ serve(async (req) => {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err) {
       console.error(`Webhook signature verification failed: ${err.message}`);
-      return new Response(`Webhook signature verification failed: ${err.message}`, { status: 400 });
+      return new Response(
+        JSON.stringify({ error: `Webhook signature verification failed: ${err.message}` }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log(`Webhook event type: ${event.type}`);
@@ -49,7 +61,10 @@ serve(async (req) => {
       
       if (!paymentId) {
         console.error('No payment ID found in the session');
-        return new Response('No payment ID found in the session', { status: 400 });
+        return new Response(
+          JSON.stringify({ error: 'No payment ID found in the session' }), 
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       console.log(`Processing payment ID: ${paymentId}`);
@@ -67,7 +82,10 @@ serve(async (req) => {
 
       if (paymentError) {
         console.error('Error updating payment status:', paymentError);
-        return new Response(`Error updating payment: ${paymentError.message}`, { status: 500 });
+        return new Response(
+          JSON.stringify({ error: `Error updating payment: ${paymentError.message}` }), 
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
       console.log('Payment updated successfully:', paymentData);
@@ -131,7 +149,10 @@ serve(async (req) => {
 
           if (createSubError) {
             console.error('Error creating new subscription:', createSubError);
-            return new Response(`Error creating subscription: ${createSubError.message}`, { status: 500 });
+            return new Response(
+              JSON.stringify({ error: `Error creating subscription: ${createSubError.message}` }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
           }
         }
       } else {
@@ -153,13 +174,22 @@ serve(async (req) => {
         console.log('Craftsman subscription status updated successfully');
       }
 
-      return new Response(JSON.stringify({ success: true }), { status: 200 });
+      return new Response(
+        JSON.stringify({ success: true }), 
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Pentru orice alt tip de eveniment, doar confirmăm primirea
-    return new Response(JSON.stringify({ received: true }), { status: 200 });
+    return new Response(
+      JSON.stringify({ received: true }), 
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error(`Error processing webhook: ${error.message}`);
-    return new Response(`Error processing webhook: ${error.message}`, { status: 500 });
+    return new Response(
+      JSON.stringify({ error: `Error processing webhook: ${error.message}` }), 
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });
