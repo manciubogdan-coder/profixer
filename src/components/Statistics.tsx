@@ -1,11 +1,34 @@
 
-import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, Download, User, Hammer } from "lucide-react";
+import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, Download, User, Hammer, Filter } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import RomaniaMap from "./maps/RomaniaMap";
+import { useState, useMemo } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 // Definim un tip pentru statisticile platformei
 interface PlatformStatistics {
@@ -26,6 +49,15 @@ const normalizeCountyName = (county: string): string => {
 };
 
 export const Statistics = () => {
+  const [selectedCounties, setSelectedCounties] = useState<string[]>([]);
+  const [displayCount, setDisplayCount] = useState<number>(10);
+  
+  const form = useForm({
+    defaultValues: {
+      displayOption: "10"
+    }
+  });
+
   const { data: stats, isLoading } = useQuery<PlatformStatistics | null>({
     queryKey: ["platform-statistics"],
     queryFn: async () => {
@@ -224,6 +256,44 @@ export const Statistics = () => {
     }
   ];
 
+  // Organizăm județele în funcție de numărul total de utilizatori
+  const sortedCounties = useMemo(() => {
+    if (!stats?.users_by_county) return [];
+    
+    return Object.entries(stats.users_by_county)
+      .map(([county, data]) => ({
+        name: county,
+        ...data
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [stats?.users_by_county]);
+
+  // Filtrăm județele în funcție de selecție
+  const filteredCounties = useMemo(() => {
+    if (selectedCounties.length === 0) {
+      return sortedCounties.slice(0, displayCount);
+    }
+    return sortedCounties.filter(county => selectedCounties.includes(county.name));
+  }, [sortedCounties, selectedCounties, displayCount]);
+
+  // Gestiunea selecției județelor
+  const toggleCountySelection = (county: string) => {
+    if (selectedCounties.includes(county)) {
+      setSelectedCounties(selectedCounties.filter(c => c !== county));
+    } else {
+      setSelectedCounties([...selectedCounties, county]);
+    }
+  };
+
+  const handleDisplayOptionChange = (value: string) => {
+    if (value === "all") {
+      setDisplayCount(sortedCounties.length);
+    } else {
+      setDisplayCount(parseInt(value));
+    }
+    setSelectedCounties([]);
+  };
+
   if (isLoading) {
     return (
       <div className="py-20">
@@ -270,43 +340,102 @@ export const Statistics = () => {
           ))}
         </div>
 
-        {/* Hartă cu distribuția județelor */}
+        {/* Lista județelor */}
         <div className="mt-10">
           <h3 className="text-2xl font-bold mb-6">Distribuția pe Județe</h3>
           
           <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-            <div className="flex flex-wrap justify-between mb-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-primary/20 rounded"></div>
-                  <span className="text-sm">1-10 utilizatori</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-primary/40 rounded"></div>
-                  <span className="text-sm">11-50 utilizatori</span>
+            <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
+              <div className="flex items-center gap-4">
+                <Form {...form}>
+                  <FormField
+                    control={form.control}
+                    name="displayOption"
+                    render={({ field }) => (
+                      <FormItem className="w-40">
+                        <FormLabel>Afișează</FormLabel>
+                        <Select 
+                          value={field.value} 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleDisplayOptionChange(value);
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selectează opțiune" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="10">Top 10 județe</SelectItem>
+                            <SelectItem value="20">Top 20 județe</SelectItem>
+                            <SelectItem value="all">Toate județele</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </Form>
+
+                <div className="flex gap-2 items-center">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Județe selectate: {selectedCounties.length}</span>
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-primary/60 rounded"></div>
-                  <span className="text-sm">51-100 utilizatori</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-primary/80 rounded"></div>
-                  <span className="text-sm">101+ utilizatori</span>
-                </div>
-              </div>
+              {selectedCounties.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setSelectedCounties([])}
+                >
+                  Resetează selecția
+                </Button>
+              )}
             </div>
 
-            <div className="relative w-full h-[500px]">
-              {stats?.users_by_county ? (
-                <RomaniaMap countiesData={stats.users_by_county} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-center text-muted-foreground">
-                  <p>Nu sunt date disponibile pentru afișarea hărții</p>
-                </div>
-              )}
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Județ</TableHead>
+                    <TableHead className="text-right">Total Utilizatori</TableHead>
+                    <TableHead className="text-right">Clienți</TableHead>
+                    <TableHead className="text-right">Meșteri</TableHead>
+                    <TableHead className="text-right">Acțiuni</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCounties.length > 0 ? (
+                    filteredCounties.map((county) => (
+                      <TableRow 
+                        key={county.name}
+                        className={selectedCounties.includes(county.name) ? "bg-primary/10" : ""}
+                      >
+                        <TableCell className="font-medium">{county.name}</TableCell>
+                        <TableCell className="text-right">{county.total}</TableCell>
+                        <TableCell className="text-right">{county.clients}</TableCell>
+                        <TableCell className="text-right">{county.craftsmen}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant={selectedCounties.includes(county.name) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => toggleCountySelection(county.name)}
+                          >
+                            {selectedCounties.includes(county.name) ? "Deselectează" : "Selectează"}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        Nu există date disponibile pentru județe
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
         </div>
