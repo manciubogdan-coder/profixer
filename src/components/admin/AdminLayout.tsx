@@ -2,6 +2,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, Outlet } from "react-router-dom";
 import { AdminNavbar } from "./AdminNavbar";
+import { Statistics } from "@/components/Statistics";
 
 export const AdminLayout = () => {
   const { user, loading } = useAuth();
@@ -21,6 +22,7 @@ export const AdminLayout = () => {
   return (
     <div className="min-h-screen bg-background">
       <AdminNavbar />
+      <Statistics />
       <div className="container mx-auto px-4 py-8">
         <Outlet />
       </div>
