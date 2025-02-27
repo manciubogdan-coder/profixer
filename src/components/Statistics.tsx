@@ -1,5 +1,5 @@
 
-import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, Download } from "lucide-react";
+import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, Download, User, Hammer } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
@@ -14,6 +14,8 @@ interface PlatformStatistics {
   total_messages: number;
   total_jobs?: number;
   new_jobs_30d?: number;
+  total_users?: number;
+  users_by_county?: Record<string, { total: number, clients: number, craftsmen: number }>;
 }
 
 export const Statistics = () => {
@@ -54,12 +56,52 @@ export const Statistics = () => {
         .from('job_listings')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', thirtyDaysAgo.toISOString());
+
+      // Get total users count
+      const { count: totalUsers, error: usersError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      if (usersError) {
+        console.error("Error fetching users count:", usersError);
+      }
+
+      // Get users by county
+      const { data: usersByCounty, error: countyError } = await supabase
+        .from('profiles')
+        .select('county, role')
+        .not('county', 'is', null);
+
+      if (countyError) {
+        console.error("Error fetching users by county:", countyError);
+      }
+
+      // Process users by county
+      const countiesStat: Record<string, { total: number, clients: number, craftsmen: number }> = {};
+      
+      usersByCounty?.forEach(user => {
+        if (!user.county) return;
+        
+        if (!countiesStat[user.county]) {
+          countiesStat[user.county] = { total: 0, clients: 0, craftsmen: 0 };
+        }
+        
+        countiesStat[user.county].total += 1;
+        
+        if (user.role === 'client') {
+          countiesStat[user.county].clients += 1;
+        } else if (user.role === 'professional') {
+          countiesStat[user.county].craftsmen += 1;
+        }
+      });
       
       const result: PlatformStatistics = { 
         ...platformStats, 
         total_messages: totalMessages || 0,
         total_jobs: totalJobs || 0,
-        new_jobs_30d: newJobs || 0
+        new_jobs_30d: newJobs || 0,
+        total_users: totalUsers || 0,
+        users_by_county: countiesStat
       };
       
       console.log("Fetched statistics:", result);
@@ -73,19 +115,26 @@ export const Statistics = () => {
       return;
     }
 
-    // Creăm un obiect potrivit pentru export
-    const exportData = [
+    // Creăm un workbook nou
+    const wb = XLSX.utils.book_new();
+
+    // Statistici principale
+    const mainExportData = [
       {
-        'Indicator': 'Clienți Mulțumiți',
+        'Indicator': 'Utilizatori Totali',
+        'Valoare': stats.total_users
+      },
+      {
+        'Indicator': 'Clienți',
         'Valoare': stats.total_clients
+      },
+      {
+        'Indicator': 'Meșteri',
+        'Valoare': stats.total_craftsmen
       },
       {
         'Indicator': 'Rating Mediu',
         'Valoare': stats.avg_rating?.toFixed(1) + '/5'
-      },
-      {
-        'Indicator': 'Meșteri Verificați',
-        'Valoare': stats.total_craftsmen
       },
       {
         'Indicator': 'Mesaje Trimise',
@@ -101,10 +150,23 @@ export const Statistics = () => {
       }
     ];
 
-    // Creăm un workbook și adăugăm datele
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Statistici");
+    // Adăugăm foaia cu statistici principale
+    const wsMain = XLSX.utils.json_to_sheet(mainExportData);
+    XLSX.utils.book_append_sheet(wb, wsMain, "Statistici Generale");
+
+    // Statistici pe județe
+    if (stats.users_by_county) {
+      const countyExportData = Object.entries(stats.users_by_county).map(([county, data]) => ({
+        'Județ': county,
+        'Total Utilizatori': data.total,
+        'Clienți': data.clients,
+        'Meșteri': data.craftsmen
+      })).sort((a, b) => b['Total Utilizatori'] - a['Total Utilizatori']);
+
+      // Adăugăm foaia cu statistici pe județe
+      const wsCounty = XLSX.utils.json_to_sheet(countyExportData);
+      XLSX.utils.book_append_sheet(wb, wsCounty, "Statistici pe Județe");
+    }
     
     // Generăm numele fișierului cu data curentă
     const fileName = `Statistici_ProFixer_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -118,18 +180,23 @@ export const Statistics = () => {
   const statisticsData = [
     {
       icon: Users,
+      value: stats?.total_users?.toString() || "0",
+      label: "Utilizatori Totali",
+    },
+    {
+      icon: User,
       value: stats?.total_clients?.toString() || "0",
-      label: "Clienți Mulțumiți",
+      label: "Clienți",
+    },
+    {
+      icon: Hammer,
+      value: stats?.total_craftsmen?.toString() || "0",
+      label: "Meșteri",
     },
     {
       icon: Star,
       value: `${stats?.avg_rating?.toFixed(1) || "0"}/5`,
       label: "Rating Mediu",
-    },
-    {
-      icon: CheckCircle,
-      value: stats?.total_craftsmen?.toString() || "0",
-      label: "Meșteri Verificați",
     },
     {
       icon: MessageSquare,
@@ -148,12 +215,19 @@ export const Statistics = () => {
     }
   ];
 
+  // Sortăm județele după numărul total de utilizatori
+  const sortedCounties = stats?.users_by_county 
+    ? Object.entries(stats.users_by_county)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 8) // Luăm doar primele 8 județe pentru afișare
+    : [];
+
   if (isLoading) {
     return (
       <div className="py-20">
         <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <div key={i} className="animate-pulse">
                 <div className="h-32 bg-muted rounded-xl"></div>
               </div>
@@ -176,7 +250,7 @@ export const Statistics = () => {
           </Button>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           {statisticsData.map((stat, index) => (
             <div
               key={index}
@@ -193,6 +267,38 @@ export const Statistics = () => {
             </div>
           ))}
         </div>
+
+        {/* Secțiunea pentru distribuția pe județe */}
+        {sortedCounties.length > 0 && (
+          <>
+            <h3 className="text-2xl font-bold mb-6">Top Județe</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {sortedCounties.map(([county, data], index) => (
+                <div
+                  key={county}
+                  className="p-6 rounded-xl backdrop-blur-md bg-white/5 border border-white/10 
+                             hover:bg-white/10 transition-all duration-300"
+                >
+                  <h4 className="text-xl font-semibold mb-3">{county}</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total:</span>
+                      <span className="font-medium">{data.total}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Clienți:</span>
+                      <span className="font-medium">{data.clients}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Meșteri:</span>
+                      <span className="font-medium">{data.craftsmen}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
