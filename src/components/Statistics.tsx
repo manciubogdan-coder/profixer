@@ -1,5 +1,5 @@
 
-import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar, TrendingUp, Clock, Download } from "lucide-react";
+import { Users, Star, CheckCircle, MessageSquare, Briefcase, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
@@ -14,11 +14,6 @@ interface PlatformStatistics {
   total_messages: number;
   total_jobs?: number;
   new_jobs_30d?: number;
-  avg_response_time?: string;
-  conversion_rate?: number;
-  retention_rate?: number;
-  revenue_monthly?: number;
-  avg_order_value?: number;
 }
 
 export const Statistics = () => {
@@ -60,25 +55,11 @@ export const Statistics = () => {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', thirtyDaysAgo.toISOString());
       
-      // Get average response time (dummy data for now, would need more complex query)
-      const avgResponseTime = "5.2 ore";
-      
-      // Valori demo pentru noile statistici
-      const conversionRate = 76; // 76%
-      const retentionRate = 83; // 83%
-      const revenueMonthly = 15400; // 15,400 RON
-      const avgOrderValue = 450; // 450 RON
-      
       const result: PlatformStatistics = { 
         ...platformStats, 
         total_messages: totalMessages || 0,
         total_jobs: totalJobs || 0,
-        new_jobs_30d: newJobs || 0,
-        avg_response_time: avgResponseTime,
-        conversion_rate: conversionRate,
-        retention_rate: retentionRate,
-        revenue_monthly: revenueMonthly,
-        avg_order_value: avgOrderValue
+        new_jobs_30d: newJobs || 0
       };
       
       console.log("Fetched statistics:", result);
@@ -117,26 +98,6 @@ export const Statistics = () => {
       {
         'Indicator': 'Lucrări Noi (30 zile)',
         'Valoare': stats.new_jobs_30d
-      },
-      {
-        'Indicator': 'Timp Răspuns Mediu',
-        'Valoare': stats.avg_response_time
-      },
-      {
-        'Indicator': 'Rată de Conversie',
-        'Valoare': stats.conversion_rate + '%'
-      },
-      {
-        'Indicator': 'Rată de Retenție',
-        'Valoare': stats.retention_rate + '%'
-      },
-      {
-        'Indicator': 'Venit Lunar',
-        'Valoare': stats.revenue_monthly + ' RON'
-      },
-      {
-        'Indicator': 'Valoare Medie Comandă',
-        'Valoare': stats.avg_order_value + ' RON'
       }
     ];
 
@@ -184,31 +145,6 @@ export const Statistics = () => {
       icon: Calendar,
       value: stats?.new_jobs_30d?.toString() || "0",
       label: "Lucrări Noi (30 zile)",
-    },
-    {
-      icon: Clock,
-      value: stats?.avg_response_time || "N/A",
-      label: "Timp Răspuns Mediu",
-    },
-    {
-      icon: TrendingUp,
-      value: `${stats?.conversion_rate || 0}%`,
-      label: "Rată de Conversie",
-    },
-    {
-      icon: TrendingUp,
-      value: `${stats?.retention_rate || 0}%`,
-      label: "Rată de Retenție",
-    },
-    {
-      icon: TrendingUp,
-      value: `${stats?.revenue_monthly || 0} RON`,
-      label: "Venit Lunar",
-    },
-    {
-      icon: TrendingUp,
-      value: `${stats?.avg_order_value || 0} RON`,
-      label: "Valoare Medie Comandă",
     }
   ];
 
@@ -217,7 +153,7 @@ export const Statistics = () => {
       <div className="py-20">
         <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="animate-pulse">
                 <div className="h-32 bg-muted rounded-xl"></div>
               </div>
