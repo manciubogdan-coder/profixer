@@ -61,24 +61,24 @@ export const Footer = () => {
                   href="https://anpc.ro/ce-este-sol/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block bg-white p-2 rounded"
+                  className="inline-block"
                 >
                   <img 
-                    src="/anpc-sol.jpeg" 
-                    alt="ANPC SOL" 
-                    className="h-20 object-contain"
+                    src="/lovable-uploads/fe8d1cfc-5531-441a-888e-cf9babdd7069.png" 
+                    alt="ANPC - Soluționarea Alternativă a Litigiilor" 
+                    className="h-16 object-contain"
                   />
                 </a>
                 <a 
                   href="https://ec.europa.eu/consumers/odr"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block bg-white p-2 rounded"
+                  className="inline-block"
                 >
                   <img 
-                    src="/sol-eu.png" 
-                    alt="SOL EU" 
-                    className="h-20 object-contain"
+                    src="/lovable-uploads/8fe99ebc-6d24-4c85-b4fb-c876baacad95.png" 
+                    alt="Soluționarea Online a Litigiilor" 
+                    className="h-16 object-contain"
                   />
                 </a>
               </div>
