@@ -270,22 +270,8 @@ export const Messages = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Luna curentă</CardTitle>
-            <CardDescription>Statistici pentru luna în curs</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {statistics[0] && (
-              <div className="space-y-2">
-                <p>Total mesaje: {statistics[0].total_messages}</p>
-                <p>De la clienți: {statistics[0].messages_from_clients}</p>
-                <p>De la meșteri: {statistics[0].messages_from_craftsmen}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Managementul Mesajelor</h2>
       </div>
 
       <div className="space-y-4">
