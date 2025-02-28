@@ -20,12 +20,10 @@ deployment:
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_FILENAME} !-l
   RewriteRule . /index.html [L]
-  
-  # Setarea MIME type-urilor pentru JavaScript
-  <IfModule mod_mime.c>
-    AddType text/javascript .js
-    AddType text/javascript .mjs
-  </IfModule>
 </IfModule>
-EOL
 
+# Setarea MIME type-urilor pentru JavaScript
+AddType text/javascript .js
+AddType text/javascript .mjs
+AddType application/json .json
+EOL
