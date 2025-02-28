@@ -7,7 +7,7 @@ import { CallToAction } from "@/components/CallToAction";
 import { Footer } from "@/components/Footer";
 import { CookieConsent } from "@/components/CookieConsent";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CalendarClock, Download, Smartphone, Image } from "lucide-react";
+import { CalendarClock, Download, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { 
@@ -32,44 +32,6 @@ const Index = () => {
       <Navigation />
       <Hero />
       <Features />
-      
-      {/* Logo Download Section */}
-      <section className="py-8 bg-white">
-        <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Image className="h-6 w-6 text-primary" />
-            <h3 className="text-xl font-bold">Logo ProFixer</h3>
-          </div>
-          
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto mb-4">
-            Descarcă logoul nostru pentru a-l folosi în materialele tale promoționale.
-          </p>
-          
-          <div className="flex justify-center mb-6">
-            <img 
-              src="/logo-download.png" 
-              alt="ProFixer Logo" 
-              className="h-24 border border-gray-200 rounded p-2 shadow-sm"
-            />
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => {
-              const link = document.createElement('a');
-              link.href = '/logo-download.png';
-              link.download = 'profixer-logo.png';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-            }}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Descarcă Logo PNG
-          </Button>
-        </div>
-      </section>
       
       {/* Mobile App Download Section */}
       <section className="py-16 bg-secondary/30">
