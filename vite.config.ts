@@ -21,14 +21,15 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Generează bundle-uri ES5 mai compatibile
     target: 'es2015',
     outDir: 'dist',
     assetsDir: 'assets',
-    // Evită utilizarea modulelor ES în build-ul de producție
     rollupOptions: {
       output: {
-        format: 'iife'
+        format: 'iife',
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       }
     },
   }
