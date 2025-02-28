@@ -2,7 +2,7 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home2/profixer/public_html
+    - export DEPLOYPATH=/home/profixer/public_html
     - /bin/cp -R * $DEPLOYPATH/
     - cd $DEPLOYPATH && npm install
     - cd $DEPLOYPATH && npm run build
