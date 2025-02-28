@@ -1,4 +1,5 @@
-import { Clock, Search, Shield } from "lucide-react";
+
+import { Clock, Search, Shield, Award } from "lucide-react";
 
 export const Features = () => {
   const features = [
@@ -26,6 +27,19 @@ export const Features = () => {
       <div className="absolute -top-40 left-0 right-0 h-80 bg-gradient-to-b from-purple-900/20 to-transparent blur-3xl" />
       
       <div className="container mx-auto relative z-10">
+        <div className="text-center mb-16">
+          <div className="flex items-center justify-center mb-4">
+            <Award className="h-12 w-12 text-primary mr-4" />
+            <h1 className="text-5xl font-extrabold bg-gradient-to-r from-primary to-purple-400 text-transparent bg-clip-text">
+              ABONAMENT GRATUIT MEȘTERI
+            </h1>
+            <Award className="h-12 w-12 text-primary ml-4" />
+          </div>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Înregistrează-te acum ca meșter și primești acces GRATUIT la toate funcționalitățile platformei până la 30 Martie 2025
+          </p>
+        </div>
+        
         <h2 className="text-3xl font-bold text-center mb-12">
           De ce să alegi{" "}
           <span className="bg-gradient-to-r from-primary to-purple-400 text-transparent bg-clip-text">
