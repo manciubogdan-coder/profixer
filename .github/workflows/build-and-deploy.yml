@@ -181,3 +181,19 @@ jobs:
           name: app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
+          
+      - name: Copy APK to web directory
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/
+          
+      - name: Deploy APK to cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./android/app/build/outputs/apk/debug/
+          server-dir: /
+          include: |
+            **/*.apk
