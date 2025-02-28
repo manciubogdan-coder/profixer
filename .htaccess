@@ -5,7 +5,7 @@ RewriteBase /
 
 # Setarea MIME type-urilor pentru JavaScript
 <IfModule mod_mime.c>
-  AddType text/javascript .js .mjs .jsx
+  AddType text/javascript .js .mjs .jsx .tsx
 </IfModule>
 
 # Redirectare pentru SPA
