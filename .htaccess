@@ -1,7 +1,27 @@
 
-# Configurare MIME types pentru fișiere JavaScript
+# Configurare MIME types pentru fișiere JavaScript și TypeScript
 AddType application/javascript .js
 AddType application/javascript .mjs
+AddType application/javascript .jsx
+AddType application/javascript .ts
+AddType application/javascript .tsx
+
+# Pentru a se asigura că fișierele JavaScript sunt servite corect
+<FilesMatch "\.js$">
+    ForceType application/javascript
+</FilesMatch>
+<FilesMatch "\.mjs$">
+    ForceType application/javascript
+</FilesMatch>
+<FilesMatch "\.jsx$">
+    ForceType application/javascript
+</FilesMatch>
+<FilesMatch "\.ts$">
+    ForceType application/javascript
+</FilesMatch>
+<FilesMatch "\.tsx$">
+    ForceType application/javascript
+</FilesMatch>
 
 # Activare HTTP/2 (dacă serverul o suportă)
 <IfModule mod_http2.c>
