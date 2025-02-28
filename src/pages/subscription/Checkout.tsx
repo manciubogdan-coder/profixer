@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Navigation } from "@/components/Navigation";
-import { createPaymentIntent } from '@/lib/subscription';
+import { createPaymentIntent, SUBSCRIPTION_PRICES } from '@/lib/subscription';
 import { SubscriptionPlan } from '@/types/subscription';
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
@@ -66,6 +66,9 @@ const Checkout = () => {
             <LoaderCircle className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Se inițializează plata...</h2>
             <p className="text-muted-foreground">Vă rugăm să așteptați, vă vom redirecționa către pagina de plată.</p>
+            <div className="mt-6 p-4 bg-muted rounded-lg">
+              <p className="font-medium">Suma de plată: {SUBSCRIPTION_PRICES[plan]} RON</p>
+            </div>
           </div>
         ) : error ? (
           <div className="text-center max-w-md">

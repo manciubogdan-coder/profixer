@@ -88,6 +88,26 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
         return;
       }
 
+      if (signUpData.user && values.role === "professional") {
+        try {
+          const freeTierEndDate = new Date("2024-03-01T23:59:59Z");
+          
+          const { error: rpcError } = await supabase.rpc('update_craftsman_subscription_status', {
+            p_craftsman_id: signUpData.user.id,
+            p_is_active: true,
+            p_end_date: freeTierEndDate.toISOString()
+          });
+
+          if (rpcError) {
+            console.error("Eroare la activarea abonamentului gratuit:", rpcError);
+          } else {
+            console.log("Abonament gratuit activat până la:", freeTierEndDate);
+          }
+        } catch (error) {
+          console.error("Eroare la procesarea abonamentului gratuit:", error);
+        }
+      }
+
       if (signUpData.user) {
         toast.success("Cont creat cu succes! Vă rugăm să vă verificați emailul pentru confirmare.");
         form.reset();

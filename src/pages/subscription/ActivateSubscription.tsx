@@ -21,6 +21,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from "sonner";
+import { SUBSCRIPTION_PRICES } from "@/lib/subscription";
 
 const ActivateSubscription = () => {
   const { user } = useAuth();
@@ -76,6 +77,9 @@ const ActivateSubscription = () => {
     }
   };
 
+  // Verificăm dacă suntem înainte de 1 martie 2024
+  const isBeforeMarch2024 = new Date() < new Date("2024-03-01T00:00:00Z");
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -87,6 +91,14 @@ const ActivateSubscription = () => {
           <p className="text-lg text-muted-foreground">
             Deblochează toate funcționalitățile și începe să primești clienți noi chiar astăzi
           </p>
+          
+          {isBeforeMarch2024 && (
+            <div className="mt-4 p-4 bg-green-100 dark:bg-green-900 rounded-lg">
+              <p className="text-green-800 dark:text-green-200 font-medium">
+                Până la 1 martie 2024, toți meșterii noi primesc acces gratuit la toate funcționalitățile platformei!
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
@@ -104,6 +116,15 @@ const ActivateSubscription = () => {
         </div>
 
         <div className="max-w-lg mx-auto">
+          <div className="mb-6 text-center">
+            <p className="text-2xl font-bold">
+              {SUBSCRIPTION_PRICES.lunar} RON / lună
+            </p>
+            <p className="text-muted-foreground">
+              Acces complet la toate funcționalitățile platformei
+            </p>
+          </div>
+          
           <Button 
             size="lg"
             className="w-full text-lg py-6"
@@ -119,6 +140,12 @@ const ActivateSubscription = () => {
               'Activează Abonament'
             )}
           </Button>
+
+          {isBeforeMarch2024 && (
+            <p className="mt-4 text-sm text-center text-muted-foreground">
+              Începând cu 1 martie 2024, accesul la platforma ProFixer va fi disponibil doar pe bază de abonament.
+            </p>
+          )}
         </div>
       </div>
     </div>

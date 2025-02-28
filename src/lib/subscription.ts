@@ -4,7 +4,7 @@ import type { SubscriptionPlan } from "@/types/subscription";
 
 // Vom folosi doar planul lunar deocamdată
 export const SUBSCRIPTION_PRICES = {
-  lunar: 99,
+  lunar: 199,
 } as const;
 
 export async function createPaymentIntent(plan: SubscriptionPlan) {
