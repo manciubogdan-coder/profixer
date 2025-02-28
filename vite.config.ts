@@ -30,11 +30,11 @@ export default defineConfig(({ mode }) => ({
     cssCodeSplit: false,
     rollupOptions: {
       output: {
-        format: 'iife', // Folosim IIFE pentru compatibilitate maximă cu browserele
+        format: 'iife',
         entryFileNames: 'assets/js/[name].[hash].js',
         chunkFileNames: 'assets/js/[name].[hash].js',
         assetFileNames: 'assets/[ext]/[name].[hash].[ext]',
-        inlineDynamicImports: true, // Toate importurile dinamice vor fi inlined
+        inlineDynamicImports: true,
         manualChunks: undefined
       },
     },
