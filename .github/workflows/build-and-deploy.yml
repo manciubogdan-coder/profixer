@@ -97,8 +97,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: 'temurin'  # Changed from 'zulu' to 'temurin'
+          java-version: '17'       # Explicitly using Java 17 which is more stable for Android builds
           
       - name: Install dependencies
         run: npm ci
@@ -114,6 +114,13 @@ jobs:
         
       - name: Sync Capacitor
         run: npx cap sync android
+        
+      - name: Update gradle.properties to set Java compatibility
+        run: |
+          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" >> android/gradle.properties
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+          echo "org.gradle.java.home=/usr/lib/jvm/temurin-17-jdk-amd64" >> android/gradle.properties
         
       - name: Build Android APK (Debug)
         run: |

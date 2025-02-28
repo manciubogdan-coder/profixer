@@ -13,7 +13,11 @@ const config: CapacitorConfig = {
     contentInset: 'automatic'
   },
   android: {
-    backgroundColor: "#ffffff"
+    backgroundColor: "#ffffff",
+    compileSdkVersion: 33,     // Added to ensure compatibility
+    targetSdkVersion: 33,      // Added to ensure compatibility
+    minSdkVersion: 22,         // Added to ensure compatibility
+    buildToolsVersion: "33.0.0" // Added to ensure compatibility
   }
 };
 
