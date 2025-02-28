@@ -123,28 +123,55 @@ jobs:
           
       - name: Update build.gradle compiler settings
         run: |
-          sed -i 's/sourceCompatibility = .*/sourceCompatibility = JavaVersion.VERSION_17/g' android/build.gradle || true
-          sed -i 's/targetCompatibility = .*/targetCompatibility = JavaVersion.VERSION_17/g' android/build.gradle || true
-          # Adăugăm sau înlocuim setările de compilare Java la nivel de proiect
-          if grep -q "compileOptions {" android/build.gradle; then
-            sed -i '/compileOptions {/,/}/c\allprojects {\n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }\n}' android/build.gradle
-          else
-            echo "allprojects {" >> android/build.gradle
-            echo "    compileOptions {" >> android/build.gradle
-            echo "        sourceCompatibility JavaVersion.VERSION_17" >> android/build.gradle
-            echo "        targetCompatibility JavaVersion.VERSION_17" >> android/build.gradle
-            echo "    }" >> android/build.gradle
-            echo "}" >> android/build.gradle
-          fi
+          # Actualizăm build.gradle principal
+          cat > android/build.gradle << EOL
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.4.2'
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        jcenter()
+        flatDir {
+            dirs "../capacitor-cordova-android-plugins/src/main/libs", "libs"
+        }
+    }
+
+    // Set Java compatibility for all projects
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+EOL
           
-          # Modificăm și gradle.properties pentru app
-          echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" >> android/app/gradle.properties || true
-          
-          # Modificăm și app/build.gradle
+          # Actualizăm app/build.gradle
           if [ -f "android/app/build.gradle" ]; then
-            sed -i '/dependencies {/a compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }' android/app/build.gradle || true
-            sed -i 's/compileSdk .*/compileSdk 33/g' android/app/build.gradle || true
-            sed -i 's/targetSdk .*/targetSdk 33/g' android/app/build.gradle || true
+            sed -i '/android {/a compileOptions {\n        sourceCompatibility JavaVersion.VERSION_17\n        targetCompatibility JavaVersion.VERSION_17\n    }' android/app/build.gradle
+            sed -i 's/compileSdk .*/compileSdk 33/g' android/app/build.gradle
+            sed -i 's/compileSdkVersion .*/compileSdkVersion 33/g' android/app/build.gradle
+            sed -i 's/targetSdk .*/targetSdk 33/g' android/app/build.gradle
+            sed -i 's/targetSdkVersion .*/targetSdkVersion 33/g' android/app/build.gradle
+            sed -i 's/minSdk .*/minSdk 22/g' android/app/build.gradle
+            sed -i 's/minSdkVersion .*/minSdkVersion 22/g' android/app/build.gradle
           fi
         
       - name: Build Android APK (Debug)
