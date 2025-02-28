@@ -23,17 +23,20 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2015',
     outDir: 'dist',
-    assetsDir: '',
+    assetsDir: 'assets',
     sourcemap: false,
     minify: true,
+    modulePreload: false,  // Dezactivare module preload
+    cssCodeSplit: false,   // Un singur fișier CSS
     rollupOptions: {
       output: {
-        format: 'system',
+        format: 'umd',
         entryFileNames: 'app.[hash].js',
-        chunkFileNames: '[name].[hash].js',
-        assetFileNames: '[name].[hash].[ext]',
-        inlineDynamicImports: true
-      }
+        chunkFileNames: 'chunk-[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]',
+        inlineDynamicImports: true, // Incluziune totală
+        manualChunks: undefined     // Fără chunking manual
+      },
     },
   }
 }));
