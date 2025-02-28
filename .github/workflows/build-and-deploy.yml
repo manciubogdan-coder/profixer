@@ -77,6 +77,5 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: / # Modificat pentru a încărca direct în rădăcină
-          dangerous-clean-slate: true # Va șterge tot conținutul de pe server
-
+          server-dir: /
+          dangerous-clean-slate: true

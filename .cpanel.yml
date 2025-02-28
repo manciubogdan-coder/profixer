@@ -45,4 +45,3 @@ AddType application/json .json
   </FilesMatch>
 </IfModule>
 EOL
-
