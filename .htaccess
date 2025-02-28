@@ -3,26 +3,33 @@
 RewriteEngine On
 RewriteBase /
 
+# Setarea tipurilor MIME pentru JavaScript
+AddType application/javascript .js
+AddType application/javascript .mjs
+AddType application/javascript .jsx
+AddType application/javascript .ts
+AddType application/javascript .tsx
+
+# Forțarea Content-Type pentru JavaScript
+<FilesMatch "\.js$">
+  Header set Content-Type "application/javascript"
+</FilesMatch>
+<FilesMatch "\.mjs$">
+  Header set Content-Type "application/javascript"
+</FilesMatch>
+<FilesMatch "\.(jsx|ts|tsx)$">
+  Header set Content-Type "application/javascript"
+</FilesMatch>
+
 # Redirectare pentru SPA
 RewriteRule ^index\.html$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.html [L]
 
-# Setare Content-Type corect pentru JavaScript
-<FilesMatch "\.js$">
-  ForceType text/javascript
-</FilesMatch>
-<FilesMatch "\.mjs$">
-  ForceType text/javascript
-</FilesMatch>
-<FilesMatch "\.(jsx|ts|tsx)$">
-  ForceType text/javascript
-</FilesMatch>
-
 # Compresia fișierelor
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json
 </IfModule>
 
 # Cache pentru fișiere statice
@@ -34,6 +41,5 @@ RewriteRule . /index.html [L]
   ExpiresByType image/png "access plus 1 year"
   ExpiresByType image/svg+xml "access plus 1 year"
   ExpiresByType text/css "access plus 1 month"
-  ExpiresByType text/javascript "access plus 1 month"
   ExpiresByType application/javascript "access plus 1 month"
 </IfModule>

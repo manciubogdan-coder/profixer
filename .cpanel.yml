@@ -7,12 +7,50 @@ deployment:
     - cd $DEPLOYPATH && npm install
     - cd $DEPLOYPATH && npm run build
     - rm -rf $DEPLOYPATH/dist/favicon.svg
-    - mkdir -p $DEPLOYPATH/build
-    - cp -R $DEPLOYPATH/dist/* $DEPLOYPATH/build/
-    - echo "DirectoryIndex index.html" > $DEPLOYPATH/.htaccess
-    - echo "RewriteEngine On" >> $DEPLOYPATH/.htaccess
-    - echo "RewriteBase /" >> $DEPLOYPATH/.htaccess
-    - echo "RewriteRule ^index\.html$ - [L]" >> $DEPLOYPATH/.htaccess
-    - echo "RewriteCond %{REQUEST_FILENAME} !-f" >> $DEPLOYPATH/.htaccess
-    - echo "RewriteCond %{REQUEST_FILENAME} !-d" >> $DEPLOYPATH/.htaccess
-    - echo "RewriteRule . /index.html [L]" >> $DEPLOYPATH/.htaccess
+    - cp -R $DEPLOYPATH/dist/* $DEPLOYPATH/
+    - cat > $DEPLOYPATH/.htaccess << 'EOL'
+# Activare rewrite engine
+RewriteEngine On
+RewriteBase /
+
+# Setarea tipurilor MIME pentru JavaScript
+AddType application/javascript .js
+AddType application/javascript .mjs
+AddType application/javascript .jsx
+AddType application/javascript .ts
+AddType application/javascript .tsx
+
+# Forțarea Content-Type pentru JavaScript
+<FilesMatch "\.js$">
+  Header set Content-Type "application/javascript"
+</FilesMatch>
+<FilesMatch "\.mjs$">
+  Header set Content-Type "application/javascript"
+</FilesMatch>
+<FilesMatch "\.(jsx|ts|tsx)$">
+  Header set Content-Type "application/javascript"
+</FilesMatch>
+
+# Redirectare pentru SPA
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+
+# Compresia fișierelor
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json
+</IfModule>
+
+# Cache pentru fișiere statice
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpg "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
+EOL
