@@ -7,4 +7,12 @@ deployment:
     - cd $DEPLOYPATH && npm install
     - cd $DEPLOYPATH && npm run build
     - rm -rf $DEPLOYPATH/dist/favicon.svg
-    - cp -R $DEPLOYPATH/dist/* $DEPLOYPATH/
+    - mkdir -p $DEPLOYPATH/build
+    - cp -R $DEPLOYPATH/dist/* $DEPLOYPATH/build/
+    - echo "DirectoryIndex index.html" > $DEPLOYPATH/.htaccess
+    - echo "RewriteEngine On" >> $DEPLOYPATH/.htaccess
+    - echo "RewriteBase /" >> $DEPLOYPATH/.htaccess
+    - echo "RewriteRule ^index\.html$ - [L]" >> $DEPLOYPATH/.htaccess
+    - echo "RewriteCond %{REQUEST_FILENAME} !-f" >> $DEPLOYPATH/.htaccess
+    - echo "RewriteCond %{REQUEST_FILENAME} !-d" >> $DEPLOYPATH/.htaccess
+    - echo "RewriteRule . /index.html [L]" >> $DEPLOYPATH/.htaccess
