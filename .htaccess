@@ -1,15 +1,16 @@
 
-# Activare rewrite engine
-RewriteEngine On
-RewriteBase /
-
-# Setarea MIME type-urilor pentru JavaScript
-<IfModule mod_mime.c>
-  AddType text/javascript .js .mjs
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+  
+  # Setarea MIME type-urilor pentru JavaScript
+  <IfModule mod_mime.c>
+    AddType text/javascript .js
+    AddType text/javascript .mjs
+  </IfModule>
 </IfModule>
-
-# Redirectare pentru SPA
-RewriteRule ^index\.html$ - [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.html [L]

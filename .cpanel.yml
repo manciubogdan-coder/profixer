@@ -3,25 +3,29 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home2/profixer/public_html
-    # Build local înainte de deployment
-    - npm install
-    - npm run build
-    # Copiere doar a fișierelor din dist direct în directorul de bază
+    # Curățăm directorul de destinație înainte de a copia noile fișiere
+    - /bin/rm -rf $DEPLOYPATH/*
+    # Executăm build local
+    - /usr/local/cpanel/3rdparty/bin/node /usr/local/cpanel/3rdparty/bin/npm install
+    - /usr/local/cpanel/3rdparty/bin/node /usr/local/cpanel/3rdparty/bin/npm run build
+    # Copiem conținutul folderului dist în directorul public_html
     - /bin/cp -R dist/* $DEPLOYPATH/
-    # Crearea unui .htaccess personalizat în directorul de destinație
-    - cat > $DEPLOYPATH/.htaccess << 'EOL'
-# Activare rewrite engine
-RewriteEngine On
-RewriteBase /
-
-# Setarea MIME type-urilor pentru JavaScript
-<IfModule mod_mime.c>
-  AddType text/javascript .js .mjs
+    # Creare fișier .htaccess în directorul de destinație
+    - /bin/cat > $DEPLOYPATH/.htaccess << 'EOL'
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+  RewriteRule . /index.html [L]
+  
+  # Setarea MIME type-urilor pentru JavaScript
+  <IfModule mod_mime.c>
+    AddType text/javascript .js
+    AddType text/javascript .mjs
+  </IfModule>
 </IfModule>
-
-# Redirectare pentru SPA
-RewriteRule ^index\.html$ - [L]
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.html [L]
 EOL
+

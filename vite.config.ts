@@ -26,16 +26,12 @@ export default defineConfig(({ mode }) => ({
     assetsDir: 'assets',
     sourcemap: false,
     minify: true,
-    modulePreload: false,
-    cssCodeSplit: false,
+    modulePreload: { polyfill: true },
     rollupOptions: {
       output: {
-        format: 'iife', // Folosim IIFE pentru compatibilitate maximă cu browserele
         entryFileNames: 'assets/js/[name].[hash].js',
         chunkFileNames: 'assets/js/[name].[hash].js',
         assetFileNames: 'assets/[ext]/[name].[hash].[ext]',
-        inlineDynamicImports: true, // Toate importurile dinamice vor fi inlined
-        manualChunks: undefined
       },
     },
   }
