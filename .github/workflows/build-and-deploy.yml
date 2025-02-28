@@ -97,8 +97,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'  # Changed from 'zulu' to 'temurin'
-          java-version: '17'       # Explicitly using Java 17 which is more stable for Android builds
+          distribution: 'temurin'
+          java-version: '17'
           
       - name: Install dependencies
         run: npm ci
@@ -124,44 +124,39 @@ jobs:
       - name: Update build.gradle compiler settings
         run: |
           # Actualizăm build.gradle principal
-          cat > android/build.gradle << EOL
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:7.4.2'
-    }
-}
+          cat > android/build.gradle << 'EOL'
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:7.4.2'
+              }
+          }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        jcenter()
-        flatDir {
-            dirs "../capacitor-cordova-android-plugins/src/main/libs", "libs"
-        }
-    }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+                  jcenter()
+                  flatDir {
+                      dirs "../capacitor-cordova-android-plugins/src/main/libs", "libs"
+                  }
+              }
 
-    // Set Java compatibility for all projects
-    gradle.projectsEvaluated {
-        tasks.withType(JavaCompile) {
-            options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
-        }
-    }
-    
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-}
+              // Set Java compatibility for all projects
+              gradle.projectsEvaluated {
+                  tasks.withType(JavaCompile) {
+                      options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+                  }
+              }
+          }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
-}
-EOL
+          task clean(type: Delete) {
+              delete rootProject.buildDir
+          }
+          EOL
           
           # Actualizăm app/build.gradle
           if [ -f "android/app/build.gradle" ]; then
