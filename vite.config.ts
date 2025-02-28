@@ -23,16 +23,16 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'es2015',
     outDir: 'dist',
-    assetsDir: '',  // fără subdirector pentru assets
+    assetsDir: '',
     sourcemap: false,
     minify: true,
     rollupOptions: {
       output: {
-        format: 'umd',  // folosim UMD în loc de IIFE
-        entryFileNames: '[name]-[hash].js',
-        chunkFileNames: '[name]-[hash].js',
-        assetFileNames: '[name]-[hash].[ext]',
-        manualChunks: undefined  // dezactivăm împărțirea în chunk-uri
+        format: 'system',
+        entryFileNames: 'app.[hash].js',
+        chunkFileNames: '[name].[hash].js',
+        assetFileNames: '[name].[hash].[ext]',
+        inlineDynamicImports: true
       }
     },
   }
