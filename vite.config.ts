@@ -26,16 +26,16 @@ export default defineConfig(({ mode }) => ({
     assetsDir: 'assets',
     sourcemap: false,
     minify: true,
-    modulePreload: false,  // Dezactivare module preload
-    cssCodeSplit: false,   // Un singur fișier CSS
+    modulePreload: false,
+    cssCodeSplit: false,
     rollupOptions: {
       output: {
-        format: 'umd',
-        entryFileNames: 'app.[hash].js',
-        chunkFileNames: 'chunk-[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash].[ext]',
-        inlineDynamicImports: true, // Incluziune totală
-        manualChunks: undefined     // Fără chunking manual
+        format: 'iife', // Schimbat la IIFE (Immediately Invoked Function Expression)
+        entryFileNames: 'assets/js/[name].[hash].js',
+        chunkFileNames: 'assets/js/[name].[hash].js',
+        assetFileNames: 'assets/[ext]/[name].[hash].[ext]',
+        inlineDynamicImports: true,
+        manualChunks: undefined
       },
     },
   }

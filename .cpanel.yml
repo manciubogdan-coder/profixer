@@ -3,10 +3,12 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home2/profixer/public_html
-    - /bin/cp -R * $DEPLOYPATH/
-    - cd $DEPLOYPATH && npm install
-    - cd $DEPLOYPATH && npm run build
-    - cp -R $DEPLOYPATH/dist/* $DEPLOYPATH/
+    # Build local înainte de deployment
+    - npm install
+    - npm run build
+    # Copiere doar a fișierelor din dist direct în directorul de bază
+    - /bin/cp -R dist/* $DEPLOYPATH/
+    # Crearea unui .htaccess personalizat în directorul de destinație
     - cat > $DEPLOYPATH/.htaccess << 'EOL'
 # Activare rewrite engine
 RewriteEngine On
@@ -14,7 +16,7 @@ RewriteBase /
 
 # Setarea MIME type-urilor pentru JavaScript
 <IfModule mod_mime.c>
-  AddType text/javascript .js .mjs .jsx .tsx
+  AddType text/javascript .js .mjs
 </IfModule>
 
 # Redirectare pentru SPA
