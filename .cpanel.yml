@@ -6,4 +6,5 @@ deployment:
     - /bin/cp -R * $DEPLOYPATH/
     - cd $DEPLOYPATH && npm install
     - cd $DEPLOYPATH && npm run build
+    - rm -rf $DEPLOYPATH/dist/favicon.svg
     - cp -R $DEPLOYPATH/dist/* $DEPLOYPATH/
