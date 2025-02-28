@@ -23,7 +23,25 @@ deployment:
 </IfModule>
 
 # Setarea MIME type-urilor pentru JavaScript
+<FilesMatch "\.js$">
+  ForceType text/javascript
+</FilesMatch>
+<FilesMatch "\.mjs$">
+  ForceType text/javascript
+</FilesMatch>
+<FilesMatch "\.json$">
+  ForceType application/json
+</FilesMatch>
+
+# Backup method for setting MIME types
 AddType text/javascript .js
 AddType text/javascript .mjs
 AddType application/json .json
+
+# Disable MIME type checking for JavaScript modules
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|mjs)$">
+    Header set X-Content-Type-Options ""
+  </FilesMatch>
+</IfModule>
 EOL

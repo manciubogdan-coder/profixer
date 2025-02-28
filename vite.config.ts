@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => ({
         entryFileNames: 'assets/js/[name].[hash].js',
         chunkFileNames: 'assets/js/[name].[hash].js',
         assetFileNames: 'assets/[ext]/[name].[hash].[ext]',
+        // Folosește doar format=es pentru mai multă compatibilitate
+        format: 'es'
       },
     },
   }
