@@ -30,10 +30,10 @@ export const CookieConsent = () => {
       <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="text-sm">
           <p>
-            Folosim cookie-uri pentru a-ți oferi cea mai bună experiență pe site-ul nostru. 
-            Poți afla mai multe despre cookie-urile pe care le folosim și cum să le controlezi citind{" "}
+            Folosim cookie-uri pentru o experiență optimă pe site. 
+            Află mai multe în{" "}
             <Link to="/cookies" className="text-primary hover:underline">
-              Politica noastră de Cookies
+              Politica de Cookies
             </Link>
             .
           </p>
