@@ -140,10 +140,8 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    // Show all craftsmen if before July 1, 2025, otherwise only show those with active subscriptions
-    const visibleCraftsmen = isBeforeJuly2025 
-      ? craftsmen 
-      : craftsmen.filter(craftsman => craftsman.subscription_status?.is_subscription_active === true);
+    // Show all craftsmen - removed filter that was limiting based on subscription status
+    const visibleCraftsmen = craftsmen;
 
     console.log("Adding markers for craftsmen:", visibleCraftsmen.length);
 

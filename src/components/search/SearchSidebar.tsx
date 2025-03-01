@@ -56,9 +56,8 @@ export const SearchSidebar = ({
     },
   });
 
-  const activeCraftsmen = craftsmen.filter(
-    (craftsman) => craftsman.subscription_status?.is_subscription_active === true
-  );
+  // Show all craftsmen, removed the filter for subscription status
+  const activeCraftsmen = craftsmen;
 
   return (
     <div className="w-full md:w-96 h-full bg-card border-r">
