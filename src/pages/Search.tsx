@@ -102,6 +102,29 @@ const Search = () => {
         userLocation
       });
       
+      // Debug: Check for the specific craftsman first
+      const { data: targetCraftsman, error: targetError } = await supabase
+        .from("profiles")
+        .select(`
+          *,
+          trade:craftsman_type(name)
+        `)
+        .eq("role", "professional")
+        .eq("email", "manciubogdan999@gmail.com")
+        .maybeSingle();
+        
+      if (targetCraftsman) {
+        console.log("Am găsit meșterul căutat:", targetCraftsman);
+        console.log("Coordonatele meșterului:", {
+          latitude: targetCraftsman.latitude,
+          longitude: targetCraftsman.longitude
+        });
+      } else if (targetError) {
+        console.error("Eroare la căutarea meșterului specific:", targetError);
+      } else {
+        console.log("Meșterul căutat nu a fost găsit");
+      }
+      
       let query = supabase
         .from("profiles")
         .select(`
@@ -159,15 +182,15 @@ const Search = () => {
             if (isNaN(lat) || isNaN(lng) || 
                 lat < -90 || lat > 90 || 
                 lng < -180 || lng > 180) {
-              console.warn(`Coordonate invalide pentru meșterul ${craftsman.id}: lat=${lat}, lng=${lng}`);
+              console.warn(`Coordonate invalide pentru meșterul ${craftsman.id} (${craftsman.email}): lat=${lat}, lng=${lng}`);
               lat = null;
               lng = null;
             }
           } else {
-            console.warn(`Coordonate lipsă pentru meșterul ${craftsman.id}`);
+            console.warn(`Coordonate lipsă pentru meșterul ${craftsman.id} (${craftsman.email})`);
           }
         } catch (e) {
-          console.error(`Eroare la parsarea coordonatelor pentru meșterul ${craftsman.id}:`, e);
+          console.error(`Eroare la parsarea coordonatelor pentru meșterul ${craftsman.id} (${craftsman.email}):`, e);
           lat = null;
           lng = null;
         }
@@ -236,6 +259,15 @@ const Search = () => {
         !isNaN(c.latitude) && !isNaN(c.longitude));
         
       console.log(`Meșteri cu coordonate valide: ${craftsmenWithCoordinates.length} din ${processedCraftsmen.length}`);
+      
+      // Log craftsmen without valid coordinates for debugging
+      processedCraftsmen.forEach(c => {
+        if (!c.latitude || !c.longitude || 
+            typeof c.latitude !== 'number' || typeof c.longitude !== 'number' ||
+            isNaN(c.latitude) || isNaN(c.longitude)) {
+          console.warn(`Meșter fără coordonate valide: ${c.id} (${c.email || 'email necunoscut'}) - ${c.first_name} ${c.last_name}`);
+        }
+      });
       
       // Apply rating filter but not distance filter initially for testing
       const filteredCraftsmen = craftsmenWithCoordinates.filter((craftsman) => {
