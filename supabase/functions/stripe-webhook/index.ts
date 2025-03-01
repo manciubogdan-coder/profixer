@@ -1,132 +1,188 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
-import Stripe from 'https://esm.sh/stripe@12.12.0?dts';
+import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.0.0";
+import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2023-10-16',
+  apiVersion: '2022-08-01',
+  httpClient: Stripe.createFetchHttpClient(),
 });
 
-const endpointSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
+const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+console.log("Hello from Stripe webhook!");
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
   try {
-    const body = await req.text();
-    const signature = req.headers.get('stripe-signature') || '';
-    
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
-    } catch (err) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
-      return new Response(`Webhook signature verification failed: ${err.message}`, { 
-        status: 400,
-        headers: corsHeaders 
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        },
       });
     }
 
-    console.log(`Processing Stripe event: ${event.type}`);
+    const signature = req.headers.get('stripe-signature');
+    if (!signature) {
+      console.error("Missing stripe-signature header");
+      return new Response(JSON.stringify({ error: 'Missing stripe-signature header' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
-    // Procesăm evenimentul de plată completată
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object;
-      console.log(`Payment completed for session: ${session.id}`);
+    // Get the raw body
+    const requestBody = await req.text();
+    let event;
 
-      // Extragem metadata pentru a identifica plata
-      const paymentId = session.metadata?.payment_id;
-      const plan = session.metadata?.plan;
+    try {
+      event = stripe.webhooks.constructEvent(
+        requestBody,
+        signature,
+        webhookSecret || ''
+      );
+    } catch (err) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      return new Response(JSON.stringify({ error: `Webhook Error: ${err.message}` }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
-      if (!paymentId) {
-        throw new Error('Payment ID not found in session metadata');
+    // Create a supabase client with the service role key
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Handle the event
+    console.log(`Processing event: ${event.type}`);
+
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        const { payment_id, craftsman_id, plan } = session.metadata || {};
+
+        console.log(`Payment ${payment_id} completed for craftsman ${craftsman_id} with plan ${plan}`);
+
+        if (!payment_id) {
+          console.error("Missing payment_id in metadata");
+          return new Response(JSON.stringify({ error: 'Missing payment_id in metadata' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Update the payment status to completed
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .update({ status: 'completed' })
+          .eq('id', payment_id);
+
+        if (paymentError) {
+          console.error(`Error updating payment: ${paymentError.message}`);
+          return new Response(JSON.stringify({ error: `Error updating payment: ${paymentError.message}` }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Calculate the subscription end date based on the plan
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        
+        if (plan === 'lunar') {
+          endDate.setDate(endDate.getDate() + 30); // 30 days subscription
+        } else if (plan === 'anual') {
+          endDate.setFullYear(endDate.getFullYear() + 1); // 1 year subscription
+        }
+
+        // Update the subscription status to active and set dates
+        const { error: subscriptionError } = await supabase
+          .from('subscriptions')
+          .update({
+            status: 'active',
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString()
+          })
+          .eq('payment_id', payment_id);
+
+        if (subscriptionError) {
+          console.error(`Error updating subscription: ${subscriptionError.message}`);
+          return new Response(JSON.stringify({ error: `Error updating subscription: ${subscriptionError.message}` }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Update the craftsman's subscription status through RPC
+        if (craftsman_id) {
+          const { error: rpcError } = await supabase.rpc('update_craftsman_subscription_status', {
+            p_craftsman_id: craftsman_id,
+            p_is_active: true,
+            p_end_date: endDate.toISOString()
+          });
+
+          if (rpcError) {
+            console.error(`Error updating craftsman subscription status: ${rpcError.message}`);
+            return new Response(JSON.stringify({ error: `Error updating craftsman subscription status: ${rpcError.message}` }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json' },
+            });
+          }
+        }
+
+        break;
       }
-
-      console.log(`Updating payment with ID: ${paymentId} to completed`);
-
-      // Actualizăm statusul plății în baza de date
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .update({
-          status: 'completed',
-          payment_details: session,
-        })
-        .eq('id', paymentId);
-
-      if (paymentError) {
-        console.error(`Error updating payment: ${paymentError.message}`);
-        throw new Error(`Error updating payment: ${paymentError.message}`);
+      
+      case 'charge.failed': {
+        const charge = event.data.object;
+        console.log(`Payment failed for charge: ${charge.id}`);
+        
+        // Try to find the payment with this Stripe ID
+        const { data: payments, error: queryError } = await supabase
+          .from('payments')
+          .select('id')
+          .eq('stripe_payment_id', charge.payment_intent)
+          .limit(1);
+          
+        if (queryError) {
+          console.error(`Error finding payment: ${queryError.message}`);
+        } else if (payments && payments.length > 0) {
+          const paymentId = payments[0].id;
+          
+          // Update the payment status to failed
+          const { error: updateError } = await supabase
+            .from('payments')
+            .update({ status: 'failed' })
+            .eq('id', paymentId);
+            
+          if (updateError) {
+            console.error(`Error updating payment status: ${updateError.message}`);
+          }
+        } else {
+          console.log(`No payment found for failed charge: ${charge.id}`);
+        }
+        
+        break;
       }
-
-      // Determinăm durata abonamentului în funcție de plan
-      const startDate = new Date();
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + (plan === 'anual' ? 365 : 30));
-
-      // Extragem ID-ul meșterului din plată
-      const { data: payment, error: fetchError } = await supabase
-        .from('payments')
-        .select('craftsman_id')
-        .eq('id', paymentId)
-        .single();
-
-      if (fetchError) {
-        console.error(`Error fetching payment: ${fetchError.message}`);
-        throw new Error(`Error fetching payment: ${fetchError.message}`);
-      }
-
-      const craftsmanId = payment.craftsman_id;
-
-      // Actualizăm abonamentul
-      const { error: subError } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'active',
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString(),
-        })
-        .eq('payment_id', paymentId);
-
-      if (subError) {
-        console.error(`Error updating subscription: ${subError.message}`);
-        throw new Error(`Error updating subscription: ${subError.message}`);
-      }
-
-      // Actualizăm statusul abonamentului pentru meșter
-      const { error: rpcError } = await supabase
-        .rpc('update_craftsman_subscription_status', {
-          p_craftsman_id: craftsmanId,
-          p_is_active: true,
-          p_end_date: endDate.toISOString()
-        });
-
-      if (rpcError) {
-        console.error(`Error updating craftsman subscription status: ${rpcError.message}`);
-      }
-
-      console.log(`Successfully updated payment and subscription for craftsman: ${craftsmanId}`);
+      
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error(`Error handling webhook: ${error.message}`);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.error(`Unexpected error: ${error.message}`);
+    return new Response(JSON.stringify({ error: `Unexpected error: ${error.message}` }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 });

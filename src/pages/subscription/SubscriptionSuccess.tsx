@@ -87,7 +87,7 @@ const SubscriptionSuccess = () => {
           }
         } else {
           console.log('Creating new subscription');
-          // Creăm un nou abonament - aici a fost eroarea
+          // Creăm un nou abonament
           const validPlan: SubscriptionPlan = plan === 'lunar' ? 'lunar' : 'lunar'; // Forțăm să fie 'lunar' dacă nu este valid
           const { error: createSubError } = await supabase
             .from('subscriptions')
@@ -121,6 +121,7 @@ const SubscriptionSuccess = () => {
         }
 
         setIsLoading(false);
+        toast.success('Abonamentul a fost activat cu succes!');
         
         // Redirecționăm către profil după 3 secunde
         setTimeout(() => {

@@ -1,103 +1,129 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
-import Stripe from 'https://esm.sh/stripe@12.12.0?dts';
+import { serve } from "https://deno.land/std@0.131.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.0.0";
+import { corsHeaders } from "../_shared/cors.ts";
+import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno';
 
-// Configurare CORS pentru a permite accesul de la aplicația web
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Folosim cheia secretă în modul live, nu în modul test
-const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY') || '';
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: '2023-10-16',
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+  apiVersion: '2022-08-01',
+  httpClient: Stripe.createFetchHttpClient(),
 });
+
+console.log("Hello from Stripe Payment Intent!");
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: corsHeaders,
-    });
+    return new Response(null, { headers: corsHeaders, status: 204 });
   }
 
   try {
-    // Verificăm dacă este un request POST
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-        status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Create a Supabase client with the Auth context of the logged in user
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
+
+    // Get the JWT token from the request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Nu ești autorizat" }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Extragem datele din request
+    // Get the user from the request
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      console.error("Error getting user:", userError);
+      return new Response(
+        JSON.stringify({ error: "Nu ești autentificat", details: userError }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get the request body
     const { craftsman_id, plan } = await req.json();
-
-    console.log(`Processing payment intent for craftsman: ${craftsman_id}, plan: ${plan}`);
-
-    if (!craftsman_id) {
-      throw new Error('ID-ul meșterului lipsește');
+    
+    if (!craftsman_id || !plan) {
+      return new Response(
+        JSON.stringify({ error: 'ID-ul meșterului și planul sunt obligatorii' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Verificăm dacă meșterul există
-    const { data: craftsman, error: craftsmanError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', craftsman_id)
-      .eq('role', 'professional')
-      .single();
-
-    if (craftsmanError || !craftsman) {
-      throw new Error(`Meșterul nu a fost găsit: ${craftsmanError?.message || 'Unknown error'}`);
+    // Make sure the user is requesting for themselves
+    if (user.id !== craftsman_id) {
+      return new Response(
+        JSON.stringify({ error: 'Nu poți crea un abonament pentru un alt utilizator' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Verificăm dacă meșterul are deja un abonament activ
-    const { data: activeSub, error: subError } = await supabase
-      .from('subscriptions')
-      .select('*')
+    // Check if the user already has an active subscription
+    const { data: subscriptionData, error: subscriptionError } = await supabaseClient
+      .from('craftsman_subscription_status_latest')
+      .select('is_subscription_active, subscription_end_date')
       .eq('craftsman_id', craftsman_id)
-      .eq('status', 'active')
-      .gt('end_date', new Date().toISOString())
       .maybeSingle();
 
-    if (subError && subError.code !== 'PGRST116') {
-      throw new Error(`Eroare la verificarea abonamentului: ${subError.message}`);
+    if (subscriptionError) {
+      console.error("Error checking subscription:", subscriptionError);
+    } else if (subscriptionData?.is_subscription_active && 
+               subscriptionData?.subscription_end_date && 
+               new Date(subscriptionData.subscription_end_date) > new Date()) {
+      console.log("User already has an active subscription until:", subscriptionData.subscription_end_date);
+      
+      // Allow users to still purchase if they want to extend
+      console.log("Allowing user to purchase a new subscription anyway");
     }
 
-    if (activeSub) {
-      throw new Error(`Ai deja un abonament activ până la ${new Date(activeSub.end_date).toLocaleDateString()}`);
-    }
+    // Determine price based on plan
+    const priceAmount = plan === 'lunar' ? 19900 : 0; // 199 RON to cents
 
-    // Determinăm prețul în funcție de plan
-    const amount = plan === 'anual' ? 1990 : 199; // 199 RON lunar sau 1990 RON anual
-    const planName = plan === 'anual' ? 'Anual' : 'Lunar';
-
-    console.log(`Creating payment with amount: ${amount} RON for plan: ${planName}`);
-
-    // Creăm o nouă înregistrare de plată în baza de date
-    const { data: payment, error: paymentError } = await supabase
+    // Create a payment record in the database
+    const { data: paymentData, error: paymentError } = await supabaseClient
       .from('payments')
       .insert({
-        craftsman_id,
-        amount,
-        status: 'pending',
-        plan,
-        payment_type: 'stripe'
+        craftsman_id: craftsman_id,
+        amount: 199, // Store as RON, not cents
+        currency: 'RON',
+        status: 'pending'
       })
-      .select('id')
+      .select()
       .single();
 
     if (paymentError) {
-      throw new Error(`Eroare la crearea înregistrării de plată: ${paymentError.message}`);
+      console.error("Error creating payment record:", paymentError);
+      return new Response(
+        JSON.stringify({ error: 'Nu am putut crea înregistrarea plății', details: paymentError }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Creăm o sesiune de checkout cu Stripe
+    // Create a subscription record for the payment
+    const { error: subscriptionCreateError } = await supabaseClient
+      .from('subscriptions')
+      .insert({
+        craftsman_id: craftsman_id,
+        status: 'inactive',
+        plan: plan,
+        payment_id: paymentData.id,
+        start_date: new Date().toISOString(),
+        end_date: null
+      });
+
+    if (subscriptionCreateError) {
+      console.error("Error creating subscription record:", subscriptionCreateError);
+    }
+
+    // Generate a Stripe Checkout URL
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -105,68 +131,47 @@ serve(async (req) => {
           price_data: {
             currency: 'ron',
             product_data: {
-              name: `Abonament ProFixer ${planName}`,
-              description: `Acces la toate funcționalitățile platformei ProFixer timp de ${plan === 'anual' ? '12 luni' : '1 lună'}`,
+              name: `Abonament ProFixer ${plan}`,
+              description: 'Abonament la platforma ProFixer pentru profesioniști',
             },
-            unit_amount: amount * 100, // Stripe folosește cenți
+            unit_amount: priceAmount,
           },
           quantity: 1,
         },
       ],
-      mode: 'payment',
-      success_url: `${req.headers.get('origin')}/subscription/success?payment_id=${payment.id}&plan=${plan}`,
-      cancel_url: `${req.headers.get('origin')}/subscription/activate`,
-      client_reference_id: craftsman_id,
       metadata: {
-        payment_id: payment.id,
-        plan: plan,
+        payment_id: paymentData.id,
+        craftsman_id: craftsman_id,
+        plan: plan
       },
+      mode: 'payment',
+      success_url: `${req.headers.get('origin')}/subscription/success?payment_id=${paymentData.id}&plan=${plan}`,
+      cancel_url: `${req.headers.get('origin')}/subscription/activate`,
     });
 
-    // Actualizăm înregistrarea de plată cu ID-ul sesiunii Stripe
-    const { error: updateError } = await supabase
-      .from('payments')
-      .update({
-        stripe_payment_id: session.id,
-      })
-      .eq('id', payment.id);
+    // Update the payment record with Stripe payment ID
+    if (session.id) {
+      const { error: updateError } = await supabaseClient
+        .from('payments')
+        .update({
+          stripe_payment_id: session.id
+        })
+        .eq('id', paymentData.id);
 
-    if (updateError) {
-      console.error(`Eroare la actualizarea înregistrării de plată: ${updateError.message}`);
+      if (updateError) {
+        console.error("Error updating payment record with Stripe ID:", updateError);
+      }
     }
 
-    console.log(`Payment session created: ${session.id}, redirecting to: ${session.url}`);
-
-    // Înregistrăm abonamentul cu status pending
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + (plan === 'anual' ? 365 : 30));
-
-    const { error: subCreateError } = await supabase
-      .from('subscriptions')
-      .insert({
-        craftsman_id,
-        status: 'pending',
-        plan,
-        payment_id: payment.id,
-        stripe_subscription_id: session.id,
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
-      });
-
-    if (subCreateError) {
-      console.error(`Eroare la crearea abonamentului: ${subCreateError.message}`);
-    }
-
-    return new Response(JSON.stringify({ url: session.url }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ url: session.url }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Error processing payment:', error);
-    return new Response(JSON.stringify({ error: error.message || 'An unknown error occurred' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error("Unexpected error:", error);
+    return new Response(
+      JSON.stringify({ error: 'A apărut o eroare neașteptată', details: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });

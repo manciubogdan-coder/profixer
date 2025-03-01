@@ -91,8 +91,10 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
 
       if (signUpData.user && values.role === "professional") {
         try {
+          // Set the free tier end date to July 1, 2025
           const freeTierEndDate = new Date("2025-07-01T23:59:59Z");
           
+          // Directly call the RPC function to update the subscription status
           const { error: rpcError } = await supabase.rpc('update_craftsman_subscription_status', {
             p_craftsman_id: signUpData.user.id,
             p_is_active: true,
@@ -101,8 +103,10 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
 
           if (rpcError) {
             console.error("Eroare la activarea abonamentului gratuit:", rpcError);
+            toast.error("Nu am putut activa abonamentul gratuit. Te rugăm să contactezi suportul.");
           } else {
             console.log("Abonament gratuit activat până la:", freeTierEndDate);
+            toast.success("Abonament gratuit activat până la 1 Iulie 2025!");
           }
         } catch (error) {
           console.error("Eroare la procesarea abonamentului gratuit:", error);
@@ -116,6 +120,7 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
       }
       
     } catch (error) {
+      console.error("Eroare neașteptată la înregistrare:", error);
       toast.error("A apărut o eroare neașteptată. Vă rugăm să încercați din nou.");
     }
   };
