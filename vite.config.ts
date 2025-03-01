@@ -12,8 +12,6 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react({
-      // Optimize React rendering
-      fastRefresh: true,
       // Use SWC's optimizations
       swcPlugins: []
     }),

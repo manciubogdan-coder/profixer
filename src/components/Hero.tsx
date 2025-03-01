@@ -27,7 +27,13 @@ export const Hero = memo(() => {
         },
         { threshold: 0.1 }
       );
+      
       observer.observe(heroRef.current);
+      
+      // Cleanup function
+      return () => {
+        observer.disconnect();
+      };
     }
 
     // Preload gradient backgrounds
@@ -35,11 +41,6 @@ export const Hero = memo(() => {
     preloadBg.fetchPriority = 'high';
     preloadBg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMxZTI5M2IiLz48L3N2Zz4=';
     
-    return () => {
-      if (heroRef.current) {
-        observer.disconnect();
-      }
-    };
   }, []);
 
   const handleSearchClick = () => {
