@@ -33,6 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export const Users = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -115,6 +116,15 @@ export const Users = () => {
       if (error) {
         console.error("Error with RPC function, trying fallback methods:", error);
         
+        const isForeignKeyError = error.message?.includes('foreign key constraint');
+        if (isForeignKeyError) {
+          toast.error("Nu se poate șterge utilizatorul deoarece are date asociate (mesaje, plăți, etc).");
+          setLoading(false);
+          setUserToDelete(null);
+          setDeleteDialogOpen(false);
+          return;
+        }
+        
         const { error: authError } = await supabase.auth.admin.deleteUser(userId);
         
         if (authError) {
@@ -141,7 +151,13 @@ export const Users = () => {
       setUsers(users.filter(user => user.id !== userId));
     } catch (error) {
       console.error("Eroare la ștergerea utilizatorului:", error);
-      toast.error("Nu am putut șterge utilizatorul. Verificați consola pentru detalii.");
+      
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      if (errorMsg.includes('foreign key constraint')) {
+        toast.error("Utilizatorul are date asociate care împiedică ștergerea (mesaje, plăți, etc).");
+      } else {
+        toast.error("Nu am putut șterge utilizatorul. Verificați consola pentru detalii.");
+      }
     } finally {
       setUserToDelete(null);
       setDeleteDialogOpen(false);
@@ -251,6 +267,13 @@ export const Users = () => {
           </Button>
         </div>
       </div>
+
+      <Alert variant="destructive" className="mb-4">
+        <AlertTitle>Notă importantă</AlertTitle>
+        <AlertDescription>
+          Utilizatorii care au mesaje sau plăți asociate nu pot fi șterși. Trebuie să ștergeți mai întâi aceste date.
+        </AlertDescription>
+      </Alert>
 
       <div className="flex gap-4 items-center">
         <div className="flex-1">
