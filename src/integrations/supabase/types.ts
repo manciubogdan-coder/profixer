@@ -967,6 +967,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      delete_user: {
+        Args: {
+          user_id: string
+        }
+        Returns: undefined
+      }
       get_craftsman_statistics: {
         Args: {
           craftsman_id_param: string

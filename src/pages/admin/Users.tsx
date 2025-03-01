@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -109,22 +108,27 @@ export const Users = () => {
     try {
       setLoading(true);
       
-      // Try to delete using the Supabase Auth API first (preferred method)
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (authError) {
-        console.error("Error with Auth API, trying direct database operation:", authError);
+      const { error } = await supabase.rpc('delete_user', {
+        user_id: userId
+      });
+
+      if (error) {
+        console.error("Error with RPC function, trying fallback methods:", error);
         
-        // If the Auth API method fails, try using a direct database operation
-        const { error: dbError } = await supabase
-          .from("profiles")
-          .delete()
-          .eq("id", userId);
+        const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+        
+        if (authError) {
+          console.error("Error with Auth API, trying direct database operation:", authError);
           
-        if (dbError) throw dbError;
+          const { error: dbError } = await supabase
+            .from("profiles")
+            .delete()
+            .eq("id", userId);
+            
+          if (dbError) throw dbError;
+        }
       }
       
-      // Log the action regardless of which method succeeded
       await supabase.from("admin_audit_logs").insert({
         admin_id: (await supabase.auth.getUser()).data.user?.id,
         action: "delete_user",
@@ -134,7 +138,6 @@ export const Users = () => {
       
       toast.success("Utilizatorul a fost șters cu succes");
       
-      // Update the users list to remove the deleted user
       setUsers(users.filter(user => user.id !== userId));
     } catch (error) {
       console.error("Eroare la ștergerea utilizatorului:", error);
