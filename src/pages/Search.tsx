@@ -145,21 +145,32 @@ const Search = () => {
       });
       
       try {
-        // Use a simpler query to get all professionals without role checks
-        let query = supabase
+        // Log current user for debugging
+        console.log("Current user ID:", user?.id);
+        
+        // Debug query to check if we can see professionals at all
+        const { data: allProfs, error: debugError } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, role")
+          .eq("role", "professional");
+          
+        if (debugError) {
+          console.error("Error checking professionals:", debugError);
+        } else {
+          console.log("Professionals found in database:", allProfs?.length);
+          console.log("Sample professional:", allProfs?.[0]);
+        }
+        
+        // Main query to get craftsmen with details
+        console.log("Executing main query for professionals with all details");
+        const { data: craftsmenData, error } = await supabase
           .from("user_profiles_with_email")
           .select(`
             *,
             reviews!reviews_craftsman_id_fkey(rating),
             trade:craftsman_type(name)
           `)
-          .eq("role", "professional");  // Filter only for professional users (craftsmen)
-
-        // Log the query to debug
-        console.log("Executing query for professionals");
-
-        // Execute query
-        const { data: craftsmenData, error } = await query;
+          .eq("role", "professional");
 
         if (error) {
           console.error("Eroare la preluarea meșterilor:", error);
