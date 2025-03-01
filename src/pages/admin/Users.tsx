@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -323,46 +322,38 @@ export const Users = () => {
       // Try multiple approaches to delete the user from auth system
       console.log("Attempting to delete user from auth system...");
       
-      // First approach: Use RPC function
       try {
+        // Use the admin RPC function we'll create
+        console.log("Trying to delete user through RPC function...");
         const { error: rpcError } = await supabase.rpc('delete_user', { user_id: userId });
         
         if (rpcError) {
-          console.log("RPC method failed, trying auth admin API next:", rpcError);
-          
-          // Second approach: Use auth admin API
-          const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-          
-          if (authError) {
-            console.error("Auth admin API failed:", authError);
-            throw new Error("Nu s-a putut șterge contul de autentificare după ștergerea datelor asociate");
-          }
+          console.error("RPC method failed:", rpcError);
+          throw rpcError;
         }
         
-        console.log("Auth user deleted successfully");
-        
-        // Log the successful delete operation
-        await supabase.from("admin_audit_logs").insert({
-          admin_id: (await supabase.auth.getUser()).data.user?.id,
-          action: "delete_user",
-          entity_type: "user",
-          entity_id: userId,
-          details: { 
-            cascade_delete: true,
-            user_role: userProfile.role 
-          }
-        });
-        
-        toast.success("Utilizatorul și toate datele asociate au fost șterse cu succes");
-        setUsers(users.filter(user => user.id !== userId));
-        
-      } catch (finalError) {
-        console.error("Authentication deletion failed:", finalError);
-        
-        // Even if auth deletion fails, we've already deleted the profile and associated data
-        toast.warning("Profilul utilizatorului a fost șters, dar contul de autentificare nu a putut fi șters complet");
-        setUsers(users.filter(user => user.id !== userId));
+        console.log("Auth user deleted successfully via RPC function");
+      } catch (authError) {
+        console.error("Authentication deletion failed:", authError);
+        toast.warning("Profilul utilizatorului a fost șters, dar contul de autentificare nu a putut fi șters complet. Un administrator va trebui să șteargă contul manual.");
       }
+      
+      // Log the successful delete operation
+      await supabase.from("admin_audit_logs").insert({
+        admin_id: (await supabase.auth.getUser()).data.user?.id,
+        action: "delete_user",
+        entity_type: "user",
+        entity_id: userId,
+        details: { 
+          cascade_delete: true,
+          user_role: userProfile.role 
+        }
+      });
+      
+      toast.success("Utilizatorul și toate datele asociate au fost șterse cu succes");
+      
+      // Update the UI by removing the deleted user from the local state
+      setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
       
     } catch (error) {
       console.error("Final error in deletion process:", error);
