@@ -3,6 +3,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import autoprefixer from 'autoprefixer';
+import cssnano from 'cssnano';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -112,10 +114,10 @@ export default defineConfig(({ mode }) => ({
     // Optimize CSS output
     postcss: {
       plugins: [
-        require('autoprefixer')({
+        autoprefixer({
           flexbox: 'no-2009',
         }),
-        require('cssnano')({
+        cssnano({
           preset: ['default', {
             discardComments: { removeAll: true },
             minifyFontValues: { removeQuotes: false }
