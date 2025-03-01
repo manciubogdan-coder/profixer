@@ -109,9 +109,7 @@ export default defineConfig(({ mode }) => ({
   },
   css: {
     devSourcemap: false,
-    // Remove the lightningcss transformer
-    // transformer: 'lightningcss',
-    // Optimize CSS output
+    // Optimizer CSS output
     postcss: {
       plugins: [
         autoprefixer({
