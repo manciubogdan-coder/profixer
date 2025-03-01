@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -79,13 +78,11 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  // Initialize map only once
   useEffect(() => {
     if (!mapContainer.current) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    // Define default center as tuple with two fixed numbers
     const defaultCenter: [number, number] = [26.1025, 44.4268]; // Bucharest
 
     try {
@@ -113,15 +110,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     };
   }, []);
 
-  // Add user location marker whenever userLocation changes
   useEffect(() => {
     if (!map.current || !userLocation) return;
 
     try {
-      // Update map center when user location changes
       map.current.setCenter([userLocation.lng, userLocation.lat]);
       
-      // Create user marker
       const el = document.createElement("div");
       el.className = "user-marker";
       el.style.width = "20px";
@@ -131,7 +125,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       el.style.border = "2px solid white";
       el.style.boxShadow = "0 0 0 2px rgba(59, 130, 246, 0.5)";
 
-      // Remove existing user markers if any
       const userMarkerEl = document.querySelector('.user-marker');
       if (userMarkerEl) {
         userMarkerEl.remove();
@@ -147,7 +140,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     }
   }, [userLocation]);
 
-  // Update craftsmen markers whenever craftsmen array changes
   useEffect(() => {
     if (!map.current) {
       console.log("Map not initialized");
@@ -156,12 +148,8 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
     console.log("Updating craftsmen markers, total craftsmen:", craftsmen.length);
 
-    // Clear existing markers
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
-
-    // Process all craftsmen without any filtering
-    console.log("Adding markers for craftsmen:", craftsmen.length);
 
     craftsmen.forEach((craftsman) => {
       if (!craftsman.latitude || !craftsman.longitude) {
@@ -170,7 +158,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       }
 
       try {
-        // Create marker element
         const el = document.createElement("div");
         el.className = "craftsman-marker";
         el.style.width = "30px";
@@ -183,10 +170,8 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         el.style.color = "white";
         el.style.cursor = "pointer";
 
-        // Get correct icon for craftsman trade
         const IconComponent = getCraftsmanIcon(craftsman.trade?.name || null);
         
-        // Render icon to string
         const iconHtml = renderToString(
           createElement(IconComponent, {
             size: 20,
@@ -196,7 +181,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         );
         el.innerHTML = iconHtml;
 
-        // Create popup content
         const popupContent = document.createElement("div");
         popupContent.className = "p-4 bg-background text-foreground";
         
@@ -229,7 +213,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           </div>
         `;
 
-        // Add click handlers
         const handlePopupClick = (e: Event) => {
           const target = e.target as HTMLElement;
           const button = target.closest('button');
@@ -247,7 +230,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
         popupContent.addEventListener('click', handlePopupClick);
 
-        // Create and add popup
         const popup = new mapboxgl.Popup({
           offset: 25,
           closeButton: true,
@@ -255,20 +237,20 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           className: 'custom-popup',
         }).setDOMContent(popupContent);
 
-        // Create and add marker
         const marker = new mapboxgl.Marker(el)
           .setLngLat([craftsman.longitude, craftsman.latitude])
           .setPopup(popup)
           .addTo(map.current);
 
         markersRef.current.push(marker);
-        console.log("Added marker for craftsman:", craftsman.id);
+        console.log(`Added marker for craftsman: ${craftsman.id} at coordinates: [${craftsman.longitude}, ${craftsman.latitude}]`);
       } catch (error) {
         console.error("Error adding marker for craftsman:", craftsman.id, error);
       }
     });
 
-  }, [craftsmen, onCraftsmanClick, userLocation]);
+    console.log(`Total markers added to map: ${markersRef.current.length}`);
+  }, [craftsmen, onCraftsmanClick]);
 
   return (
     <div className="flex-1 relative h-full">

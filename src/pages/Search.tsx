@@ -52,6 +52,7 @@ const Search = () => {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
+          console.log("User location set:", position.coords.latitude, position.coords.longitude);
         },
         (error) => {
           console.error("Error getting location:", error);
@@ -89,47 +90,44 @@ const Search = () => {
 
       if (error) throw error;
 
-      const { data: subscriptionStatuses, error: subError } = await supabase
-        .from("craftsman_subscription_status_latest")
-        .select("*");
+      console.log("Fetched craftsmen data:", craftsmenData?.length || 0);
 
-      if (subError) throw subError;
+      const processedCraftsmen = craftsmenData.map((craftsman): Craftsman => {
+        const reviews = Array.isArray(craftsman.reviews) ? craftsman.reviews : [];
+        const avgRating = reviews.length > 0
+          ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
+          : 0;
 
-      const statusMap: Record<string, boolean> = {};
-      subscriptionStatuses.forEach((status) => {
-        statusMap[status.craftsman_id] = status.is_subscription_active;
+        return {
+          ...craftsman,
+          average_rating: avgRating,
+        };
+      }).filter((craftsman) => {
+        // Skip craftsmen without coordinates
+        if (!craftsman.latitude || !craftsman.longitude) {
+          console.log(`Craftsman ${craftsman.id} has no coordinates, skipping distance check`);
+          return minRating <= (craftsman.average_rating || 0);
+        }
+
+        if ((craftsman.average_rating || 0) < minRating) return false;
+
+        // Apply distance filter only if we have user location
+        if (userLocation && craftsman.latitude && craftsman.longitude) {
+          const distance = calculateDistance(
+            userLocation.lat,
+            userLocation.lng,
+            craftsman.latitude,
+            craftsman.longitude
+          );
+          console.log(`Distance for craftsman ${craftsman.id}: ${distance.toFixed(2)}km`);
+          if (distance > maxDistance) return false;
+        }
+
+        return true;
       });
 
-      const processedCraftsmen = craftsmenData
-        .map((craftsman): Craftsman => {
-          const reviews = Array.isArray(craftsman.reviews) ? craftsman.reviews : [];
-          const avgRating = reviews.length > 0
-            ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
-            : 0;
-
-          return {
-            ...craftsman,
-            average_rating: avgRating,
-            subscription_status: {
-              is_subscription_active: statusMap[craftsman.id] || false
-            }
-          };
-        })
-        .filter((craftsman) => {
-          if ((craftsman.average_rating || 0) < minRating) return false;
-
-          if (userLocation && craftsman.latitude && craftsman.longitude) {
-            const distance = calculateDistance(
-              userLocation.lat,
-              userLocation.lng,
-              craftsman.latitude,
-              craftsman.longitude
-            );
-            if (distance > maxDistance) return false;
-          }
-
-          return true;
-        });
+      console.log("Processed craftsmen for map:", processedCraftsmen.length);
+      console.log("Craftsmen with coordinates:", processedCraftsmen.filter(c => c.latitude && c.longitude).length);
 
       return processedCraftsmen;
     },
@@ -160,6 +158,9 @@ const Search = () => {
     return null;
   }
 
+  // Calculate how many craftsmen have valid coordinates
+  const craftsmenWithCoordinates = craftsmen.filter(c => c.latitude && c.longitude).length;
+  
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -202,12 +203,19 @@ const Search = () => {
           />
         )}
         {(!isMobile || showMap) && (
-          <div className="flex-1">
+          <div className="flex-1 relative">
             <Map 
               craftsmen={craftsmen} 
               userLocation={userLocation}
               onCraftsmanClick={handleCraftsmanClick}
             />
+            <div className="absolute top-2 left-2 bg-background/80 p-2 rounded-md text-xs">
+              {isLoading ? (
+                "Se încarcă..."
+              ) : (
+                <>Meșteri pe hartă: {craftsmenWithCoordinates} din {craftsmen.length}</>
+              )}
+            </div>
           </div>
         )}
       </div>
