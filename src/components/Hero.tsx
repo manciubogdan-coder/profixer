@@ -4,10 +4,8 @@ import { Search, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { memo } from "react";
 
-// Memoized hero component to prevent unnecessary re-rendering
-export const Hero = memo(() => {
+export const Hero = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -29,17 +27,9 @@ export const Hero = memo(() => {
   };
 
   return (
-    <div 
-      className="relative bg-secondary py-12 px-4 overflow-hidden"
-    >
-      {/* Simplified background - direct color application */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 via-secondary to-secondary" />
-      
-      {/* Simplified blur effect */}
-      <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl" /> 
-      
-      <div className="container mx-auto text-center relative z-10">
-        <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 max-w-4xl mx-auto shadow-xl">
+    <div className="bg-secondary py-12 px-4">
+      <div className="container mx-auto text-center">
+        <div className="bg-white/5 rounded-2xl p-6 max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Găsește cel mai bun meșter pentru <br />
             <span className="bg-gradient-to-r from-primary to-purple-400 text-transparent bg-clip-text">
@@ -53,16 +43,14 @@ export const Hero = memo(() => {
           
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button 
-              size="default" 
-              className="bg-gradient-to-r from-primary to-purple-600 hover:from-purple-600 hover:to-primary transition-all duration-300"
               onClick={handleSearchClick}
+              className="bg-gradient-to-r from-primary to-purple-600 hover:from-purple-600 hover:to-primary"
             >
               <Search className="mr-2 h-4 w-4" /> Caută Meșteri
             </Button>
             <Button 
-              size="default" 
               variant="outline"
-              className="backdrop-blur-md bg-white/10 border-white/20 hover:bg-white/20 transition-all duration-300"
+              className="bg-white/10 border-white/20 hover:bg-white/20"
               onClick={handleBecomeCraftsmanClick}
             >
               <ArrowRight className="mr-2 h-4 w-4" /> Devino Meșter
@@ -72,6 +60,6 @@ export const Hero = memo(() => {
       </div>
     </div>
   );
-});
+};
 
 Hero.displayName = "Hero";
