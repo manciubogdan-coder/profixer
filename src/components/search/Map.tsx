@@ -160,12 +160,10 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    // Show all craftsmen - filter removed
-    const visibleCraftsmen = craftsmen;
+    // Process all craftsmen without any filtering
+    console.log("Adding markers for craftsmen:", craftsmen.length);
 
-    console.log("Adding markers for craftsmen:", visibleCraftsmen.length);
-
-    visibleCraftsmen.forEach((craftsman) => {
+    craftsmen.forEach((craftsman) => {
       if (!craftsman.latitude || !craftsman.longitude) {
         console.log("Missing coordinates for craftsman:", craftsman.id);
         return;
