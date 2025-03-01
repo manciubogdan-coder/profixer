@@ -17,6 +17,7 @@ export type Craftsman = Tables<"profiles"> & {
   latitude?: number;
   longitude?: number;
   average_rating?: number;
+  email?: string; // Add email property to Craftsman type
   trade?: {
     name: string;
   } | null;
@@ -103,30 +104,34 @@ const Search = () => {
       });
       
       // Debug: Check for the specific craftsman first
-      const { data: targetCraftsman, error: targetError } = await supabase
-        .from("profiles")
-        .select(`
-          *,
-          trade:craftsman_type(name)
-        `)
-        .eq("role", "professional")
-        .eq("email", "manciubogdan999@gmail.com")
-        .maybeSingle();
-        
-      if (targetCraftsman) {
-        console.log("Am găsit meșterul căutat:", targetCraftsman);
-        console.log("Coordonatele meșterului:", {
-          latitude: targetCraftsman.latitude,
-          longitude: targetCraftsman.longitude
-        });
-      } else if (targetError) {
-        console.error("Eroare la căutarea meșterului specific:", targetError);
-      } else {
-        console.log("Meșterul căutat nu a fost găsit");
+      try {
+        const { data: targetCraftsman, error: targetError } = await supabase
+          .from("user_profiles_with_email")  // Use user_profiles_with_email instead to get email
+          .select(`
+            *,
+            trade:craftsman_type(name)
+          `)
+          .eq("role", "professional")
+          .eq("email", "manciubogdan999@gmail.com")
+          .maybeSingle();
+          
+        if (targetCraftsman) {
+          console.log("Am găsit meșterul căutat:", targetCraftsman);
+          console.log("Coordonatele meșterului:", {
+            latitude: targetCraftsman.latitude,
+            longitude: targetCraftsman.longitude
+          });
+        } else if (targetError) {
+          console.error("Eroare la căutarea meșterului specific:", targetError);
+        } else {
+          console.log("Meșterul căutat nu a fost găsit");
+        }
+      } catch (error) {
+        console.error("Eroare la căutarea meșterului specific:", error);
       }
       
       let query = supabase
-        .from("profiles")
+        .from("user_profiles_with_email") // Use user_profiles_with_email view to get emails
         .select(`
           *,
           reviews!reviews_craftsman_id_fkey(rating),
@@ -182,15 +187,15 @@ const Search = () => {
             if (isNaN(lat) || isNaN(lng) || 
                 lat < -90 || lat > 90 || 
                 lng < -180 || lng > 180) {
-              console.warn(`Coordonate invalide pentru meșterul ${craftsman.id} (${craftsman.email}): lat=${lat}, lng=${lng}`);
+              console.warn(`Coordonate invalide pentru meșterul ${craftsman.id} (${craftsman.email || 'email necunoscut'}): lat=${lat}, lng=${lng}`);
               lat = null;
               lng = null;
             }
           } else {
-            console.warn(`Coordonate lipsă pentru meșterul ${craftsman.id} (${craftsman.email})`);
+            console.warn(`Coordonate lipsă pentru meșterul ${craftsman.id} (${craftsman.email || 'email necunoscut'})`);
           }
         } catch (e) {
-          console.error(`Eroare la parsarea coordonatelor pentru meșterul ${craftsman.id} (${craftsman.email}):`, e);
+          console.error(`Eroare la parsarea coordonatelor pentru meșterul ${craftsman.id} (${craftsman.email || 'email necunoscut'}):`, e);
           lat = null;
           lng = null;
         }
@@ -200,7 +205,8 @@ const Search = () => {
           ...craftsman,
           average_rating: avgRating,
           latitude: lat,
-          longitude: lng
+          longitude: lng,
+          email: craftsman.email // Make sure to include email from the view
         };
       });
 
@@ -208,7 +214,7 @@ const Search = () => {
       try {
         if (user) {
           const { data: currentUserProfile } = await supabase
-            .from('profiles')
+            .from('user_profiles_with_email') // Use user_profiles_with_email view to get emails
             .select('*, trade:craftsman_type(name)')
             .eq('id', user.id)
             .single();
@@ -241,7 +247,8 @@ const Search = () => {
                 ...currentUserProfile,
                 average_rating: 0,
                 latitude: userLat,
-                longitude: userLng
+                longitude: userLng,
+                email: currentUserProfile.email // Include email for the current user
               };
               
               processedCraftsmen.push(currentUserAsCraftsman);

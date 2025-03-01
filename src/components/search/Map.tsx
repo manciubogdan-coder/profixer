@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -256,7 +257,9 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         el.style.boxShadow = "0 0 0 2px rgba(147, 51, 234, 0.5)";
         el.dataset.craftsman = craftsman.id;
 
-        if (craftsman.email === "manciubogdan999@gmail.com") {
+        // Special highlighting for the target craftsman (if email property exists)
+        const targetEmail = "manciubogdan999@gmail.com";
+        if (craftsman.email && craftsman.email === targetEmail) {
           el.style.backgroundColor = "#EF4444";
           el.style.boxShadow = "0 0 0 4px rgba(239, 68, 68, 0.5)";
           el.style.width = "40px";
@@ -287,7 +290,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
               <h3 class="text-lg font-semibold text-foreground">${craftsman.first_name} ${craftsman.last_name}</h3>
               <p class="text-sm text-muted-foreground">${craftsman.trade?.name || "Meserie nesetată"}</p>
               <p class="text-sm text-muted-foreground">${craftsman.city}, ${craftsman.county}</p>
-              ${craftsman.email === "manciubogdan999@gmail.com" ? 
+              ${craftsman.email && craftsman.email === "manciubogdan999@gmail.com" ? 
                 `<p class="text-sm font-bold text-red-500">Email: ${craftsman.email}</p>` : ''}
             </div>
             <div class="flex items-center gap-1">
@@ -346,7 +349,8 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           .setPopup(popup)
           .addTo(map.current!);
 
-        if (craftsman.email === "manciubogdan999@gmail.com") {
+        // Auto-open popup for target craftsman
+        if (craftsman.email && craftsman.email === "manciubogdan999@gmail.com") {
           marker.togglePopup();
         }
 
