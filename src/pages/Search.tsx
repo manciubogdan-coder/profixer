@@ -127,6 +127,7 @@ const Search = () => {
         query = query.eq("craftsman_type", selectedType);
       }
 
+      // Execute query
       const { data: craftsmenData, error } = await query;
 
       if (error) {
@@ -136,6 +137,7 @@ const Search = () => {
 
       console.log("Fetched craftsmen data:", craftsmenData?.length || 0);
       
+      // Log sample data for debugging
       if (craftsmenData && craftsmenData.length > 0) {
         console.log("First craftsman sample:", craftsmenData[0]);
       } else {
@@ -181,9 +183,9 @@ const Search = () => {
           lng = null;
         }
 
-        // Get subscription status - consider all craftsmen active for now
-        // This ensures all craftsmen are visible even if their subscription is inactive
-        const isActive = true; // Force to true to show all craftsmen
+        // IMPORTANT: Force all craftsmen to be visible regardless of subscription status
+        // This ensures all professionals appear on the map
+        const isActive = true;
 
         // Build processed craftsman object
         return {
@@ -290,6 +292,9 @@ const Search = () => {
       });
 
       console.log("Final craftsmen count after filtering:", filteredCraftsmen.length);
+      
+      // IMPORTANT: Return all craftsmen with coordinates if filtered list is empty
+      // This ensures there's always someone visible on the map for testing
       return filteredCraftsmen.length > 0 ? filteredCraftsmen : craftsmenWithCoordinates;
     },
     enabled: !!user,

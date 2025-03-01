@@ -200,14 +200,16 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         .setLngLat([userLocation.lng, userLocation.lat])
         .addTo(map.current);
       
-      // Force fly to user location to ensure the map centers on it
-      map.current.flyTo({
-        center: [userLocation.lng, userLocation.lat],
-        zoom: 8,
-        essential: true
-      });
+      // Only fly to user location if we haven't set any other markers yet
+      if (markersRef.current.length === 0) {
+        map.current.flyTo({
+          center: [userLocation.lng, userLocation.lat],
+          zoom: 8,
+          essential: true
+        });
+      }
       
-      console.log("User location marker added/updated and map centered");
+      console.log("User location marker added/updated");
     } catch (error) {
       console.error("Error adding user location marker:", error);
     }
@@ -237,36 +239,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         "role:", c.role);
     });
 
-    // Special handling: Include the current user if they are a craftsman but not in the craftsmen list
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*, trade:craftsman_type(name)')
-            .eq('id', user.id)
-            .single();
-          
-          if (profileData && profileData.role === 'professional') {
-            const userIsCraftsman = craftsmen.some(c => c.id === user.id);
-            if (!userIsCraftsman && profileData.latitude && profileData.longitude) {
-              console.log("Current user is a craftsman but not in list, adding to map:", profileData);
-              const currentUserAsCraftsman: Craftsman = {
-                ...profileData,
-                average_rating: 0,
-                subscription_status: { is_subscription_active: true }
-              };
-              craftsmen = [...craftsmen, currentUserAsCraftsman];
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error checking current user as craftsman:", error);
-      }
-    })();
-
-    // Filter craftsmen with valid coordinates
+    // Get craftsmen with valid coordinates
     const craftsmenWithCoordinates = craftsmen.filter(c => 
       c.latitude !== null && c.latitude !== undefined && 
       c.longitude !== null && c.longitude !== undefined &&
@@ -374,7 +347,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           if (!button) return;
 
           if (button.hasAttribute('data-craftsman-id')) {
-            // Handle profile view - using an immediately-invoked async function to correctly handle the Promise
+            // Handle profile view - using an immediately-invoked async function for async/await
             (async () => {
               const userId = await getCurrentUserId();
               recordProfileInteraction(craftsman.id, userId, 'profile_view');
@@ -383,7 +356,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           } else if (button.hasAttribute('data-phone')) {
             const phone = button.getAttribute('data-phone');
             if (phone) {
-              // Handle phone click - using an immediately-invoked async function to correctly handle the Promise
+              // Handle phone click - using an immediately-invoked async function for async/await
               (async () => {
                 const userId = await getCurrentUserId();
                 recordProfileInteraction(craftsman.id, userId, 'phone_click');
@@ -407,12 +380,15 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         const marker = new mapboxgl.Marker(el)
           .setLngLat([craftsman.longitude, craftsman.latitude])
           .setPopup(popup)
-          .addTo(map.current);
+          .addTo(map.current!);
 
         // Add marker click handler to record interaction
-        el.addEventListener('click', async () => {
-          const userId = await getCurrentUserId();
-          recordProfileInteraction(craftsman.id, userId, 'map_click');
+        el.addEventListener('click', () => {
+          // Using IIFE (Immediately Invoked Function Expression) to handle the async function
+          (async () => {
+            const userId = await getCurrentUserId();
+            recordProfileInteraction(craftsman.id, userId, 'map_click');
+          })();
         });
 
         // Save marker reference
