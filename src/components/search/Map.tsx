@@ -92,6 +92,17 @@ const recordProfileInteraction = async (craftsmanId: string, visitorId: string |
   }
 };
 
+// Helper function to get the current user ID
+const getCurrentUserId = async (): Promise<string | undefined> => {
+  try {
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id;
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return undefined;
+  }
+};
+
 export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -325,25 +336,21 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           if (!button) return;
 
           if (button.hasAttribute('data-craftsman-id')) {
-            // Record profile view interaction
-            const userId = (async () => {
-              const { data } = await supabase.auth.getUser();
-              return data.user?.id;
+            // Handle profile view - using an immediately-invoked async function to correctly handle the Promise
+            (async () => {
+              const userId = await getCurrentUserId();
+              recordProfileInteraction(craftsman.id, userId, 'profile_view');
+              onCraftsmanClick(craftsman);
             })();
-            
-            recordProfileInteraction(craftsman.id, userId, 'profile_view');
-            onCraftsmanClick(craftsman);
           } else if (button.hasAttribute('data-phone')) {
             const phone = button.getAttribute('data-phone');
             if (phone) {
-              // Record phone click interaction
-              const userId = (async () => {
-                const { data } = await supabase.auth.getUser();
-                return data.user?.id;
+              // Handle phone click - using an immediately-invoked async function to correctly handle the Promise
+              (async () => {
+                const userId = await getCurrentUserId();
+                recordProfileInteraction(craftsman.id, userId, 'phone_click');
+                window.location.href = `tel:${phone}`;
               })();
-              
-              recordProfileInteraction(craftsman.id, userId, 'phone_click');
-              window.location.href = `tel:${phone}`;
             }
           }
         };
@@ -366,8 +373,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
         // Add marker click handler to record interaction
         el.addEventListener('click', async () => {
-          const { data } = await supabase.auth.getUser();
-          const userId = data.user?.id;
+          const userId = await getCurrentUserId();
           recordProfileInteraction(craftsman.id, userId, 'map_click');
         });
 
