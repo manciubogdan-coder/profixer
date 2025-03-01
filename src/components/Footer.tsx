@@ -67,6 +67,8 @@ export const Footer = () => {
                     src="/lovable-uploads/fe8d1cfc-5531-441a-888e-cf9babdd7069.png" 
                     alt="ANPC - Soluționarea Alternativă a Litigiilor" 
                     className="h-16 object-contain"
+                    width="120"
+                    height="64"
                   />
                 </a>
                 <a 
@@ -79,6 +81,8 @@ export const Footer = () => {
                     src="/lovable-uploads/8fe99ebc-6d24-4c85-b4fb-c876baacad95.png" 
                     alt="Soluționarea Online a Litigiilor" 
                     className="h-16 object-contain"
+                    width="120"
+                    height="64"
                   />
                 </a>
               </div>
