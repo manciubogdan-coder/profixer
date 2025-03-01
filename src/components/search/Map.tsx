@@ -39,67 +39,60 @@ interface MapProps {
   onCraftsmanClick: (craftsman: Craftsman) => void;
 }
 
+// Funcția pentru obținerea iconului meșterului în funcție de meserie
 const getCraftsmanIcon = (tradeName: string | null) => {
-  switch (tradeName?.toLowerCase()) {
-    case "tâmplar":
-      return Hammer;
-    case "instalator":
-      return Wrench;
-    case "zugrav":
-      return Paintbrush;
-    case "electrician":
-      return Plug;
-    case "arhitect":
-      return Ruler;
-    case "lăcătuș":
-      return Lock;
-    case "constructor":
-      return Construction;
-    case "dulgher":
-      return Home;
-    case "climatizare":
-      return Wind;
-    case "zidar":
-      return Blocks;
-    case "hidroizolator":
-      return Warehouse;
-    case "peisagist":
-      return Shovel;
-    case "amenajări interioare":
-      return Home;
-    case "amenajări exterioare":
-      return Truck;
-    case "electricitate":
-      return Lightbulb;
-    case "frizerie":
-      return Scissors;
-    default:
-      return HardHat;
+  if (!tradeName) return HardHat;
+  
+  const lowercaseTrade = tradeName.toLowerCase();
+  
+  if (lowercaseTrade.includes("tâmplar")) return Hammer;
+  if (lowercaseTrade.includes("instalator")) return Wrench;
+  if (lowercaseTrade.includes("zugrav")) return Paintbrush;
+  if (lowercaseTrade.includes("electrician")) return Plug;
+  if (lowercaseTrade.includes("arhitect")) return Ruler;
+  if (lowercaseTrade.includes("lăcătuș")) return Lock;
+  if (lowercaseTrade.includes("constructor")) return Construction;
+  if (lowercaseTrade.includes("dulgher")) return Home;
+  if (lowercaseTrade.includes("climatizare")) return Wind;
+  if (lowercaseTrade.includes("zidar")) return Blocks;
+  if (lowercaseTrade.includes("hidroizolator")) return Warehouse;
+  if (lowercaseTrade.includes("peisagist")) return Shovel;
+  if (lowercaseTrade.includes("amenajări interioare")) return Home;
+  if (lowercaseTrade.includes("amenajări exterioare")) return Truck;
+  if (lowercaseTrade.includes("electricitate")) return Lightbulb;
+  if (lowercaseTrade.includes("frizerie")) return Scissors;
+  
+  // Default icon
+  return HardHat;
+};
+
+// Funcție pentru a obține ID-ul utilizatorului curent
+const getCurrentUserId = async () => {
+  try {
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id;
+  } catch (error) {
+    console.error('Eroare la obținerea utilizatorului curent:', error);
+    return undefined;
   }
 };
 
-// Helper function to record profile interaction
+// Funcție pentru înregistrarea interacțiunilor cu profilul
 const recordProfileInteraction = async (craftsmanId: string, visitorId: string | undefined, interactionType: string) => {
+  if (!visitorId) {
+    console.log("Nu se poate înregistra interacțiunea deoarece ID-ul vizitatorului lipsește");
+    return;
+  }
+  
   try {
     await supabase.from('profile_interactions').insert({
       craftsman_id: craftsmanId,
       visitor_id: visitorId,
       interaction_type: interactionType
     });
-    console.log(`Recorded ${interactionType} for craftsman ${craftsmanId}`);
+    console.log(`S-a înregistrat interacțiunea ${interactionType} pentru meșterul ${craftsmanId}`);
   } catch (error) {
-    console.error('Error recording profile interaction:', error);
-  }
-};
-
-// Helper function to get the current user ID
-const getCurrentUserId = async (): Promise<string | undefined> => {
-  try {
-    const { data } = await supabase.auth.getUser();
-    return data.user?.id;
-  } catch (error) {
-    console.error('Error getting current user:', error);
-    return undefined;
+    console.error('Eroare la înregistrarea interacțiunii cu profilul:', error);
   }
 };
 
@@ -112,9 +105,9 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
   // Debug craftsmen data
   useEffect(() => {
-    console.log("Craftsmen data received in Map component:", craftsmen.length);
+    console.log("Date despre meșteri primite în componenta Map:", craftsmen.length);
     craftsmen.forEach((c, idx) => {
-      console.log(`[${idx}] Craftsman: ${c.id}, ${c.first_name} ${c.last_name}, lat: ${c.latitude}, lng: ${c.longitude}, role: ${c.role}`);
+      console.log(`[${idx}] Meșter: ${c.id}, ${c.first_name} ${c.last_name}, lat: ${c.latitude}, lng: ${c.longitude}, meserie: ${c.trade?.name}, rol: ${c.role}`);
     });
   }, [craftsmen]);
 
@@ -123,7 +116,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     if (!mapContainer.current || mapInitializedRef.current) return;
 
     try {
-      console.log("Initializing map...");
+      console.log("Inițializare hartă...");
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
       // Default center for Romania
@@ -141,25 +134,25 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
       
       map.current.on('load', () => {
-        console.log("Map loaded successfully");
+        console.log("Harta s-a încărcat cu succes");
         // Check if map was initialized with the correct center
         if (map.current) {
           const center = map.current.getCenter();
-          console.log("Map center:", center.lng, center.lat);
+          console.log("Centrul hărții:", center.lng, center.lat);
         }
       });
       
       mapInitializedRef.current = true;
-      console.log("Map initialized successfully");
+      console.log("Harta a fost inițializată cu succes");
     } catch (error) {
-      console.error("Error initializing map:", error);
+      console.error("Eroare la inițializarea hărții:", error);
       setMapError("Eroare la inițializarea hărții. Reîncărcați pagina.");
       toast.error("Eroare la inițializarea hărții. Reîncărcați pagina.");
     }
 
     return () => {
       if (map.current) {
-        console.log("Removing map instance");
+        console.log("Se elimină instanța hărții");
         map.current.remove();
         map.current = null;
         mapInitializedRef.current = false;
@@ -172,7 +165,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     if (!map.current || !userLocation || !mapInitializedRef.current) return;
 
     try {
-      console.log("Updating user location on map:", userLocation.lat, userLocation.lng);
+      console.log("Actualizare locație utilizator pe hartă:", userLocation.lat, userLocation.lng);
       
       // Remove existing user marker
       const existingUserMarker = document.querySelector('.user-marker-container');
@@ -209,35 +202,24 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         });
       }
       
-      console.log("User location marker added/updated");
+      console.log("Marker-ul locației utilizatorului a fost adăugat/actualizat");
     } catch (error) {
-      console.error("Error adding user location marker:", error);
+      console.error("Eroare la adăugarea marker-ului pentru locația utilizatorului:", error);
     }
   }, [userLocation]);
 
   // Update craftsmen markers - this is the critical function for showing craftsmen on the map
   useEffect(() => {
     if (!map.current || !mapInitializedRef.current) {
-      console.log("Map not initialized, cannot add craftsmen markers");
+      console.log("Harta nu este inițializată, nu se pot adăuga markerii meșterilor");
       return;
     }
 
-    console.log("Updating craftsmen markers, total craftsmen:", craftsmen.length);
+    console.log("Actualizare markeri meșteri, total meșteri:", craftsmen.length);
     
     // Clear existing markers
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
-
-    // Debug each craftsman's coordinates
-    craftsmen.forEach((c, index) => {
-      console.log(`Craftsman ${index} - ${c.first_name} ${c.last_name}:`, 
-        c.id, 
-        "lat:", c.latitude, 
-        "lng:", c.longitude, 
-        "type:", typeof c.latitude, typeof c.longitude,
-        "trade:", c.trade?.name,
-        "role:", c.role);
-    });
 
     // Get craftsmen with valid coordinates
     const craftsmenWithCoordinates = craftsmen.filter(c => 
@@ -249,10 +231,10 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       c.longitude >= -180 && c.longitude <= 180
     );
     
-    console.log(`Craftsmen with valid coordinates after filtering: ${craftsmenWithCoordinates.length} out of ${craftsmen.length}`);
+    console.log(`Meșteri cu coordonate valide după filtrare: ${craftsmenWithCoordinates.length} din ${craftsmen.length}`);
     
     if (craftsmenWithCoordinates.length === 0) {
-      console.warn("No craftsmen have valid coordinates to display on the map");
+      console.warn("Nu există meșteri cu coordonate valide pentru a fi afișați pe hartă");
       
       // If user location is available, center the map there
       if (userLocation && map.current) {
@@ -273,12 +255,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         if (!craftsman.latitude || !craftsman.longitude || 
             typeof craftsman.latitude !== 'number' || 
             typeof craftsman.longitude !== 'number') {
-          console.warn(`Skipping craftsman ${craftsman.id} due to invalid coordinates:`, 
+          console.warn(`Se omite meșterul ${craftsman.id} din cauza coordonatelor invalide:`, 
             craftsman.latitude, craftsman.longitude);
           return;
         }
         
-        console.log(`Adding marker for ${craftsman.first_name} ${craftsman.last_name} at [${craftsman.longitude}, ${craftsman.latitude}]`);
+        console.log(`Se adaugă marker pentru ${craftsman.first_name} ${craftsman.last_name} la [${craftsman.longitude}, ${craftsman.latitude}], meserie: ${craftsman.trade?.name}`);
         
         // Create marker element
         const el = document.createElement("div");
@@ -296,6 +278,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         el.style.boxShadow = "0 0 0 2px rgba(147, 51, 234, 0.5)";
         el.dataset.craftsman = craftsman.id;
 
+        // Get the appropriate icon based on trade
         const IconComponent = getCraftsmanIcon(craftsman.trade?.name || null);
         
         const iconHtml = renderToString(
@@ -341,27 +324,25 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         `;
 
         // Add click handlers for popup buttons
-        const handlePopupClick = (e: Event) => {
+        const handlePopupClick = async (e: Event) => {
           const target = e.target as HTMLElement;
           const button = target.closest('button');
           if (!button) return;
 
+          const userId = await getCurrentUserId();
+
           if (button.hasAttribute('data-craftsman-id')) {
-            // Handle profile view - using an immediately-invoked async function for async/await
-            (async () => {
-              const userId = await getCurrentUserId();
-              recordProfileInteraction(craftsman.id, userId, 'profile_view');
-              onCraftsmanClick(craftsman);
-            })();
+            if (userId) {
+              await recordProfileInteraction(craftsman.id, userId, 'profile_view');
+            }
+            onCraftsmanClick(craftsman);
           } else if (button.hasAttribute('data-phone')) {
             const phone = button.getAttribute('data-phone');
             if (phone) {
-              // Handle phone click - using an immediately-invoked async function for async/await
-              (async () => {
-                const userId = await getCurrentUserId();
-                recordProfileInteraction(craftsman.id, userId, 'phone_click');
-                window.location.href = `tel:${phone}`;
-              })();
+              if (userId) {
+                await recordProfileInteraction(craftsman.id, userId, 'phone_click');
+              }
+              window.location.href = `tel:${phone}`;
             }
           }
         };
@@ -383,12 +364,11 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           .addTo(map.current!);
 
         // Add marker click handler to record interaction
-        el.addEventListener('click', () => {
-          // Using IIFE (Immediately Invoked Function Expression) to handle the async function
-          (async () => {
-            const userId = await getCurrentUserId();
-            recordProfileInteraction(craftsman.id, userId, 'map_click');
-          })();
+        el.addEventListener('click', async () => {
+          const userId = await getCurrentUserId();
+          if (userId) {
+            await recordProfileInteraction(craftsman.id, userId, 'map_click');
+          }
         });
 
         // Save marker reference
@@ -397,13 +377,13 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         // Extend map bounds to include this marker
         bounds.extend([craftsman.longitude, craftsman.latitude]);
         
-        console.log(`Added marker for craftsman ${craftsman.id}`);
+        console.log(`S-a adăugat marker pentru meșterul ${craftsman.id}`);
       } catch (error) {
-        console.error(`Error adding marker for craftsman ${craftsman.id}:`, error);
+        console.error(`Eroare la adăugarea marker-ului pentru meșterul ${craftsman.id}:`, error);
       }
     });
 
-    console.log(`Total markers added to map: ${markersRef.current.length}`);
+    console.log(`Total markeri adăugați pe hartă: ${markersRef.current.length}`);
     
     // Fit map to bounds if we have markers
     if (!bounds.isEmpty() && map.current) {
@@ -418,9 +398,9 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         maxZoom: 15
       });
       
-      console.log("Map view adjusted to fit all markers");
+      console.log("Vizualizarea hărții a fost ajustată pentru a încadra toți markerii");
     } else {
-      console.warn("No bounds to fit - either no markers or bounds calculation failed");
+      console.warn("Nu există limite pentru a încadra - fie nu există markeri, fie calculul limitelor a eșuat");
       
       // If we have user location but no craftsmen markers, center on user
       if (userLocation && map.current) {

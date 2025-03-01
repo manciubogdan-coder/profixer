@@ -49,17 +49,17 @@ const Search = () => {
     const getUserLocation = () => {
       // Attempt to get user location
       if (navigator.geolocation) {
-        console.log("Requesting user location...");
+        console.log("Solicitare locație utilizator...");
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            console.log("User location obtained successfully:", position.coords.latitude, position.coords.longitude);
+            console.log("Locația utilizatorului obținută cu succes:", position.coords.latitude, position.coords.longitude);
             setUserLocation({
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             });
           },
           (error) => {
-            console.error("Error getting location:", error);
+            console.error("Eroare la obținerea locației:", error);
             toast.error("Nu am putut obține locația ta. Te rugăm să activezi serviciile de localizare.");
             
             // Set default location for Romania if geolocation fails
@@ -75,7 +75,7 @@ const Search = () => {
           }
         );
       } else {
-        console.log("Geolocation not supported, using default Romania location");
+        console.log("Geolocația nu este suportată, se folosește locația implicită pentru România");
         // Fallback for browsers without geolocation
         setUserLocation({
           lat: 45.9443, // Default latitude for Romania
@@ -97,7 +97,7 @@ const Search = () => {
   const { data: craftsmen = [], isLoading } = useQuery({
     queryKey: ["craftsmen", searchTerm, selectedType, maxDistance, minRating, userLocation],
     queryFn: async () => {
-      console.log("Fetching craftsmen with params:", {
+      console.log("Se preiau meșterii cu parametrii:", {
         searchTerm,
         selectedType,
         maxDistance,
@@ -131,19 +131,12 @@ const Search = () => {
       const { data: craftsmenData, error } = await query;
 
       if (error) {
-        console.error("Error fetching craftsmen:", error);
+        console.error("Eroare la preluarea meșterilor:", error);
         throw error;
       }
 
-      console.log("Fetched craftsmen data:", craftsmenData?.length || 0);
+      console.log("Date despre meșteri obținute:", craftsmenData?.length || 0);
       
-      // Log sample data for debugging
-      if (craftsmenData && craftsmenData.length > 0) {
-        console.log("First craftsman sample:", craftsmenData[0]);
-      } else {
-        console.log("No craftsmen data returned from the query");
-      }
-
       // Process craftsmen data
       const processedCraftsmen = craftsmenData.map((craftsman): Craftsman => {
         // Calculate average rating
@@ -170,21 +163,21 @@ const Search = () => {
             if (isNaN(lat) || isNaN(lng) || 
                 lat < -90 || lat > 90 || 
                 lng < -180 || lng > 180) {
-              console.warn(`Invalid coordinates for craftsman ${craftsman.id}: lat=${lat}, lng=${lng}`);
+              console.warn(`Coordonate invalide pentru meșterul ${craftsman.id}: lat=${lat}, lng=${lng}`);
               lat = null;
               lng = null;
             }
           } else {
-            console.warn(`Missing coordinates for craftsman ${craftsman.id}`);
+            console.warn(`Coordonate lipsă pentru meșterul ${craftsman.id}`);
           }
         } catch (e) {
-          console.error(`Error parsing coordinates for craftsman ${craftsman.id}:`, e);
+          console.error(`Eroare la parsarea coordonatelor pentru meșterul ${craftsman.id}:`, e);
           lat = null;
           lng = null;
         }
 
-        // IMPORTANT: Force all craftsmen to be visible regardless of subscription status
-        // This ensures all professionals appear on the map
+        // IMPORTANT: Forțăm toți meșterii să fie vizibili indiferent de statutul abonamentului
+        // Acest lucru asigură că toți profesioniștii apar pe hartă
         const isActive = true;
 
         // Build processed craftsman object
@@ -197,15 +190,6 @@ const Search = () => {
             is_subscription_active: isActive
           }
         };
-      });
-
-      // Debug log craftsmen coordinates
-      processedCraftsmen.forEach((c, idx) => {
-        console.log(`[${idx}] Craftsman ${c.id} (${c.first_name} ${c.last_name}):`, 
-          "lat:", c.latitude, 
-          "lng:", c.longitude, 
-          "rating:", c.average_rating,
-          "trade:", c.trade?.name);
       });
 
       // Add current user if they are a professional but not in the results
@@ -221,7 +205,7 @@ const Search = () => {
             const isAlreadyIncluded = processedCraftsmen.some(c => c.id === user.id);
             
             if (!isAlreadyIncluded) {
-              console.log("Adding current user (who is a professional) to the craftsmen list:", currentUserProfile);
+              console.log("Se adaugă utilizatorul curent (care este profesionist) la lista de meșteri:", currentUserProfile);
               
               // Process coordinates for current user
               let userLat = null;
@@ -238,7 +222,7 @@ const Search = () => {
                     : Number(currentUserProfile.longitude);
                 }
               } catch (e) {
-                console.error("Error parsing coordinates for current user:", e);
+                console.error("Eroare la parsarea coordonatelor pentru utilizatorul curent:", e);
               }
               
               const currentUserAsCraftsman: Craftsman = {
@@ -256,7 +240,7 @@ const Search = () => {
           }
         }
       } catch (error) {
-        console.error("Error checking current user profile:", error);
+        console.error("Eroare la verificarea profilului utilizatorului curent:", error);
       }
 
       // Filter craftsmen with coordinates
@@ -265,7 +249,7 @@ const Search = () => {
         typeof c.latitude === 'number' && typeof c.longitude === 'number' &&
         !isNaN(c.latitude) && !isNaN(c.longitude));
         
-      console.log(`Craftsmen with valid coordinates: ${craftsmenWithCoordinates.length} out of ${processedCraftsmen.length}`);
+      console.log(`Meșteri cu coordonate valide: ${craftsmenWithCoordinates.length} din ${processedCraftsmen.length}`);
       
       // Apply rating filter but not distance filter initially for testing
       const filteredCraftsmen = craftsmenWithCoordinates.filter((craftsman) => {
@@ -291,10 +275,10 @@ const Search = () => {
         return true;
       });
 
-      console.log("Final craftsmen count after filtering:", filteredCraftsmen.length);
+      console.log("Număr final de meșteri după filtrare:", filteredCraftsmen.length);
       
-      // IMPORTANT: Return all craftsmen with coordinates if filtered list is empty
-      // This ensures there's always someone visible on the map for testing
+      // IMPORTANT: Returnează toți meșterii cu coordonate dacă lista filtrată este goală
+      // Acest lucru asigură că există întotdeauna cineva vizibil pe hartă pentru testare
       return filteredCraftsmen.length > 0 ? filteredCraftsmen : craftsmenWithCoordinates;
     },
     enabled: !!user,
@@ -314,7 +298,7 @@ const Search = () => {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     
-    console.log(`Distance from user to craftsman: ${distance.toFixed(2)}km`);
+    console.log(`Distanța de la utilizator la meșter: ${distance.toFixed(2)}km`);
     return distance;
   }, []);
 
