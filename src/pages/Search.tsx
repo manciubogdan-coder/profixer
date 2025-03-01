@@ -144,33 +144,6 @@ const Search = () => {
         userLocation
       });
       
-      // Debug: Check for the specific craftsman first
-      try {
-        const { data: targetCraftsman, error: targetError } = await supabase
-          .from("user_profiles_with_email")  // Use user_profiles_with_email instead to get email
-          .select(`
-            *,
-            trade:craftsman_type(name)
-          `)
-          .eq("role", "professional")
-          .eq("email", "manciubogdan999@gmail.com")
-          .maybeSingle();
-          
-        if (targetCraftsman) {
-          console.log("Am găsit meșterul căutat:", targetCraftsman);
-          console.log("Coordonatele meșterului:", {
-            latitude: targetCraftsman.latitude,
-            longitude: targetCraftsman.longitude
-          });
-        } else if (targetError) {
-          console.error("Eroare la căutarea meșterului specific:", targetError);
-        } else {
-          console.log("Meșterul căutat nu a fost găsit");
-        }
-      } catch (error) {
-        console.error("Eroare la căutarea meșterului specific:", error);
-      }
-      
       let query = supabase
         .from("user_profiles_with_email") // Use user_profiles_with_email view to get emails
         .select(`
@@ -201,7 +174,6 @@ const Search = () => {
       }
 
       console.log("Date despre meșteri obținute:", craftsmenData?.length || 0);
-      console.log("Meșteri brut:", craftsmenData);
       
       // Process craftsmen data
       const processedCraftsmen = craftsmenData.map((craftsman): Craftsman => {
@@ -211,7 +183,7 @@ const Search = () => {
           ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
           : 0;
 
-        // Parse latitude and longitude to ensure they're valid numbers
+        // Ensure latitude and longitude are numbers and valid
         let lat = null;
         let lng = null;
         
@@ -252,58 +224,7 @@ const Search = () => {
         };
       });
 
-      // Add current user if they are a professional but not in the results
-      try {
-        if (user) {
-          const { data: currentUserProfile } = await supabase
-            .from('user_profiles_with_email') // Use user_profiles_with_email view to get emails
-            .select('*, trade:craftsman_type(name)')
-            .eq('id', user.id)
-            .single();
-          
-          if (currentUserProfile && currentUserProfile.role === 'professional') {
-            const isAlreadyIncluded = processedCraftsmen.some(c => c.id === user.id);
-            
-            if (!isAlreadyIncluded) {
-              console.log("Se adaugă utilizatorul curent (care este profesionist) la lista de meșteri:", currentUserProfile);
-              
-              // Process coordinates for current user
-              let userLat = null;
-              let userLng = null;
-              
-              try {
-                if (currentUserProfile.latitude !== null && currentUserProfile.longitude !== null) {
-                  userLat = typeof currentUserProfile.latitude === 'string' 
-                    ? parseFloat(currentUserProfile.latitude) 
-                    : Number(currentUserProfile.latitude);
-                  
-                  userLng = typeof currentUserProfile.longitude === 'string' 
-                    ? parseFloat(currentUserProfile.longitude) 
-                    : Number(currentUserProfile.longitude);
-                }
-              } catch (e) {
-                console.error("Eroare la parsarea coordonatelor pentru utilizatorul curent:", e);
-              }
-              
-              const currentUserAsCraftsman: Craftsman = {
-                ...currentUserProfile,
-                average_rating: 0,
-                latitude: userLat,
-                longitude: userLng,
-                email: currentUserProfile.email // Include email for the current user
-              };
-              
-              processedCraftsmen.push(currentUserAsCraftsman);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Eroare la verificarea profilului utilizatorului curent:", error);
-      }
-
-      console.log("Număr total de meșteri procesați:", processedCraftsmen.length);
-      
-      // Filter craftsmen with coordinates
+      // Filter craftsmen with coordinates for debugging
       const craftsmenWithCoordinates = processedCraftsmen.filter(c => 
         c.latitude !== null && c.longitude !== null && 
         typeof c.latitude === 'number' && typeof c.longitude === 'number' &&
@@ -311,16 +232,12 @@ const Search = () => {
         
       console.log(`Meșteri cu coordonate valide: ${craftsmenWithCoordinates.length} din ${processedCraftsmen.length}`);
       
-      // Log craftsmen without valid coordinates for debugging
-      processedCraftsmen.forEach(c => {
-        if (!c.latitude || !c.longitude || 
-            typeof c.latitude !== 'number' || typeof c.longitude !== 'number' ||
-            isNaN(c.latitude) || isNaN(c.longitude)) {
-          console.warn(`Meșter fără coordonate valide: ${c.id} (${c.email || 'email necunoscut'}) - ${c.first_name} ${c.last_name}`);
-        }
+      // List all craftsmen with their coordinates for debugging
+      processedCraftsmen.forEach((c, i) => {
+        console.log(`Meșter #${i+1}: ${c.first_name} ${c.last_name} (ID: ${c.id}), Lat: ${c.latitude}, Lng: ${c.longitude}, Email: ${c.email || 'N/A'}`);
       });
       
-      // Apply rating filter but not distance filter initially for testing
+      // Apply filters for search results
       const filteredCraftsmen = processedCraftsmen.filter((craftsman) => {
         // Apply rating filter
         if ((craftsman.average_rating || 0) < minRating) {
@@ -345,14 +262,12 @@ const Search = () => {
       });
 
       console.log("Număr final de meșteri după filtrare:", filteredCraftsmen.length);
-      console.log("Meșteri filtrați:", filteredCraftsmen);
       
-      // Return all craftsmen with coordinates if filtered list is empty
-      return filteredCraftsmen.length > 0 ? filteredCraftsmen : processedCraftsmen;
+      // Return all craftsmen, not just filtered ones to ensure map shows everyone
+      return processedCraftsmen;
     },
     enabled: !!user,
-    // Refresh every 10 seconds to catch new craftsmen or location updates
-    refetchInterval: 10000,
+    refetchInterval: 10000, // Refresh every 10 seconds
   });
 
   // Calculate distance between two coordinates using Haversine formula
@@ -392,6 +307,40 @@ const Search = () => {
     !isNaN(c.latitude) && !isNaN(c.longitude)
   ).length;
   
+  // Filter craftsmen based on active filters for sidebar
+  const filteredCraftsmen = craftsmen.filter((craftsman) => {
+    // Apply rating filter
+    if ((craftsman.average_rating || 0) < minRating) {
+      return false;
+    }
+
+    // Apply search term filter
+    if (searchTerm && !`${craftsman.first_name} ${craftsman.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false;
+    }
+
+    // Apply type filter
+    if (selectedType && craftsman.craftsman_type !== selectedType) {
+      return false;
+    }
+
+    // Apply distance filter only if user location is available
+    if (userLocation && craftsman.latitude !== null && craftsman.longitude !== null) {
+      const distance = calculateDistance(
+        userLocation.lat,
+        userLocation.lng,
+        craftsman.latitude,
+        craftsman.longitude
+      );
+      
+      if (distance > maxDistance) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+  
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -424,7 +373,7 @@ const Search = () => {
             setSearchTerm={setSearchTerm}
             selectedType={selectedType}
             setSelectedType={setSelectedType}
-            craftsmen={craftsmen}
+            craftsmen={filteredCraftsmen}
             isLoading={isLoading}
             maxDistance={maxDistance}
             setMaxDistance={setMaxDistance}

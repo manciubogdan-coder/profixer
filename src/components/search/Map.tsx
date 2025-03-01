@@ -101,7 +101,11 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
   useEffect(() => {
     console.log("Date despre meșteri primite în componenta Map:", craftsmen.length);
     craftsmen.forEach((c, idx) => {
-      console.log(`[${idx}] Meșter: ${c.id}, ${c.first_name} ${c.last_name}, lat: ${c.latitude}, lng: ${c.longitude}, meserie: ${c.trade?.name}, rol: ${c.role}, email: ${c.email || 'N/A'}`);
+      if (c.latitude !== null && c.longitude !== null) {
+        console.log(`[${idx}] Meșter valid pentru afișare: ${c.id}, ${c.first_name} ${c.last_name}, lat: ${c.latitude}, lng: ${c.longitude}, meserie: ${c.trade?.name}`);
+      } else {
+        console.log(`[${idx}] Meșter fără coordonate: ${c.id}, ${c.first_name} ${c.last_name}`);
+      }
     });
   }, [craftsmen]);
 
@@ -180,14 +184,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         .setLngLat([userLocation.lng, userLocation.lat])
         .addTo(map.current);
       
-      if (markersRef.current.length === 0) {
-        map.current.flyTo({
-          center: [userLocation.lng, userLocation.lat],
-          zoom: 8,
-          essential: true
-        });
-      }
-      
       console.log("Marker-ul locației utilizatorului a fost adăugat/actualizat");
     } catch (error) {
       console.error("Eroare la adăugarea marker-ului pentru locația utilizatorului:", error);
@@ -202,9 +198,11 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
     console.log("Actualizare markeri meșteri, total meșteri:", craftsmen.length);
     
+    // Remove existing markers
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
+    // Filter craftsmen to only include those with valid coordinates
     const craftsmenWithCoordinates = craftsmen.filter(c => 
       c.latitude !== null && c.latitude !== undefined && 
       c.longitude !== null && c.longitude !== undefined &&
@@ -235,12 +233,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         if (!craftsman.latitude || !craftsman.longitude || 
             typeof craftsman.latitude !== 'number' || 
             typeof craftsman.longitude !== 'number') {
-          console.warn(`Se omite meșterul ${craftsman.id} (${craftsman.email || 'email necunoscut'}) din cauza coordonatelor invalide:`, 
+          console.warn(`Se omite meșterul ${craftsman.id} din cauza coordonatelor invalide:`, 
             craftsman.latitude, craftsman.longitude);
           return;
         }
         
-        console.log(`Se adaugă marker pentru ${craftsman.first_name} ${craftsman.last_name} (${craftsman.email || 'email necunoscut'}) la [${craftsman.longitude}, ${craftsman.latitude}], meserie: ${craftsman.trade?.name}`);
+        console.log(`Se adaugă marker pentru ${craftsman.first_name} ${craftsman.last_name} la [${craftsman.longitude}, ${craftsman.latitude}], meserie: ${craftsman.trade?.name}`);
         
         const el = document.createElement("div");
         el.className = "craftsman-marker";
@@ -256,16 +254,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         el.style.border = "2px solid white";
         el.style.boxShadow = "0 0 0 2px rgba(147, 51, 234, 0.5)";
         el.dataset.craftsman = craftsman.id;
-
-        // Special highlighting for the target craftsman (if email property exists)
-        const targetEmail = "manciubogdan999@gmail.com";
-        if (craftsman.email && craftsman.email === targetEmail) {
-          el.style.backgroundColor = "#EF4444";
-          el.style.boxShadow = "0 0 0 4px rgba(239, 68, 68, 0.5)";
-          el.style.width = "40px";
-          el.style.height = "40px";
-          console.log("IMPORTANT: Am adăugat marker special pentru meșterul căutat manciubogdan999@gmail.com");
-        }
 
         const IconComponent = getCraftsmanIcon(craftsman.trade?.name || null);
         
@@ -290,8 +278,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
               <h3 class="text-lg font-semibold text-foreground">${craftsman.first_name} ${craftsman.last_name}</h3>
               <p class="text-sm text-muted-foreground">${craftsman.trade?.name || "Meserie nesetată"}</p>
               <p class="text-sm text-muted-foreground">${craftsman.city}, ${craftsman.county}</p>
-              ${craftsman.email && craftsman.email === "manciubogdan999@gmail.com" ? 
-                `<p class="text-sm font-bold text-red-500">Email: ${craftsman.email}</p>` : ''}
             </div>
             <div class="flex items-center gap-1">
               <span class="flex items-center">
@@ -348,11 +334,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           .setLngLat([craftsman.longitude, craftsman.latitude])
           .setPopup(popup)
           .addTo(map.current!);
-
-        // Auto-open popup for target craftsman
-        if (craftsman.email && craftsman.email === "manciubogdan999@gmail.com") {
-          marker.togglePopup();
-        }
 
         el.addEventListener('click', async () => {
           const userId = await getCurrentUserId();
