@@ -22,13 +22,26 @@ const Index = () => {
   const [showInstructions, setShowInstructions] = useState(false);
 
   const handleDownloadAndroid = () => {
-    // Create an anchor element and trigger download
+    // Setăm calea directă către APK și forțăm descărcarea
+    const apkUrl = '/profixer.apk';
+    
+    // Creăm un element 'a' cu atributul download
     const link = document.createElement('a');
-    link.href = '/profixer.apk';
-    link.download = 'profixer.apk'; 
+    link.href = apkUrl;
+    link.setAttribute('download', 'profixer.apk');
+    link.setAttribute('type', 'application/vnd.android.package-archive');
+    
+    // Ascundem link-ul și îl adăugăm în DOM
+    link.style.display = 'none';
     document.body.appendChild(link);
+    
+    // Simulăm click și apoi ștergem elementul
     link.click();
-    document.body.removeChild(link);
+    
+    // Curățăm după descărcare
+    setTimeout(() => {
+      document.body.removeChild(link);
+    }, 100);
   };
 
   return (
