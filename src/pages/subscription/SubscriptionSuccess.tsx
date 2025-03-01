@@ -18,14 +18,66 @@ const SubscriptionSuccess = () => {
   const plan = searchParams.get('plan') as SubscriptionPlan;
 
   useEffect(() => {
-    const verifyPayment = async () => {
-      if (!paymentId) {
-        toast.error('Nu s-a putut verifica plata: ID de plată lipsă');
-        setTimeout(() => navigate('/subscription/activate'), 3000);
-        return;
-      }
-
+    const handleSubscriptionSuccess = async () => {
       try {
+        // Check if this is an auto-activated subscription
+        if (paymentId === 'auto_activated') {
+          console.log('Auto-activated subscription detected');
+          
+          // Get current user
+          const { data: session } = await supabase.auth.getSession();
+          const userId = session.session?.user.id;
+          
+          if (!userId) {
+            throw new Error('Nu ești autentificat');
+          }
+          
+          // Double-check that subscription was activated properly
+          const { data: subscriptionStatus, error: statusError } = await supabase
+            .from('craftsman_subscription_status_latest')
+            .select('*')
+            .eq('craftsman_id', userId)
+            .maybeSingle();
+          
+          if (statusError) {
+            throw new Error('Nu s-a putut verifica statusul abonamentului');
+          }
+          
+          if (!subscriptionStatus?.is_subscription_active) {
+            console.log('Subscription not active, retrying activation');
+            
+            // If not active, try activating again
+            const targetEndDate = new Date('2025-07-01T23:59:59');
+            const { error: updateError } = await supabase
+              .rpc('update_craftsman_subscription_status', {
+                p_craftsman_id: userId,
+                p_is_active: true,
+                p_end_date: targetEndDate.toISOString()
+              });
+            
+            if (updateError) {
+              throw new Error('Nu s-a putut activa abonamentul');
+            }
+          }
+          
+          setIsLoading(false);
+          toast.success('Abonamentul a fost activat cu succes!');
+          
+          // Redirect to profile after 3 seconds
+          setTimeout(() => {
+            navigate('/profile/me');
+          }, 3000);
+          
+          return;
+        }
+        
+        // Handle normal payment verification (leaving original code for fallback)
+        if (!paymentId) {
+          toast.error('Nu s-a putut verifica plata: ID de plată lipsă');
+          setTimeout(() => navigate('/subscription/activate'), 3000);
+          return;
+        }
+
         console.log(`Verifying payment ${paymentId} for plan ${plan}`);
         
         // Verificăm starea plății
@@ -56,8 +108,7 @@ const SubscriptionSuccess = () => {
 
         // Creăm date pentru abonament
         const startDate = new Date();
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 30); // Adăugăm 30 de zile pentru abonament lunar
+        const endDate = new Date('2025-07-01T23:59:59');
 
         // Verificăm abonamentul existent
         const { data: existingSub, error: existingSubError } = await supabase
@@ -129,8 +180,8 @@ const SubscriptionSuccess = () => {
         }, 3000);
 
       } catch (error) {
-        console.error('Error during payment verification:', error);
-        toast.error(error.message || 'A apărut o eroare la verificarea plății');
+        console.error('Error during subscription verification:', error);
+        toast.error(error.message || 'A apărut o eroare la verificarea abonamentului');
         setIsLoading(false);
         
         // Redirecționăm către pagina de activare în caz de eroare
@@ -140,7 +191,7 @@ const SubscriptionSuccess = () => {
       }
     };
 
-    verifyPayment();
+    handleSubscriptionSuccess();
   }, [paymentId, plan, navigate]);
 
   return (
@@ -151,17 +202,17 @@ const SubscriptionSuccess = () => {
           {isLoading ? (
             <>
               <LoaderCircle className="mx-auto h-12 w-12 animate-spin text-primary" />
-              <h1 className="mt-6 text-2xl font-bold">Procesăm plata ta...</h1>
+              <h1 className="mt-6 text-2xl font-bold">Activăm abonamentul tău...</h1>
               <p className="mt-2 text-muted-foreground">
-                Te rugăm să aștepți câteva momente în timp ce confirmăm plata.
+                Te rugăm să aștepți câteva momente în timp ce confirmăm abonamentul.
               </p>
             </>
           ) : (
             <>
               <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-              <h1 className="mt-6 text-2xl font-bold">Plata a fost confirmată!</h1>
+              <h1 className="mt-6 text-2xl font-bold">Abonament activat!</h1>
               <p className="mt-2 text-muted-foreground">
-                Mulțumim pentru abonare! Abonamentul tău a fost activat cu succes.
+                Abonamentul tău a fost activat cu succes și este valabil până la 1 iulie 2025.
               </p>
               <p className="mt-6 text-sm text-muted-foreground">
                 Vei fi redirecționat automat către profilul tău în câteva secunde...

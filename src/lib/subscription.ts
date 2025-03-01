@@ -16,27 +16,28 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
       throw new Error('Nu ești autentificat');
     }
 
-    console.log('Creating payment link for user:', user.id);
+    console.log('Auto-activating subscription for user:', user.id);
     
-    const response = await supabase.functions.invoke('create-payment-intent', {
-      body: {
-        craftsman_id: user.id,
-        plan,
-      }
-    });
+    // Instead of creating a payment intent, we'll directly activate the subscription
+    // until July 1, 2025
+    const targetEndDate = new Date('2025-07-01T23:59:59');
+    
+    const { error } = await supabase
+      .rpc('update_craftsman_subscription_status', {
+        p_craftsman_id: user.id,
+        p_is_active: true,
+        p_end_date: targetEndDate.toISOString()
+      });
 
-    if (response.error) {
-      console.error('Error response:', response.error);
-      if (response.error.message?.includes('Ai deja un abonament activ')) {
-        throw new Error('Ai deja un abonament activ. Nu poți crea un nou abonament până când cel curent nu expiră.');
-      }
-      
-      throw new Error(response.error.message || 'A apărut o eroare la crearea plății');
+    if (error) {
+      console.error('Error activating subscription:', error);
+      throw new Error('A apărut o eroare la activarea abonamentului');
     }
 
-    return response.data.url;
+    // Return success page URL instead of payment URL
+    return window.location.origin + '/subscription/success?payment_id=auto_activated&plan=' + plan;
   } catch (error) {
-    console.error('Error creating payment link:', error);
+    console.error('Error creating subscription:', error);
     throw error;
   }
 }

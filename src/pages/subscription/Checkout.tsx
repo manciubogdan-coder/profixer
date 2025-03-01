@@ -23,28 +23,25 @@ const Checkout = () => {
       return;
     }
 
-    const initializePayment = async () => {
+    const activateSubscription = async () => {
       try {
-        console.log('Creating payment link for plan:', plan);
-        const paymentUrl = await createPaymentIntent(plan);
-        console.log('Payment link created, redirecting to:', paymentUrl);
-        window.location.href = paymentUrl;
+        console.log('Auto-activating subscription for plan:', plan);
+        // This will now directly activate the subscription without payment
+        const redirectUrl = await createPaymentIntent(plan);
+        console.log('Subscription activated, redirecting to:', redirectUrl);
+        window.location.href = redirectUrl;
       } catch (error: any) {
-        console.error('Error creating payment:', error);
+        console.error('Error activating subscription:', error);
         
-        setError(error.message || 'A apărut o eroare la inițializarea plății.');
+        setError(error.message || 'A apărut o eroare la activarea abonamentului.');
         
-        if (error.message.includes('Ai deja un abonament activ')) {
-          toast.error('Nu poți crea un nou abonament deoarece ai deja unul activ.');
-        } else {
-          toast.error(error.message || 'A apărut o eroare la inițializarea plății.');
-        }
+        toast.error(error.message || 'A apărut o eroare la activarea abonamentului.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    initializePayment();
+    activateSubscription();
   }, [plan, navigate]);
 
   const handleRetry = () => {
@@ -64,10 +61,10 @@ const Checkout = () => {
         {isLoading ? (
           <div className="text-center">
             <LoaderCircle className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Se inițializează plata...</h2>
-            <p className="text-muted-foreground">Vă rugăm să așteptați, vă vom redirecționa către pagina de plată.</p>
+            <h2 className="text-2xl font-bold mb-2">Se activează abonamentul...</h2>
+            <p className="text-muted-foreground">Vă rugăm să așteptați, abonamentul va fi activat automat.</p>
             <div className="mt-6 p-4 bg-muted rounded-lg">
-              <p className="font-medium">Suma de plată: {SUBSCRIPTION_PRICES[plan]} RON</p>
+              <p className="font-medium">Valabil până la 1 iulie 2025</p>
             </div>
           </div>
         ) : error ? (

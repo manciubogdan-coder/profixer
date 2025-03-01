@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -185,12 +184,10 @@ export const useSubscriptions = () => {
     }
   };
 
-  // Adăugăm o funcție pentru a obține date istorice în funcție de intervalul de date
   const fetchHistoricalStats = async (startDate?: Date, endDate?: Date): Promise<HistoricalStats[]> => {
     try {
       console.log("Fetching historical data from:", startDate, "to:", endDate);
       
-      // Obținem utilizatorii înregistrați în timp
       const { data: userTimeline, error: userError } = await supabase
         .from('profiles')
         .select('created_at, role')
@@ -198,7 +195,6 @@ export const useSubscriptions = () => {
       
       if (userError) throw userError;
       
-      // Obținem mesajele în timp
       const { data: messageTimeline, error: messageError } = await supabase
         .from('messages')
         .select('created_at')
@@ -206,7 +202,6 @@ export const useSubscriptions = () => {
       
       if (messageError) throw messageError;
       
-      // Obținem lucrările în timp
       const { data: jobTimeline, error: jobError } = await supabase
         .from('job_listings')
         .select('created_at')
@@ -214,16 +209,13 @@ export const useSubscriptions = () => {
       
       if (jobError) throw jobError;
       
-      // Creăm o mapare a lunilor cu date agregate
       const monthlyData = new Map<string, HistoricalStats>();
       
-      // Funcția pentru a grupa pe luni
       const aggregateByMonth = (date: string) => {
         const d = new Date(date);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       };
       
-      // Inițializăm luna de start pentru a avea toate lunile în interval
       let startMonth = startDate ? 
           new Date(startDate.getFullYear(), startDate.getMonth(), 1) : 
           userTimeline.length > 0 ? new Date(userTimeline[0].created_at) : new Date();
@@ -232,7 +224,6 @@ export const useSubscriptions = () => {
           new Date(endDate.getFullYear(), endDate.getMonth(), 1) : 
           new Date();
       
-      // Creăm intrări pentru toate lunile din interval
       while (startMonth <= endMonth) {
         const monthKey = `${startMonth.getFullYear()}-${String(startMonth.getMonth() + 1).padStart(2, '0')}`;
         const monthName = format(startMonth, 'MMM yyyy');
@@ -249,7 +240,6 @@ export const useSubscriptions = () => {
         startMonth.setMonth(startMonth.getMonth() + 1);
       }
       
-      // Agregăm utilizatorii pe luni
       let runningTotalUsers = 0;
       let runningTotalClients = 0;
       let runningTotalCraftsmen = 0;
@@ -265,7 +255,6 @@ export const useSubscriptions = () => {
             runningTotalCraftsmen++;
           }
           
-          // Actualizăm toate lunile de la această dată încolo
           for (const [key, value] of monthlyData.entries()) {
             if (key >= monthKey) {
               monthlyData.set(key, {
@@ -279,7 +268,6 @@ export const useSubscriptions = () => {
         }
       });
       
-      // Agregăm mesajele pe luni
       messageTimeline.forEach(message => {
         const monthKey = aggregateByMonth(message.created_at);
         if (monthlyData.has(monthKey)) {
@@ -291,7 +279,6 @@ export const useSubscriptions = () => {
         }
       });
       
-      // Agregăm lucrările pe luni
       jobTimeline.forEach(job => {
         const monthKey = aggregateByMonth(job.created_at);
         if (monthlyData.has(monthKey)) {
@@ -303,7 +290,6 @@ export const useSubscriptions = () => {
         }
       });
       
-      // Convertim Map în array și sortăm cronologic
       return Array.from(monthlyData.values())
         .sort((a, b) => {
           const dateA = new Date(a.date);
@@ -341,6 +327,61 @@ export const useSubscriptions = () => {
     }
   };
 
+  const activateAllProfessionalSubscriptions = async () => {
+    try {
+      const { data: professionals, error: profError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "professional");
+
+      if (profError) {
+        throw profError;
+      }
+
+      if (!professionals || professionals.length === 0) {
+        toast.info('Nu există meșteri în sistem');
+        return;
+      }
+
+      const targetEndDate = new Date('2025-07-01T23:59:59');
+      
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const prof of professionals) {
+        console.log(`Activating subscription for craftsman: ${prof.id}`);
+        const { error } = await supabase
+          .rpc('update_craftsman_subscription_status', {
+            p_craftsman_id: prof.id,
+            p_is_active: true,
+            p_end_date: targetEndDate.toISOString()
+          });
+        
+        if (error) {
+          console.error(`Error activating subscription for ${prof.id}:`, error);
+          errorCount++;
+        } else {
+          successCount++;
+        }
+      }
+      
+      if (errorCount > 0) {
+        toast.warning(`Activare parțială: ${successCount} abonamente activate, ${errorCount} eșuate`);
+      } else {
+        toast.success(`Toate abonamentele au fost activate cu succes (${successCount} în total)`);
+      }
+      
+      await Promise.all([
+        fetchSubscriptions(),
+        fetchDashboardStats()
+      ]);
+      
+    } catch (error) {
+      console.error('Error activating all subscriptions:', error);
+      toast.error('A apărut o eroare la activarea abonamentelor');
+    }
+  };
+
   useEffect(() => {
     console.log('Running fetchSubscriptions effect');
     fetchSubscriptions();
@@ -359,5 +400,6 @@ export const useSubscriptions = () => {
     filters,
     setFilters,
     fetchHistoricalStats,
+    activateAllProfessionalSubscriptions,
   };
 };

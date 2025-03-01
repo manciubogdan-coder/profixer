@@ -11,7 +11,8 @@ export const SubscriptionManagement = () => {
     loading, 
     updateSubscriptionDate,
     filters,
-    setFilters
+    setFilters,
+    activateAllProfessionalSubscriptions
   } = useSubscriptions();
 
   return (
@@ -34,6 +35,7 @@ export const SubscriptionManagement = () => {
             emailFilter={filters.email}
             onEmailFilterChange={(email) => 
               setFilters(prev => ({ ...prev, email }))}
+            onActivateAll={activateAllProfessionalSubscriptions}
           />
         </div>
       </Card>
