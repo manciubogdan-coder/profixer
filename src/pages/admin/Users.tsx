@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -109,34 +110,150 @@ export const Users = () => {
     try {
       setLoading(true);
       
-      const { error } = await supabase.rpc('delete_user', {
-        user_id: userId
-      });
-
-      if (error) {
-        console.error("Error with RPC function, trying fallback methods:", error);
-        
-        const isForeignKeyError = error.message?.includes('foreign key constraint');
-        if (isForeignKeyError) {
-          toast.error("Nu se poate șterge utilizatorul deoarece are date asociate (mesaje, plăți, etc).");
-          setLoading(false);
-          setUserToDelete(null);
-          setDeleteDialogOpen(false);
-          return;
-        }
-        
-        const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-        
-        if (authError) {
-          console.error("Error with Auth API, trying direct database operation:", authError);
-          
-          const { error: dbError } = await supabase
-            .from("profiles")
-            .delete()
-            .eq("id", userId);
-            
-          if (dbError) throw dbError;
-        }
+      // Pașii de ștergere în cascadă
+      console.log("Începem ștergerea utilizatorului și a datelor asociate...", userId);
+      
+      // Ștergem toate mesajele asociate utilizatorului
+      const { error: messagesError } = await supabase
+        .from("messages")
+        .delete()
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+      
+      if (messagesError) {
+        console.error("Eroare la ștergerea mesajelor:", messagesError);
+      } else {
+        console.log("Mesajele utilizatorului au fost șterse cu succes");
+      }
+      
+      // Ștergem toate plățile asociate utilizatorului
+      const { error: paymentsError } = await supabase
+        .from("payments")
+        .delete()
+        .eq("craftsman_id", userId);
+      
+      if (paymentsError) {
+        console.error("Eroare la ștergerea plăților:", paymentsError);
+      } else {
+        console.log("Plățile utilizatorului au fost șterse cu succes");
+      }
+      
+      // Ștergem abonamentele asociate utilizatorului
+      const { error: subscriptionsError } = await supabase
+        .from("subscriptions")
+        .delete()
+        .eq("craftsman_id", userId);
+      
+      if (subscriptionsError) {
+        console.error("Eroare la ștergerea abonamentelor:", subscriptionsError);
+      } else {
+        console.log("Abonamentele utilizatorului au fost șterse cu succes");
+      }
+      
+      // Ștergem recenziile date de sau despre utilizator
+      const { error: reviewsError } = await supabase
+        .from("reviews")
+        .delete()
+        .or(`client_id.eq.${userId},craftsman_id.eq.${userId}`);
+      
+      if (reviewsError) {
+        console.error("Eroare la ștergerea recenziilor:", reviewsError);
+      } else {
+        console.log("Recenziile utilizatorului au fost șterse cu succes");
+      }
+      
+      // Ștergem portofoliile utilizatorului
+      const { error: portfoliosError } = await supabase
+        .from("portfolios")
+        .delete()
+        .eq("craftsman_id", userId);
+      
+      if (portfoliosError) {
+        console.error("Eroare la ștergerea portofoliilor:", portfoliosError);
+      } else {
+        console.log("Portofoliile utilizatorului au fost șterse cu succes");
+      }
+      
+      // Ștergem calificările utilizatorului
+      const { error: qualificationsError } = await supabase
+        .from("qualifications")
+        .delete()
+        .eq("craftsman_id", userId);
+      
+      if (qualificationsError) {
+        console.error("Eroare la ștergerea calificărilor:", qualificationsError);
+      } else {
+        console.log("Calificările utilizatorului au fost șterse cu succes");
+      }
+      
+      // Ștergem specializările utilizatorului
+      const { error: specializationsError } = await supabase
+        .from("specializations")
+        .delete()
+        .eq("craftsman_id", userId);
+      
+      if (specializationsError) {
+        console.error("Eroare la ștergerea specializărilor:", specializationsError);
+      } else {
+        console.log("Specializările utilizatorului au fost șterse cu succes");
+      }
+      
+      // Ștergem notificările utilizatorului
+      const { error: notificationsError } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("user_id", userId);
+      
+      if (notificationsError) {
+        console.error("Eroare la ștergerea notificărilor:", notificationsError);
+      } else {
+        console.log("Notificările utilizatorului au fost șterse cu succes");
+      }
+      
+      // Ștergem anunțurile de job create de utilizator
+      const { error: jobListingsError } = await supabase
+        .from("job_listings")
+        .delete()
+        .eq("client_id", userId);
+      
+      if (jobListingsError) {
+        console.error("Eroare la ștergerea anunțurilor de job:", jobListingsError);
+      } else {
+        console.log("Anunțurile de job ale utilizatorului au fost șterse cu succes");
+      }
+      
+      // Ștergem interacțiunile cu profilul
+      const { error: profileInteractionsError } = await supabase
+        .from("profile_interactions")
+        .delete()
+        .or(`visitor_id.eq.${userId},craftsman_id.eq.${userId}`);
+      
+      if (profileInteractionsError) {
+        console.error("Eroare la ștergerea interacțiunilor cu profilul:", profileInteractionsError);
+      } else {
+        console.log("Interacțiunile cu profilul utilizatorului au fost șterse cu succes");
+      }
+      
+      // După ce toate datele asociate au fost șterse, ștergem utilizatorul
+      console.log("Toate datele asociate au fost șterse, acum ștergem utilizatorul");
+      
+      // Ștergerea profilului și a contului utilizatorului
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+      
+      if (profileError) {
+        console.error("Eroare la ștergerea profilului:", profileError);
+      } else {
+        console.log("Profilul utilizatorului a fost șters cu succes");
+      }
+      
+      // Încercarea finală de ștergere a contului de autentificare
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (authError) {
+        console.error("Eroare la ștergerea contului de autentificare:", authError);
+        throw new Error("Nu s-a putut șterge contul de autentificare după ștergerea datelor asociate");
       }
       
       await supabase.from("admin_audit_logs").insert({
@@ -144,20 +261,15 @@ export const Users = () => {
         action: "delete_user",
         entity_type: "user",
         entity_id: userId,
+        details: { cascade_delete: true }
       });
       
-      toast.success("Utilizatorul a fost șters cu succes");
+      toast.success("Utilizatorul și toate datele asociate au fost șterse cu succes");
       
       setUsers(users.filter(user => user.id !== userId));
     } catch (error) {
-      console.error("Eroare la ștergerea utilizatorului:", error);
-      
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      if (errorMsg.includes('foreign key constraint')) {
-        toast.error("Utilizatorul are date asociate care împiedică ștergerea (mesaje, plăți, etc).");
-      } else {
-        toast.error("Nu am putut șterge utilizatorul. Verificați consola pentru detalii.");
-      }
+      console.error("Eroare finală la ștergerea utilizatorului:", error);
+      toast.error("Nu am putut șterge complet utilizatorul. Verificați consola pentru detalii.");
     } finally {
       setUserToDelete(null);
       setDeleteDialogOpen(false);
@@ -268,10 +380,10 @@ export const Users = () => {
         </div>
       </div>
 
-      <Alert variant="destructive" className="mb-4">
-        <AlertTitle>Notă importantă</AlertTitle>
+      <Alert className="mb-4">
+        <AlertTitle>Mod de ștergere</AlertTitle>
         <AlertDescription>
-          Utilizatorii care au mesaje sau plăți asociate nu pot fi șterși. Trebuie să ștergeți mai întâi aceste date.
+          Ștergerea unui utilizator va șterge automat toate datele asociate acestuia: mesaje, plăți, abonamente, recenzii, anunțuri, etc.
         </AlertDescription>
       </Alert>
 
