@@ -1,3 +1,4 @@
+
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
@@ -16,7 +17,7 @@ import {
   DialogTitle, 
   DialogDescription
 } from "@/components/ui/dialog";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 const Index = () => {
   const [showInstructions, setShowInstructions] = useState(false);
