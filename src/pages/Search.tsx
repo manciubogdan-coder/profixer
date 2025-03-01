@@ -42,7 +42,7 @@ const Search = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showMap, setShowMap] = useState(!isMobile);
 
-  // Get user's location
+  // Get user's location and update it every 10 seconds
   useEffect(() => {
     const getUserLocation = () => {
       // Attempt to get user location
@@ -55,6 +55,11 @@ const Search = () => {
               lat: position.coords.latitude,
               lng: position.coords.longitude,
             });
+            
+            // If user is a craftsman, update their location in the database
+            if (user) {
+              updateCraftsmanLocation(position.coords.latitude, position.coords.longitude);
+            }
           },
           (error) => {
             console.error("Eroare la obținerea locației:", error);
@@ -82,16 +87,52 @@ const Search = () => {
       }
     };
 
-    // Start geolocation process
+    // Start geolocation process immediately
     getUserLocation();
 
-    // Set up an interval to refresh location every 5 minutes
-    const locationInterval = setInterval(getUserLocation, 5 * 60 * 1000);
+    // Set up an interval to refresh location every 10 seconds
+    const locationInterval = setInterval(getUserLocation, 10 * 1000);
     
     return () => clearInterval(locationInterval);
-  }, []);
+  }, [user]);
 
-  // Fetch craftsmen data
+  // Function to update craftsman location in the database
+  const updateCraftsmanLocation = async (latitude: number, longitude: number) => {
+    if (!user) return;
+
+    try {
+      // Fetch the current user's profile to check if they are a craftsman
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      // Only update location if the user is a craftsman
+      if (profile && profile.role === 'professional') {
+        console.log("Actualizare locație meșter:", latitude, longitude);
+        
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            latitude: latitude,
+            longitude: longitude,
+            last_location_update: new Date().toISOString()
+          })
+          .eq('id', user.id);
+        
+        if (error) {
+          console.error("Eroare la actualizarea locației meșterului:", error);
+        } else {
+          console.log("Locația meșterului a fost actualizată cu succes");
+        }
+      }
+    } catch (error) {
+      console.error("Eroare la verificarea/actualizarea profilului:", error);
+    }
+  };
+
+  // Fetch craftsmen data with 10 second refresh
   const { data: craftsmen = [], isLoading } = useQuery({
     queryKey: ["craftsmen", searchTerm, selectedType, maxDistance, minRating, userLocation],
     queryFn: async () => {
@@ -310,8 +351,8 @@ const Search = () => {
       return filteredCraftsmen.length > 0 ? filteredCraftsmen : processedCraftsmen;
     },
     enabled: !!user,
-    // Refresh every 30 seconds to catch new craftsmen or location updates
-    refetchInterval: 30000,
+    // Refresh every 10 seconds to catch new craftsmen or location updates
+    refetchInterval: 10000,
   });
 
   // Calculate distance between two coordinates using Haversine formula
