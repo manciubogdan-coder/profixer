@@ -1,6 +1,5 @@
 
 import { Button } from "@/components/ui/button";
-import { Search, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
