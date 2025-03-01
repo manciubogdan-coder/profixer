@@ -1,4 +1,3 @@
-
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
@@ -23,13 +22,12 @@ const Index = () => {
   const [showInstructions, setShowInstructions] = useState(false);
 
   const handleDownloadAndroid = () => {
-    // Google Drive direct download URL - convert from sharing URL to direct download
-    const fileId = "1AJb4iV8V4mpUA3nsVRC3MAEfrf1QSolK";
-    const directDownloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+    // Link direct pentru descărcare
+    const downloadUrl = "https://profixer.ro/profixer.apk";
     
     // Create a link and trigger the download
     const link = document.createElement('a');
-    link.href = directDownloadUrl;
+    link.href = downloadUrl;
     link.download = 'ProFixer.apk';
     link.type = 'application/vnd.android.package-archive';
     
