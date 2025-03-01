@@ -109,8 +109,8 @@ export default defineConfig(({ mode }) => ({
   },
   css: {
     devSourcemap: false,
-    // Fast CSS processing
-    transformer: 'lightningcss',
+    // Remove the lightningcss transformer
+    // transformer: 'lightningcss',
     // Optimize CSS output
     postcss: {
       plugins: [
