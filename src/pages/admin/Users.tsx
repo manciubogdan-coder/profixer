@@ -108,19 +108,23 @@ export const Users = () => {
   const deleteUser = async (userId: string) => {
     try {
       setLoading(true);
-      // Ștergem utilizatorul folosind RPC (Remote Procedure Call)
-      const { error } = await supabase.rpc('delete_user', {
-        user_id: userId
-      });
-
-      if (error) {
-        // Dacă RPC nu funcționează, încercăm cu admin API
-        const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      
+      // Try to delete using the Supabase Auth API first (preferred method)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      
+      if (authError) {
+        console.error("Error with Auth API, trying direct database operation:", authError);
         
-        if (authError) throw authError;
+        // If the Auth API method fails, try using a direct database operation
+        const { error: dbError } = await supabase
+          .from("profiles")
+          .delete()
+          .eq("id", userId);
+          
+        if (dbError) throw dbError;
       }
       
-      // Înregistrăm acțiunea în audit log
+      // Log the action regardless of which method succeeded
       await supabase.from("admin_audit_logs").insert({
         admin_id: (await supabase.auth.getUser()).data.user?.id,
         action: "delete_user",
@@ -130,7 +134,7 @@ export const Users = () => {
       
       toast.success("Utilizatorul a fost șters cu succes");
       
-      // Actualizăm lista de utilizatori
+      // Update the users list to remove the deleted user
       setUsers(users.filter(user => user.id !== userId));
     } catch (error) {
       console.error("Eroare la ștergerea utilizatorului:", error);
