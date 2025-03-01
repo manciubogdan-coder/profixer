@@ -1,11 +1,8 @@
 
+import { lazy, Suspense } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
-import { Testimonials } from "@/components/Testimonials";
-import { CallToAction } from "@/components/CallToAction";
-import { Footer } from "@/components/Footer";
-import { CookieConsent } from "@/components/CookieConsent";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CalendarClock, Download, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +15,12 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+
+// Lazy load components that are not needed for initial render
+const Testimonials = lazy(() => import("@/components/Testimonials").then(module => ({ default: module.Testimonials })));
+const CallToAction = lazy(() => import("@/components/CallToAction").then(module => ({ default: module.CallToAction })));
+const Footer = lazy(() => import("@/components/Footer").then(module => ({ default: module.Footer })));
+const CookieConsent = lazy(() => import("@/components/CookieConsent").then(module => ({ default: module.CookieConsent })));
 
 const Index = () => {
   const [showInstructions, setShowInstructions] = useState(false);
@@ -113,10 +116,13 @@ const Index = () => {
         </DialogContent>
       </Dialog>
       
-      <Testimonials />
-      <CallToAction />
-      <Footer />
-      <CookieConsent />
+      {/* Lazy loaded components that are not in the initial viewport */}
+      <Suspense fallback={<div className="h-40 flex items-center justify-center">Se încarcă...</div>}>
+        <Testimonials />
+        <CallToAction />
+        <Footer />
+        <CookieConsent />
+      </Suspense>
     </div>
   );
 };

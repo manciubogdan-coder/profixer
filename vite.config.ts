@@ -11,7 +11,12 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(),
+    react({
+      // Optimize React rendering
+      fastRefresh: true,
+      // Use SWC's optimizations
+      swcPlugins: []
+    }),
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
@@ -25,16 +30,38 @@ export default defineConfig(({ mode }) => ({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: true,
+    minify: 'terser', // Use terser for better minification
+    cssCodeSplit: true,
     modulePreload: { polyfill: true },
+    chunkSizeWarningLimit: 500, // Warn for chunks above 500kb
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true // Remove debugger statements
+      }
+    },
     rollupOptions: {
       output: {
         entryFileNames: 'assets/js/[name].[hash].js',
         chunkFileNames: 'assets/js/[name].[hash].js',
         assetFileNames: 'assets/[ext]/[name].[hash].[ext]',
-        // Folosește doar format=es pentru mai multă compatibilitate
+        // Improved code splitting strategy
+        manualChunks: {
+          'vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui': [
+            '@/components/ui/button', 
+            '@/components/ui/dialog',
+            '@/components/ui/alert'
+          ],
+        },
+        // Format for modern browsers
         format: 'es'
       },
     },
+  },
+  // Add this to optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'lucide-react', 'sonner'],
+    exclude: []
   }
 }));
