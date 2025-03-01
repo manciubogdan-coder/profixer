@@ -50,8 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
 if ('requestIdleCallback' in window) {
   window.requestIdleCallback(() => {
     // Load analytics and other non-critical scripts here
-    if (typeof gtag === 'function') {
-      gtag('event', 'page_view');
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'page_view');
     }
   }, { timeout: 2000 });
 }
