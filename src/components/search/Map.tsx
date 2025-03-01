@@ -78,17 +78,15 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-  
-  // Check if current date is before July 1, 2025
-  const isBeforeJuly2025 = new Date() < new Date("2025-07-01T00:00:00Z");
 
+  // Initialize map only once
   useEffect(() => {
     if (!mapContainer.current) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    // Definim centrul implicit ca tuple cu două numere fixe
-    const defaultCenter: [number, number] = [26.1025, 44.4268]; // București
+    // Define default center as tuple with two fixed numbers
+    const defaultCenter: [number, number] = [26.1025, 44.4268]; // Bucharest
 
     try {
       map.current = new mapboxgl.Map({
@@ -102,21 +100,6 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
       map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
-      if (userLocation) {
-        const el = document.createElement("div");
-        el.className = "marker";
-        el.style.width = "20px";
-        el.style.height = "20px";
-        el.style.borderRadius = "50%";
-        el.style.backgroundColor = "#3B82F6";
-        el.style.border = "2px solid white";
-        el.style.boxShadow = "0 0 0 2px rgba(59, 130, 246, 0.5)";
-
-        new mapboxgl.Marker(el)
-          .setLngLat([userLocation.lng, userLocation.lat] as [number, number])
-          .addTo(map.current);
-      }
-
       console.log("Map initialized successfully");
     } catch (error) {
       console.error("Error initializing map:", error);
@@ -128,19 +111,56 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         map.current = null;
       }
     };
+  }, []);
+
+  // Add user location marker whenever userLocation changes
+  useEffect(() => {
+    if (!map.current || !userLocation) return;
+
+    try {
+      // Update map center when user location changes
+      map.current.setCenter([userLocation.lng, userLocation.lat]);
+      
+      // Create user marker
+      const el = document.createElement("div");
+      el.className = "user-marker";
+      el.style.width = "20px";
+      el.style.height = "20px";
+      el.style.borderRadius = "50%";
+      el.style.backgroundColor = "#3B82F6";
+      el.style.border = "2px solid white";
+      el.style.boxShadow = "0 0 0 2px rgba(59, 130, 246, 0.5)";
+
+      // Remove existing user markers if any
+      const userMarkerEl = document.querySelector('.user-marker');
+      if (userMarkerEl) {
+        userMarkerEl.remove();
+      }
+
+      new mapboxgl.Marker(el)
+        .setLngLat([userLocation.lng, userLocation.lat])
+        .addTo(map.current);
+      
+      console.log("User location marker added at:", userLocation);
+    } catch (error) {
+      console.error("Error adding user location marker:", error);
+    }
   }, [userLocation]);
 
+  // Update craftsmen markers whenever craftsmen array changes
   useEffect(() => {
     if (!map.current) {
       console.log("Map not initialized");
       return;
     }
 
-    // Ștergem markerii existenți
+    console.log("Updating craftsmen markers, total craftsmen:", craftsmen.length);
+
+    // Clear existing markers
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    // Show all craftsmen - removed filter that was limiting based on subscription status
+    // Show all craftsmen - filter removed
     const visibleCraftsmen = craftsmen;
 
     console.log("Adding markers for craftsmen:", visibleCraftsmen.length);
@@ -152,9 +172,9 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       }
 
       try {
-        // Creăm elementul marker
+        // Create marker element
         const el = document.createElement("div");
-        el.className = "marker";
+        el.className = "craftsman-marker";
         el.style.width = "30px";
         el.style.height = "30px";
         el.style.borderRadius = "50%";
@@ -165,8 +185,10 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         el.style.color = "white";
         el.style.cursor = "pointer";
 
-        // Adăugăm iconița
+        // Get correct icon for craftsman trade
         const IconComponent = getCraftsmanIcon(craftsman.trade?.name || null);
+        
+        // Render icon to string
         const iconHtml = renderToString(
           createElement(IconComponent, {
             size: 20,
@@ -176,7 +198,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         );
         el.innerHTML = iconHtml;
 
-        // Creăm conținutul popup-ului
+        // Create popup content
         const popupContent = document.createElement("div");
         popupContent.className = "p-4 bg-background text-foreground";
         
@@ -209,7 +231,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           </div>
         `;
 
-        // Adăugăm handleri pentru click-uri
+        // Add click handlers
         const handlePopupClick = (e: Event) => {
           const target = e.target as HTMLElement;
           const button = target.closest('button');
@@ -227,7 +249,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
         popupContent.addEventListener('click', handlePopupClick);
 
-        // Creăm și adăugăm popup-ul
+        // Create and add popup
         const popup = new mapboxgl.Popup({
           offset: 25,
           closeButton: true,
@@ -235,19 +257,20 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           className: 'custom-popup',
         }).setDOMContent(popupContent);
 
-        // Creăm și adăugăm markerul
+        // Create and add marker
         const marker = new mapboxgl.Marker(el)
           .setLngLat([craftsman.longitude, craftsman.latitude])
           .setPopup(popup)
           .addTo(map.current);
 
         markersRef.current.push(marker);
+        console.log("Added marker for craftsman:", craftsman.id);
       } catch (error) {
         console.error("Error adding marker for craftsman:", craftsman.id, error);
       }
     });
 
-  }, [craftsmen, onCraftsmanClick, isBeforeJuly2025]);
+  }, [craftsmen, onCraftsmanClick, userLocation]);
 
   return (
     <div className="flex-1 relative h-full">
