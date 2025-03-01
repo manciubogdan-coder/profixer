@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -18,17 +19,29 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Download, Search } from "lucide-react";
+import { Download, Search, Trash2 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Users = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -90,6 +103,48 @@ export const Users = () => {
       console.error("Eroare la actualizarea rolului:", error);
       toast.error("Nu am putut actualiza rolul utilizatorului");
     }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      setLoading(true);
+      // Ștergem utilizatorul folosind RPC (Remote Procedure Call)
+      const { error } = await supabase.rpc('delete_user', {
+        user_id: userId
+      });
+
+      if (error) {
+        // Dacă RPC nu funcționează, încercăm cu admin API
+        const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+        
+        if (authError) throw authError;
+      }
+      
+      // Înregistrăm acțiunea în audit log
+      await supabase.from("admin_audit_logs").insert({
+        admin_id: (await supabase.auth.getUser()).data.user?.id,
+        action: "delete_user",
+        entity_type: "user",
+        entity_id: userId,
+      });
+      
+      toast.success("Utilizatorul a fost șters cu succes");
+      
+      // Actualizăm lista de utilizatori
+      setUsers(users.filter(user => user.id !== userId));
+    } catch (error) {
+      console.error("Eroare la ștergerea utilizatorului:", error);
+      toast.error("Nu am putut șterge utilizatorul. Verificați consola pentru detalii.");
+    } finally {
+      setUserToDelete(null);
+      setDeleteDialogOpen(false);
+      setLoading(false);
+    }
+  };
+
+  const confirmDelete = (user: UserProfile) => {
+    setUserToDelete(user);
+    setDeleteDialogOpen(true);
   };
 
   const filteredUsers = users.filter(user => {
@@ -228,6 +283,7 @@ export const Users = () => {
               <TableHead>Rol</TableHead>
               <TableHead>Telefon</TableHead>
               <TableHead>Locație</TableHead>
+              <TableHead>Acțiuni</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -256,11 +312,46 @@ export const Users = () => {
                 <TableCell>
                   {user.city}, {user.county}
                 </TableCell>
+                <TableCell>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => confirmDelete(user)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmă ștergerea utilizatorului</AlertDialogTitle>
+            <AlertDialogDescription>
+              {userToDelete && (
+                <span>
+                  Ești sigur că vrei să ștergi utilizatorul <strong>{userToDelete.first_name} {userToDelete.last_name}</strong> ({userToDelete.email})?
+                  <br /><br />
+                  Această acțiune este ireversibilă și va șterge toate datele asociate acestui utilizator.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anulează</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => userToDelete && deleteUser(userToDelete.id)}
+            >
+              Șterge
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
