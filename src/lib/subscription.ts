@@ -42,64 +42,32 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
 
     console.log('Creating payment link for user:', user.id);
     
-    // Add retries for the function invocation
-    let attempts = 0;
-    let response = null;
-    let lastError = null;
-    
-    while (attempts < 3 && !response) {
-      try {
-        attempts++;
-        console.log(`Attempt ${attempts} to create payment intent`);
-        
-        // Create a payment record first in the database
-        const { data: paymentData, error: paymentError } = await supabase
-          .from('payments')
-          .insert({
-            craftsman_id: user.id,
-            amount: SUBSCRIPTION_PRICES[plan],
-            currency: 'RON',
-            status: 'pending'
-          })
-          .select()
-          .single();
-          
-        if (paymentError) {
-          console.error('Error creating payment record:', paymentError);
-          throw new Error('Nu am putut crea înregistrarea plății');
-        }
-        
-        console.log('Created payment record:', paymentData.id);
-        
-        // Create payment URL
-        const baseUrl = window.location.origin;
-        const successUrl = `${baseUrl}/subscription/success?payment_id=${paymentData.id}&plan=${plan}`;
-        const cancelUrl = `${baseUrl}/subscription/activate`;
-        
-        // Use direct success URL instead of edge function
-        // This simulates a successful payment
-        return successUrl;
-          
-      } catch (err) {
-        console.error(`Exception during attempt ${attempts}:`, err);
-        lastError = err;
-        
-        // Wait before retrying
-        if (attempts < 3) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-    }
-    
-    if (lastError) {
-      if (lastError?.message?.includes('Ai deja un abonament activ')) {
-        throw new Error('Ai deja un abonament activ. Nu poți crea un nou abonament până când cel curent nu expiră.');
-      }
+    // Create a payment record in the database
+    const { data: paymentData, error: paymentError } = await supabase
+      .from('payments')
+      .insert({
+        craftsman_id: user.id,
+        amount: SUBSCRIPTION_PRICES[plan],
+        currency: 'RON',
+        status: 'pending'
+      })
+      .select()
+      .single();
       
-      throw new Error(lastError?.message || 'A apărut o eroare la crearea plății');
+    if (paymentError) {
+      console.error('Error creating payment record:', paymentError);
+      throw new Error('Nu am putut crea înregistrarea plății');
     }
-
-    throw new Error('Nu am putut crea pagina de plată. Te rugăm să încerci din nou.');
+    
+    console.log('Created payment record:', paymentData.id);
+    
+    // Create a simple success URL without using Stripe
+    const baseUrl = window.location.origin;
+    const successUrl = `${baseUrl}/subscription/success?payment_id=${paymentData.id}&plan=${plan}`;
+    
+    // Return the success URL directly - skipping payment process
+    return successUrl;
+      
   } catch (error) {
     console.error('Error creating payment link:', error);
     throw error;

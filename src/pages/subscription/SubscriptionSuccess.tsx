@@ -62,26 +62,7 @@ const SubscriptionSuccess = () => {
 
         // Creăm date pentru abonament
         const startDate = new Date();
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 30); // Adăugăm 30 de zile pentru abonament lunar
-
-        // Dezactivăm orice abonament existent folosind RPC
-        try {
-          const { error: deactivateError } = await supabase
-            .rpc('update_craftsman_subscription_status', {
-              p_craftsman_id: payment.craftsman_id,
-              p_is_active: false,
-              p_end_date: new Date().toISOString()
-            });
-
-          if (deactivateError) {
-            console.error('Error deactivating existing subscriptions via RPC:', deactivateError);
-          } else {
-            console.log('Deactivated existing subscriptions via RPC');
-          }
-        } catch (deactivateErr) {
-          console.error('Exception while deactivating subscriptions:', deactivateErr);
-        }
+        const endDate = new Date(2025, 6, 1); // 1 Iulie 2025
 
         // Forțăm actualizarea stării abonamentului prin RPC
         console.log('Updating subscription status via RPC for user:', payment.craftsman_id);
