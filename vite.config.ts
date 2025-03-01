@@ -11,7 +11,14 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   plugins: [
-    react(),
+    react({
+      // Optimize React runtime
+      jsxImportSource: undefined,
+      // Fastest possible development mode
+      devTarget: 'es2022',
+      // Optimize SSR components
+      plugins: []
+    }),
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
@@ -20,35 +27,48 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Extreme optimization for build
   build: {
-    target: 'es2015',
+    target: 'esnext', // Modern browsers only for maximum performance
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: 'terser', // Use terser for better minification
-    cssCodeSplit: true,
-    modulePreload: { polyfill: true },
-    chunkSizeWarningLimit: 500, 
+    minify: 'terser',
+    cssCodeSplit: false, // Bundle all CSS together for LCP optimization
+    modulePreload: false, // Skip module preload for faster initial load
+    reportCompressedSize: false, // Skip compression calculation
+    chunkSizeWarningLimit: 1000,
+    emptyOutDir: true,
+    cssMinify: true,
     terserOptions: {
+      ecma: 2020,
       compress: {
         drop_console: true,
         drop_debugger: true,
         pure_funcs: ['console.log', 'console.debug', 'console.info'],
-        passes: 2 // Additional compression passes
+        passes: 3, // Additional compression passes
+        toplevel: true,
+        unsafe: true,
+        unsafe_arrows: true,
+        unsafe_methods: true
       },
       mangle: {
-        safari10: true
+        safari10: false, // Skip Safari 10 support for better minification
+        toplevel: true
+      },
+      format: {
+        comments: false
       }
     },
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/js/[name].[hash].js',
-        chunkFileNames: 'assets/js/[name].[hash].js',
-        assetFileNames: 'assets/[ext]/[name].[hash].[ext]',
+        entryFileNames: 'assets/[hash].js',
+        chunkFileNames: 'assets/[hash].js',
+        assetFileNames: 'assets/[hash].[ext]',
         // Improved code splitting strategy
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+            if (id.includes('react') || id.includes('react-dom')) {
               return 'vendor-react';
             }
             if (id.includes('lucide') || id.includes('svg')) {
@@ -56,7 +76,6 @@ export default defineConfig(({ mode }) => ({
             }
             return 'vendor';
           }
-          // UI components in a separate chunk
           if (id.includes('components/ui')) {
             return 'ui';
           }
@@ -66,7 +85,7 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-  // Optimize dependencies 
+  // Pre-bundle dependencies for faster startup
   optimizeDeps: {
     include: [
       'react', 
@@ -74,19 +93,41 @@ export default defineConfig(({ mode }) => ({
       'react-router-dom', 
       'lucide-react', 
       'sonner',
-      '@radix-ui/react-slot',
+      '@radix-ui/react-slot'
     ],
     esbuildOptions: {
-      target: 'es2020',
+      target: 'esnext',
       legalComments: 'none',
       treeShaking: true,
+      minify: true,
+      minifyWhitespace: true,
+      minifyIdentifiers: true,
+      minifySyntax: true
     }
   },
-  // Improve CSS handling
   css: {
     devSourcemap: false,
-    preprocessorOptions: {
-      // Add any preprocessor options if needed
+    // Fast CSS processing
+    transformer: 'lightningcss',
+    // Optimize CSS output
+    postcss: {
+      plugins: [
+        require('autoprefixer')({
+          flexbox: 'no-2009',
+        }),
+        require('cssnano')({
+          preset: ['default', {
+            discardComments: { removeAll: true },
+            minifyFontValues: { removeQuotes: false }
+          }]
+        })
+      ],
     }
+  },
+  // Enable top-level await when supported
+  esbuild: {
+    supported: {
+      'top-level-await': true
+    },
   }
 }));
