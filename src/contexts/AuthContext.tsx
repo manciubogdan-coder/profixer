@@ -99,7 +99,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session.user);
         
         // When a user signs in or signs up, activate their subscription if needed
-        if (event === 'SIGNED_IN' || event === 'SIGNED_UP') {
+        if (event === 'SIGNED_IN') {
           activateSubscriptionIfNeeded(session.user.id);
         }
         
