@@ -160,6 +160,7 @@ const Search = () => {
       }
 
       console.log("Date despre meșteri obținute:", craftsmenData?.length || 0);
+      console.log("Meșteri brut:", craftsmenData);
       
       // Process craftsmen data
       const processedCraftsmen = craftsmenData.map((craftsman): Craftsman => {
@@ -259,6 +260,8 @@ const Search = () => {
         console.error("Eroare la verificarea profilului utilizatorului curent:", error);
       }
 
+      console.log("Număr total de meșteri procesați:", processedCraftsmen.length);
+      
       // Filter craftsmen with coordinates
       const craftsmenWithCoordinates = processedCraftsmen.filter(c => 
         c.latitude !== null && c.longitude !== null && 
@@ -277,7 +280,7 @@ const Search = () => {
       });
       
       // Apply rating filter but not distance filter initially for testing
-      const filteredCraftsmen = craftsmenWithCoordinates.filter((craftsman) => {
+      const filteredCraftsmen = processedCraftsmen.filter((craftsman) => {
         // Apply rating filter
         if ((craftsman.average_rating || 0) < minRating) {
           return false;
@@ -301,9 +304,10 @@ const Search = () => {
       });
 
       console.log("Număr final de meșteri după filtrare:", filteredCraftsmen.length);
+      console.log("Meșteri filtrați:", filteredCraftsmen);
       
       // Return all craftsmen with coordinates if filtered list is empty
-      return filteredCraftsmen.length > 0 ? filteredCraftsmen : craftsmenWithCoordinates;
+      return filteredCraftsmen.length > 0 ? filteredCraftsmen : processedCraftsmen;
     },
     enabled: !!user,
     // Refresh every 30 seconds to catch new craftsmen or location updates
@@ -322,7 +326,6 @@ const Search = () => {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     
-    console.log(`Distanța de la utilizator la meșter: ${distance.toFixed(2)}km`);
     return distance;
   }, []);
 
