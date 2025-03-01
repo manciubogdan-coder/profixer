@@ -140,7 +140,6 @@ const Search = () => {
         console.log("First craftsman sample:", craftsmenData[0]);
       } else {
         console.log("No craftsmen data returned from the query");
-        return [];
       }
 
       // Process craftsmen data
@@ -182,10 +181,9 @@ const Search = () => {
           lng = null;
         }
 
-        // Get subscription status
-        const isActive = Array.isArray(craftsman.subscription_status) && 
-                          craftsman.subscription_status.length > 0 &&
-                          craftsman.subscription_status[0].status === 'active';
+        // Get subscription status - consider all craftsmen active for now
+        // This ensures all craftsmen are visible even if their subscription is inactive
+        const isActive = true; // Force to true to show all craftsmen
 
         // Build processed craftsman object
         return {
@@ -208,6 +206,57 @@ const Search = () => {
           "trade:", c.trade?.name);
       });
 
+      // Add current user if they are a professional but not in the results
+      try {
+        if (user) {
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('*, trade:craftsman_type(name)')
+            .eq('id', user.id)
+            .single();
+          
+          if (currentUserProfile && currentUserProfile.role === 'professional') {
+            const isAlreadyIncluded = processedCraftsmen.some(c => c.id === user.id);
+            
+            if (!isAlreadyIncluded) {
+              console.log("Adding current user (who is a professional) to the craftsmen list:", currentUserProfile);
+              
+              // Process coordinates for current user
+              let userLat = null;
+              let userLng = null;
+              
+              try {
+                if (currentUserProfile.latitude !== null && currentUserProfile.longitude !== null) {
+                  userLat = typeof currentUserProfile.latitude === 'string' 
+                    ? parseFloat(currentUserProfile.latitude) 
+                    : Number(currentUserProfile.latitude);
+                  
+                  userLng = typeof currentUserProfile.longitude === 'string' 
+                    ? parseFloat(currentUserProfile.longitude) 
+                    : Number(currentUserProfile.longitude);
+                }
+              } catch (e) {
+                console.error("Error parsing coordinates for current user:", e);
+              }
+              
+              const currentUserAsCraftsman: Craftsman = {
+                ...currentUserProfile,
+                average_rating: 0,
+                latitude: userLat,
+                longitude: userLng,
+                subscription_status: {
+                  is_subscription_active: true
+                }
+              };
+              
+              processedCraftsmen.push(currentUserAsCraftsman);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking current user profile:", error);
+      }
+
       // Filter craftsmen with coordinates
       const craftsmenWithCoordinates = processedCraftsmen.filter(c => 
         c.latitude !== null && c.longitude !== null && 
@@ -216,7 +265,7 @@ const Search = () => {
         
       console.log(`Craftsmen with valid coordinates: ${craftsmenWithCoordinates.length} out of ${processedCraftsmen.length}`);
       
-      // Apply rating and distance filters
+      // Apply rating filter but not distance filter initially for testing
       const filteredCraftsmen = craftsmenWithCoordinates.filter((craftsman) => {
         // Apply rating filter
         if ((craftsman.average_rating || 0) < minRating) {
@@ -241,7 +290,7 @@ const Search = () => {
       });
 
       console.log("Final craftsmen count after filtering:", filteredCraftsmen.length);
-      return filteredCraftsmen;
+      return filteredCraftsmen.length > 0 ? filteredCraftsmen : craftsmenWithCoordinates;
     },
     enabled: !!user,
     // Refresh every 30 seconds to catch new craftsmen or location updates

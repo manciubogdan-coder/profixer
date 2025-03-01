@@ -110,6 +110,14 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
   const mapInitializedRef = useRef(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
+  // Debug craftsmen data
+  useEffect(() => {
+    console.log("Craftsmen data received in Map component:", craftsmen.length);
+    craftsmen.forEach((c, idx) => {
+      console.log(`[${idx}] Craftsman: ${c.id}, ${c.first_name} ${c.last_name}, lat: ${c.latitude}, lng: ${c.longitude}, role: ${c.role}`);
+    });
+  }, [craftsmen]);
+
   // Initialize the map
   useEffect(() => {
     if (!mapContainer.current || mapInitializedRef.current) return;
@@ -225,8 +233,38 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         "lat:", c.latitude, 
         "lng:", c.longitude, 
         "type:", typeof c.latitude, typeof c.longitude,
-        "trade:", c.trade?.name);
+        "trade:", c.trade?.name,
+        "role:", c.role);
     });
+
+    // Special handling: Include the current user if they are a craftsman but not in the craftsmen list
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*, trade:craftsman_type(name)')
+            .eq('id', user.id)
+            .single();
+          
+          if (profileData && profileData.role === 'professional') {
+            const userIsCraftsman = craftsmen.some(c => c.id === user.id);
+            if (!userIsCraftsman && profileData.latitude && profileData.longitude) {
+              console.log("Current user is a craftsman but not in list, adding to map:", profileData);
+              const currentUserAsCraftsman: Craftsman = {
+                ...profileData,
+                average_rating: 0,
+                subscription_status: { is_subscription_active: true }
+              };
+              craftsmen = [...craftsmen, currentUserAsCraftsman];
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking current user as craftsman:", error);
+      }
+    })();
 
     // Filter craftsmen with valid coordinates
     const craftsmenWithCoordinates = craftsmen.filter(c => 
