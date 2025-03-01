@@ -30,16 +30,10 @@ export default defineConfig(({ mode }) => ({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: 'terser', // Use terser for better minification
+    minify: 'esbuild', // Use esbuild for faster minification
     cssCodeSplit: true,
     modulePreload: { polyfill: true },
     chunkSizeWarningLimit: 500, // Warn for chunks above 500kb
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console logs in production
-        drop_debugger: true // Remove debugger statements
-      }
-    },
     rollupOptions: {
       output: {
         entryFileNames: 'assets/js/[name].[hash].js',
@@ -63,5 +57,16 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom', 'lucide-react', 'sonner'],
     exclude: []
+  },
+  // Optimizare pentru CSS
+  css: {
+    // Optimizează CSS parsing
+    devSourcemap: false,
+  },
+  // Optimizare pentru preloading
+  preview: {
+    headers: {
+      'Cache-Control': 'public, max-age=31536000',
+    }
   }
 }));
