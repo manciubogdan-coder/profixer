@@ -11,6 +11,9 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  // Check if current date is before July 1, 2025
+  const isBeforeJuly2025 = new Date() < new Date("2025-07-01T00:00:00Z");
+
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -43,11 +46,14 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
       console.log("Subscription status data:", data);
       return data;
     },
-    enabled: !!user && profile?.role === 'professional',
+    enabled: !!user && profile?.role === 'professional' && !isBeforeJuly2025,
     refetchInterval: 30000, // Verificăm statusul la fiecare 30 secunde
   });
 
   useEffect(() => {
+    // Skip subscription check before July 1, 2025
+    if (isBeforeJuly2025) return;
+    
     if (!shouldCheck || !profile) return;
 
     if (profile.role === 'professional') {
@@ -56,7 +62,7 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
         navigate('/subscription/activate');
       }
     }
-  }, [shouldCheck, profile, subscriptionStatus, navigate]);
+  }, [shouldCheck, profile, subscriptionStatus, navigate, isBeforeJuly2025]);
 
   const refreshSubscriptionStatus = () => {
     queryClient.invalidateQueries({ queryKey: ['subscription-status', user?.id] });
@@ -65,7 +71,7 @@ export const useSubscriptionCheck = (shouldCheck: boolean = true) => {
   return {
     isLoading: profileLoading || subscriptionLoading,
     isProfessional: profile?.role === 'professional',
-    hasActiveSubscription: subscriptionStatus?.is_subscription_active ?? false,
+    hasActiveSubscription: isBeforeJuly2025 ? true : (subscriptionStatus?.is_subscription_active ?? false),
     refreshSubscriptionStatus,
   };
 };

@@ -78,6 +78,9 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  
+  // Check if current date is before July 1, 2025
+  const isBeforeJuly2025 = new Date() < new Date("2025-07-01T00:00:00Z");
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -137,14 +140,14 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    // Filtrăm meșterii pentru a-i afișa doar pe cei cu abonament activ
-    const activeCraftsmen = craftsmen.filter(craftsman => {
-      return craftsman.subscription_status?.is_subscription_active === true;
-    });
+    // Show all craftsmen if before July 1, 2025, otherwise only show those with active subscriptions
+    const visibleCraftsmen = isBeforeJuly2025 
+      ? craftsmen 
+      : craftsmen.filter(craftsman => craftsman.subscription_status?.is_subscription_active === true);
 
-    console.log("Adding markers for craftsmen:", activeCraftsmen.length);
+    console.log("Adding markers for craftsmen:", visibleCraftsmen.length);
 
-    activeCraftsmen.forEach((craftsman) => {
+    visibleCraftsmen.forEach((craftsman) => {
       if (!craftsman.latitude || !craftsman.longitude) {
         console.log("Missing coordinates for craftsman:", craftsman.id);
         return;
@@ -246,7 +249,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       }
     });
 
-  }, [craftsmen, onCraftsmanClick]);
+  }, [craftsmen, onCraftsmanClick, isBeforeJuly2025]);
 
   return (
     <div className="flex-1 relative h-full">

@@ -20,7 +20,29 @@ export const SubscriptionStatus = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  console.log("SubscriptionStatus Component - User ID:", user?.id);
+  // Check if current date is before July 1, 2025
+  const isBeforeJuly2025 = new Date() < new Date("2025-07-01T00:00:00Z");
+
+  // Skip displaying subscription warnings if before July 1, 2025
+  if (isBeforeJuly2025) {
+    return (
+      <Alert className="mb-4 border-green-500 bg-green-50">
+        <div className="flex items-start">
+          <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+          <div className="ml-3 flex-1">
+            <AlertTitle className="text-green-800 text-lg font-semibold">
+              Abonament Activ
+            </AlertTitle>
+            <AlertDescription className="mt-2">
+              <p className="text-green-700">
+                Până la 1 iulie 2025, toți meșterii au acces gratuit la toate funcționalitățile platformei.
+              </p>
+            </AlertDescription>
+          </div>
+        </div>
+      </Alert>
+    );
+  }
 
   // Verificăm rolul utilizatorului
   const { data: profile } = useQuery({
@@ -60,7 +82,7 @@ export const SubscriptionStatus = () => {
       console.log("Fetched subscription status:", data);
       return data as SubscriptionStatusData;
     },
-    enabled: !!user?.id && profile?.role === 'professional',
+    enabled: !!user?.id && profile?.role === 'professional' && !isBeforeJuly2025,
     refetchInterval: 30000 // Reîmprospătăm datele la fiecare 30 secunde
   });
 
@@ -68,16 +90,13 @@ export const SubscriptionStatus = () => {
     queryClient.invalidateQueries({ queryKey: ['subscription-status', user?.id] });
   };
 
-  console.log("Profile role:", profile?.role);
-  console.log("Subscription status:", subscriptionStatus);
-  console.log("Loading:", isLoading);
-  console.log("Error:", error);
-
   // Nu afișăm nimic dacă utilizatorul nu este profesionist
   if (!profile || profile.role !== 'professional') {
     return null;
   }
 
+  // If we've returned early due to the date check, the rest won't execute
+  
   if (isLoading) {
     return (
       <Alert className="mb-4 bg-gray-50">
@@ -238,4 +257,3 @@ export const SubscriptionStatus = () => {
     </Alert>
   );
 };
-
