@@ -9,12 +9,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 interface PlatformStats {
   total_users: number;
   total_jobs: number;
   total_professionals: number;
   total_clients: number;
 }
+
 interface SubscriptionStats {
   active_subscriptions: number;
   inactive_subscriptions: number;
@@ -22,6 +24,7 @@ interface SubscriptionStats {
   expired_subscriptions: number;
   valid_subscriptions: number;
 }
+
 interface ProfessionalSubscription {
   id: string;
   craftsman_id: string;
@@ -31,10 +34,12 @@ interface ProfessionalSubscription {
   status: 'active' | 'inactive' | 'canceled';
   end_date: string;
 }
-export const AdminDashboard = () => {
+
+const Dashboard = () => {
   const queryClient = useQueryClient();
   const [selectedEndDate, setSelectedEndDate] = useState<Date>();
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string | null>(null);
+
   const {
     data: stats
   } = useQuery({
@@ -72,6 +77,7 @@ export const AdminDashboard = () => {
       } as PlatformStats;
     }
   });
+
   const {
     data: subStats
   } = useQuery({
@@ -83,6 +89,7 @@ export const AdminDashboard = () => {
       return data as SubscriptionStats;
     }
   });
+
   const {
     data: professionals = []
   } = useQuery({
@@ -119,6 +126,7 @@ export const AdminDashboard = () => {
       })) as ProfessionalSubscription[];
     }
   });
+
   const updateSubscriptionEndDate = async (subscriptionId: string) => {
     if (!selectedEndDate) return;
     try {
@@ -133,7 +141,6 @@ export const AdminDashboard = () => {
       setSelectedEndDate(undefined);
       setSelectedProfessionalId(null);
 
-      // Reîncărcăm datele folosind React Query
       await queryClient.invalidateQueries({
         queryKey: ["professionals-subscriptions"]
       });
@@ -145,6 +152,7 @@ export const AdminDashboard = () => {
       toast.error("Nu am putut actualiza abonamentul");
     }
   };
+
   return <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -248,3 +256,5 @@ export const AdminDashboard = () => {
       </Card>
     </div>;
 };
+
+export default Dashboard;
