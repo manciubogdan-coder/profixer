@@ -26,16 +26,15 @@ export const Hero = () => {
     navigate("/profile/me");
   };
 
-  // Mobile and desktop version combined for simplicity and faster rendering
   return (
-    <div className="bg-secondary py-8 px-3">
+    <div className="bg-secondary py-6 px-3">
       <div className="container mx-auto text-center">
-        <h1 className="text-2xl md:text-4xl font-bold text-white mb-3">
+        <h1 className="text-xl md:text-3xl font-bold text-white mb-2">
           Găsește meșteri pentru
           <span className="text-primary"> orice lucrare</span>
         </h1>
         
-        <p className="text-sm md:text-base text-gray-300 mb-4">
+        <p className="text-xs md:text-sm text-gray-300 mb-3">
           Conectăm clienții cu meșteri verificați
         </p>
         
@@ -43,15 +42,17 @@ export const Hero = () => {
           <Button 
             onClick={handleSearchClick}
             className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+            size="sm"
           >
-            <Search className="mr-2 h-4 w-4" /> Caută Meșteri
+            <Search className="mr-2 h-3 w-3" /> Caută Meșteri
           </Button>
           <Button 
             variant="outline"
             className="w-full sm:w-auto"
+            size="sm"
             onClick={handleBecomeCraftsmanClick}
           >
-            <ArrowRight className="mr-2 h-4 w-4" /> Devino Meșter
+            <ArrowRight className="mr-2 h-3 w-3" /> Devino Meșter
           </Button>
         </div>
       </div>
