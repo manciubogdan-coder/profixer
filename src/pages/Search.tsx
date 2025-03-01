@@ -91,6 +91,14 @@ const Search = () => {
       if (error) throw error;
 
       console.log("Fetched craftsmen data:", craftsmenData?.length || 0);
+      
+      // Log all craftsmen coordinates for debugging
+      if (craftsmenData && craftsmenData.length > 0) {
+        console.log("Craftsmen with coordinates:");
+        craftsmenData.forEach((c, index) => {
+          console.log(`[${index}] Craftsman ${c.id}: lat=${c.latitude}, lng=${c.longitude}`);
+        });
+      }
 
       const processedCraftsmen = craftsmenData.map((craftsman): Craftsman => {
         const reviews = Array.isArray(craftsman.reviews) ? craftsman.reviews : [];
@@ -98,9 +106,15 @@ const Search = () => {
           ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
           : 0;
 
+        // Make sure latitude and longitude are valid numbers
+        const lat = typeof craftsman.latitude === 'number' ? craftsman.latitude : null;
+        const lng = typeof craftsman.longitude === 'number' ? craftsman.longitude : null;
+
         return {
           ...craftsman,
           average_rating: avgRating,
+          latitude: lat,
+          longitude: lng
         };
       }).filter((craftsman) => {
         // Skip craftsmen without coordinates
