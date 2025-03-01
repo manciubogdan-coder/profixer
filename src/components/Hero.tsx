@@ -4,44 +4,12 @@ import { Search, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { memo, useEffect, useRef } from "react";
+import { memo } from "react";
 
 // Memoized hero component to prevent unnecessary re-rendering
 export const Hero = memo(() => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const heroRef = useRef<HTMLDivElement>(null);
-
-  // Optimizare pentru încărcare - preload resources
-  useEffect(() => {
-    // Prioritizare încărcare
-    if (heroRef.current) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              heroRef.current?.classList.add('loaded');
-              observer.disconnect();
-            }
-          });
-        },
-        { threshold: 0.1 }
-      );
-      
-      observer.observe(heroRef.current);
-      
-      // Cleanup function
-      return () => {
-        observer.disconnect();
-      };
-    }
-
-    // Preload gradient backgrounds
-    const preloadBg = new Image();
-    preloadBg.fetchPriority = 'high';
-    preloadBg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiMxZTI5M2IiLz48L3N2Zz4=';
-    
-  }, []);
 
   const handleSearchClick = () => {
     if (!user) {
@@ -62,31 +30,17 @@ export const Hero = memo(() => {
 
   return (
     <div 
-      ref={heroRef}
-      className="relative bg-secondary py-12 px-4 overflow-hidden will-change-transform"
-      style={{ 
-        contentVisibility: 'auto',
-        containIntrinsicSize: '0 500px' 
-      }}
+      className="relative bg-secondary py-12 px-4 overflow-hidden"
     >
-      {/* Optimizare background - folosirea CSS simplificat și versiunea inline pentru gradienți */}
+      {/* Simplified background - direct color application */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/50 via-secondary to-secondary" />
       
-      {/* Efect blur optimizat cu CSS simplificat */}
-      <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl" 
-           style={{ transform: 'translateZ(0)' }} /> {/* Hardware acceleration */}
+      {/* Simplified blur effect */}
+      <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl" /> 
       
       <div className="container mx-auto text-center relative z-10">
         <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-6 max-w-4xl mx-auto shadow-xl">
-          {/* Heading optimizat cu text rendering optimizat */}
-          <h1 
-            className="text-4xl md:text-5xl font-bold text-white mb-4"
-            style={{ 
-              willChange: 'transform', 
-              textRendering: 'optimizeSpeed',
-              transform: 'translateZ(0)'
-            }}
-          >
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Găsește cel mai bun meșter pentru <br />
             <span className="bg-gradient-to-r from-primary to-purple-400 text-transparent bg-clip-text">
               orice lucrare
