@@ -57,8 +57,19 @@ const Search = () => {
         (error) => {
           console.error("Error getting location:", error);
           toast.error("Nu am putut obține locația ta. Te rugăm să activezi serviciile de localizare.");
+          // Set default location for Romania if geolocation fails
+          setUserLocation({
+            lat: 45.9443, // Default latitude for Romania
+            lng: 25.0094  // Default longitude for Romania
+          });
         }
       );
+    } else {
+      // Fallback for browsers without geolocation
+      setUserLocation({
+        lat: 45.9443, // Default latitude for Romania
+        lng: 25.0094  // Default longitude for Romania
+      });
     }
   }, []);
 
@@ -88,7 +99,10 @@ const Search = () => {
 
       const { data: craftsmenData, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching craftsmen:", error);
+        throw error;
+      }
 
       console.log("Fetched craftsmen data:", craftsmenData?.length || 0);
       
@@ -96,8 +110,10 @@ const Search = () => {
       if (craftsmenData && craftsmenData.length > 0) {
         console.log("Craftsmen with coordinates:");
         craftsmenData.forEach((c, index) => {
-          console.log(`[${index}] Craftsman ${c.id}: lat=${c.latitude}, lng=${c.longitude}`);
+          console.log(`[${index}] Craftsman ${c.id}: lat=${c.latitude}, lng=${c.longitude}, name=${c.first_name} ${c.last_name}`);
         });
+      } else {
+        console.log("No craftsmen data returned from the query");
       }
 
       const processedCraftsmen = craftsmenData.map((craftsman): Craftsman => {
@@ -106,9 +122,23 @@ const Search = () => {
           ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
           : 0;
 
-        // Make sure latitude and longitude are valid numbers
-        const lat = typeof craftsman.latitude === 'number' ? craftsman.latitude : null;
-        const lng = typeof craftsman.longitude === 'number' ? craftsman.longitude : null;
+        // Parse latitude and longitude to ensure they're numbers
+        let lat = null;
+        let lng = null;
+        
+        if (craftsman.latitude !== null && craftsman.longitude !== null) {
+          lat = parseFloat(String(craftsman.latitude));
+          lng = parseFloat(String(craftsman.longitude));
+          
+          // Validate coordinates are within reasonable range
+          if (isNaN(lat) || isNaN(lng) || 
+              lat < -90 || lat > 90 || 
+              lng < -180 || lng > 180) {
+            console.warn(`Invalid coordinates for craftsman ${craftsman.id}: lat=${lat}, lng=${lng}`);
+            lat = null;
+            lng = null;
+          }
+        }
 
         return {
           ...craftsman,
@@ -116,23 +146,29 @@ const Search = () => {
           latitude: lat,
           longitude: lng
         };
-      }).filter((craftsman) => {
-        // Skip craftsmen without coordinates
-        if (!craftsman.latitude || !craftsman.longitude) {
-          console.log(`Craftsman ${craftsman.id} has no coordinates, skipping distance check`);
-          return minRating <= (craftsman.average_rating || 0);
-        }
+      });
 
+      const craftsmenWithCoordinates = processedCraftsmen.filter(c => c.latitude !== null && c.longitude !== null);
+      console.log(`Craftsmen with valid coordinates: ${craftsmenWithCoordinates.length} out of ${processedCraftsmen.length}`);
+      
+      if (craftsmenWithCoordinates.length === 0) {
+        console.warn("No craftsmen have valid coordinates");
+      }
+
+      // Apply filters
+      const filteredCraftsmen = processedCraftsmen.filter((craftsman) => {
+        // Skip craftsmen without coordinates for distance filtering only
         if ((craftsman.average_rating || 0) < minRating) return false;
 
-        // Apply distance filter only if we have user location
-        if (userLocation && craftsman.latitude && craftsman.longitude) {
+        // Apply distance filter only if we have user location and craftsman has coordinates
+        if (userLocation && craftsman.latitude !== null && craftsman.longitude !== null) {
           const distance = calculateDistance(
             userLocation.lat,
             userLocation.lng,
             craftsman.latitude,
             craftsman.longitude
           );
+          // Debug distance calculation
           console.log(`Distance for craftsman ${craftsman.id}: ${distance.toFixed(2)}km`);
           if (distance > maxDistance) return false;
         }
@@ -140,10 +176,8 @@ const Search = () => {
         return true;
       });
 
-      console.log("Processed craftsmen for map:", processedCraftsmen.length);
-      console.log("Craftsmen with coordinates:", processedCraftsmen.filter(c => c.latitude && c.longitude).length);
-
-      return processedCraftsmen;
+      console.log("Final craftsmen count after filtering:", filteredCraftsmen.length);
+      return filteredCraftsmen;
     },
     enabled: !!user,
   });
@@ -173,7 +207,10 @@ const Search = () => {
   }
 
   // Calculate how many craftsmen have valid coordinates
-  const craftsmenWithCoordinates = craftsmen.filter(c => c.latitude && c.longitude).length;
+  const craftsmenWithCoordinates = craftsmen.filter(c => 
+    c.latitude !== null && c.latitude !== undefined && 
+    c.longitude !== null && c.longitude !== undefined
+  ).length;
   
   return (
     <div className="min-h-screen bg-background">

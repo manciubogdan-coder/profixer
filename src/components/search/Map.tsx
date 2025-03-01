@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { Craftsman } from "@/pages/Search";
@@ -23,10 +23,13 @@ import {
   Truck,
   Lightbulb,
   Blocks,
+  AlertCircle,
 } from "lucide-react";
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
+import { toast } from "sonner";
 
+// Use your Mapbox token here
 const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXVpdnVidCJ9.l1qMsSzaQBOq8sopVis4BQ";
 
 interface MapProps {
@@ -79,15 +82,17 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapInitializedRef = useRef(false);
+  const [mapError, setMapError] = useState<string | null>(null);
 
-  // Inițializarea hărții
+  // Initialize the map
   useEffect(() => {
     if (!mapContainer.current || mapInitializedRef.current) return;
 
     try {
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
-      const defaultCenter: [number, number] = [26.1025, 44.4268]; // Bucharest
+      // Default center for Romania
+      const defaultCenter: [number, number] = [25.0094, 45.9443];
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
@@ -95,15 +100,26 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         center: userLocation 
           ? [userLocation.lng, userLocation.lat] as [number, number]
           : defaultCenter,
-        zoom: 12,
+        zoom: 7,
       });
 
       map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
+      
+      map.current.on('load', () => {
+        console.log("Map loaded successfully");
+        // Check if map was initialized with the correct center
+        if (map.current) {
+          const center = map.current.getCenter();
+          console.log("Map center:", center.lng, center.lat);
+        }
+      });
       
       mapInitializedRef.current = true;
       console.log("Map initialized successfully");
     } catch (error) {
       console.error("Error initializing map:", error);
+      setMapError("Eroare la inițializarea hărții. Reîncărcați pagina.");
+      toast.error("Eroare la inițializarea hărții. Reîncărcați pagina.");
     }
 
     return () => {
@@ -115,25 +131,23 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     };
   }, []);
 
-  // Actualizare locație utilizator
+  // Update user location
   useEffect(() => {
     if (!map.current || !userLocation || !mapInitializedRef.current) return;
 
     try {
-      // Actualizează centrul hărții la locația utilizatorului dacă aceasta s-a schimbat
-      map.current.setCenter([userLocation.lng, userLocation.lat]);
+      console.log("Updating user location on map:", userLocation.lat, userLocation.lng);
       
-      // Caută markerul existent pentru utilizator și elimină-l
+      // Remove existing user marker
       const existingUserMarker = document.querySelector('.user-marker-container');
       if (existingUserMarker) {
         existingUserMarker.remove();
       }
       
-      // Creează un nou container pentru markerul utilizatorului
+      // Create user marker
       const el = document.createElement("div");
       el.className = "user-marker-container";
       
-      // Creează un element pentru markerul utilizatorului cu un stil distinct
       const userMarker = document.createElement("div");
       userMarker.className = "user-marker";
       userMarker.style.width = "20px";
@@ -145,18 +159,27 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
       
       el.appendChild(userMarker);
 
-      // Adaugă markerul pe hartă
+      // Add marker to map
       new mapboxgl.Marker(el)
         .setLngLat([userLocation.lng, userLocation.lat])
         .addTo(map.current);
       
-      console.log("User location marker added/updated at:", userLocation);
+      console.log("User location marker added/updated");
+      
+      // Center on user location if it's the initial load
+      if (map.current.getZoom() < 8) {
+        map.current.flyTo({
+          center: [userLocation.lng, userLocation.lat],
+          zoom: 10,
+          essential: true
+        });
+      }
     } catch (error) {
       console.error("Error adding user location marker:", error);
     }
   }, [userLocation]);
 
-  // Actualizare markeri pentru meșteri
+  // Update craftsmen markers
   useEffect(() => {
     if (!map.current || !mapInitializedRef.current) {
       console.log("Map not initialized, cannot add craftsmen markers");
@@ -165,35 +188,42 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
     console.log("Updating craftsmen markers, total craftsmen:", craftsmen.length);
     
-    // Log all craftsmen with coordinates for debugging
-    const craftsmenWithCoords = craftsmen.filter(
-      c => typeof c.latitude === 'number' && typeof c.longitude === 'number'
-    );
-    console.log(`Craftsmen with valid coordinates: ${craftsmenWithCoords.length} out of ${craftsmen.length}`);
-    
-    craftsmenWithCoords.forEach((c, i) => {
-      console.log(`Craftsman ${i}: ID=${c.id}, Name=${c.first_name} ${c.last_name}, Lat=${c.latitude}, Lng=${c.longitude}`);
-    });
-
-    // Șterge markerii existenți
+    // Clear existing markers
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    // Adaugă noi markeri pentru meșteri
-    craftsmen.forEach((craftsman) => {
-      // Verificare strictă a coordonatelor
-      if (typeof craftsman.latitude !== 'number' || typeof craftsman.longitude !== 'number' || 
+    // Filter craftsmen with valid coordinates
+    const craftsmenWithCoordinates = craftsmen.filter(c => 
+      typeof c.latitude === 'number' && !isNaN(c.latitude) && 
+      typeof c.longitude === 'number' && !isNaN(c.longitude)
+    );
+    
+    console.log(`Craftsmen with valid coordinates: ${craftsmenWithCoordinates.length} out of ${craftsmen.length}`);
+    
+    if (craftsmenWithCoordinates.length === 0) {
+      console.warn("No craftsmen have valid coordinates to display on the map");
+      return;
+    }
+
+    // Create bounds to fit all markers
+    const bounds = new mapboxgl.LngLatBounds();
+    
+    // Add markers for craftsmen with coordinates
+    craftsmenWithCoordinates.forEach((craftsman) => {
+      if (typeof craftsman.latitude !== 'number' || typeof craftsman.longitude !== 'number' ||
           isNaN(craftsman.latitude) || isNaN(craftsman.longitude)) {
-        console.log(`Missing or invalid coordinates for craftsman ${craftsman.id}: lat=${craftsman.latitude}, lng=${craftsman.longitude}`);
+        console.warn(`Skipping craftsman ${craftsman.id} due to invalid coordinates`);
         return;
       }
 
       try {
-        // Creează elementul marker cu iconiță specifică meseriei
+        console.log(`Adding marker for ${craftsman.first_name} ${craftsman.last_name} at [${craftsman.longitude}, ${craftsman.latitude}]`);
+        
+        // Create marker element
         const el = document.createElement("div");
         el.className = "craftsman-marker";
-        el.style.width = "30px";
-        el.style.height = "30px";
+        el.style.width = "34px";
+        el.style.height = "34px";
         el.style.borderRadius = "50%";
         el.style.backgroundColor = "#9333EA";
         el.style.display = "flex";
@@ -201,6 +231,8 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         el.style.justifyContent = "center";
         el.style.color = "white";
         el.style.cursor = "pointer";
+        el.style.border = "2px solid white";
+        el.style.boxShadow = "0 0 0 2px rgba(147, 51, 234, 0.5)";
         el.dataset.craftsman = craftsman.id;
 
         const IconComponent = getCraftsmanIcon(craftsman.trade?.name || null);
@@ -214,7 +246,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         );
         el.innerHTML = iconHtml;
 
-        // Creare conținut popup cu informații despre meșter
+        // Create popup content
         const popupContent = document.createElement("div");
         popupContent.className = "p-4 bg-background text-foreground";
         
@@ -247,7 +279,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           </div>
         `;
 
-        // Adăugare eveniment click pentru butoanele din popup
+        // Add click handlers for popup buttons
         const handlePopupClick = (e: Event) => {
           const target = e.target as HTMLElement;
           const button = target.closest('button');
@@ -265,7 +297,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
         popupContent.addEventListener('click', handlePopupClick);
 
-        // Creare popup și atașare la marker
+        // Create and attach popup
         const popup = new mapboxgl.Popup({
           offset: 25,
           closeButton: true,
@@ -273,56 +305,67 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           className: 'custom-popup',
         }).setDOMContent(popupContent);
 
-        // Creare marker și adăugare pe hartă
+        // Create and add marker to map
         const marker = new mapboxgl.Marker(el)
           .setLngLat([craftsman.longitude, craftsman.latitude])
           .setPopup(popup)
           .addTo(map.current);
 
-        // Memorare referință pentru curățare ulterioară
+        // Save marker reference
         markersRef.current.push(marker);
         
-        console.log(`Added marker for craftsman: ${craftsman.id} at coordinates: [${craftsman.longitude}, ${craftsman.latitude}]`);
+        // Extend map bounds to include this marker
+        bounds.extend([craftsman.longitude, craftsman.latitude]);
+        
+        console.log(`Added marker for craftsman ${craftsman.id}`);
       } catch (error) {
-        console.error("Error adding marker for craftsman:", craftsman.id, error);
+        console.error(`Error adding marker for craftsman ${craftsman.id}:`, error);
       }
     });
 
     console.log(`Total markers added to map: ${markersRef.current.length}`);
     
-    // Ajustare zoom și bounds pentru a afișa toți meșterii dacă există
-    if (markersRef.current.length > 0 && map.current) {
-      try {
-        const bounds = new mapboxgl.LngLatBounds();
-        
-        // Adăugare coordonate meșteri în bounds
-        craftsmen.forEach((craftsman) => {
-          if (typeof craftsman.longitude === 'number' && typeof craftsman.latitude === 'number') {
-            bounds.extend([craftsman.longitude, craftsman.latitude]);
-          }
+    // Fit map to bounds if we have markers
+    if (!bounds.isEmpty() && map.current) {
+      // Also include user location in bounds if available
+      if (userLocation) {
+        bounds.extend([userLocation.lng, userLocation.lat]);
+      }
+      
+      // Adjust map view with padding
+      map.current.fitBounds(bounds, {
+        padding: 80,
+        maxZoom: 15
+      });
+      
+      console.log("Map view adjusted to fit all markers");
+    } else {
+      console.warn("No bounds to fit - either no markers or bounds calculation failed");
+      
+      // If we have user location but no craftsmen markers, center on user
+      if (userLocation && map.current) {
+        map.current.flyTo({
+          center: [userLocation.lng, userLocation.lat],
+          zoom: 10
         });
-        
-        // Adăugare locație utilizator în bounds dacă există
-        if (userLocation) {
-          bounds.extend([userLocation.lng, userLocation.lat]);
-        }
-        
-        // Ajustare bounds cu padding
-        if (!bounds.isEmpty()) {
-          map.current.fitBounds(bounds, {
-            padding: 50,
-            maxZoom: 15
-          });
-        }
-      } catch (error) {
-        console.error("Error adjusting map bounds:", error);
       }
     }
-  }, [craftsmen, onCraftsmanClick]);
+  }, [craftsmen, onCraftsmanClick, userLocation]);
 
   return (
     <div className="flex-1 relative h-full">
       <div ref={mapContainer} className="absolute inset-0" />
+      
+      {mapError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+          <div className="flex flex-col items-center gap-2 p-4 bg-card border rounded-md text-center">
+            <AlertCircle className="h-10 w-10 text-destructive" />
+            <h3 className="font-semibold">Eroare hartă</h3>
+            <p>{mapError}</p>
+          </div>
+        </div>
+      )}
+      
       <style>{`
         .mapboxgl-popup-content {
           background-color: hsl(var(--background));
