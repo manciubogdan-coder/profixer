@@ -1,8 +1,12 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { z } from "zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -11,114 +15,112 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
 
-const loginSchema = z.object({
-  email: z.string().email("Adresa de email invalidă"),
-  password: z.string().min(6, "Parola trebuie să aibă minim 6 caractere"),
+const formSchema = z.object({
+  email: z.string().email({
+    message: "Adresa de email nu este validă.",
+  }),
+  password: z.string().min(1, {
+    message: "Parola este obligatorie.",
+  }),
 });
 
 interface LoginFormProps {
   onToggleForm: () => void;
 }
 
-export const LoginForm = ({ onToggleForm }: LoginFormProps) => {
+export function LoginForm({ onToggleForm }: LoginFormProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  
-  const form = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",
       password: "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsLoading(true);
+
     try {
-      const { email, password } = values;
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const { error } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
       });
 
       if (error) {
-        let errorMessage = "Credențiale invalide. Vă rugăm să verificați email-ul și parola.";
-        
-        if (error.message.includes("Email not confirmed")) {
-          errorMessage = "Vă rugăm să confirmați adresa de email înainte de autentificare";
-        }
-        
-        toast.error(errorMessage);
+        toast.error("Autentificare eșuată. Vă rugăm să verificați datele introduse.");
+        console.error(error);
+        setIsLoading(false);
         return;
       }
 
-      if (data.user) {
-        toast.success("Autentificare reușită");
-        navigate("/");
-      }
-      
+      toast.success('Autentificare reușită! Redirecționare...');
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
     } catch (error) {
-      toast.error("A apărut o eroare neașteptată. Vă rugăm să încercați din nou.");
+      console.error('Error in login:', error);
+      toast.error('A apărut o eroare la autentificare. Vă rugăm încercați din nou.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  placeholder="email@exemplu.com"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Parolă</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  placeholder="Introduceți parola"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit" className="w-full">
-          Autentificare
-        </Button>
-
-        <div className="text-center">
-          <Button
-            variant="link"
-            onClick={onToggleForm}
-            className="text-primary"
-            type="button"
-          >
-            Nu aveți cont? Înregistrați-vă
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input placeholder="email@example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Parolă</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="********" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Se autentifică...
+              </>
+            ) : (
+              "Autentificare"
+            )}
           </Button>
-        </div>
-      </form>
-    </Form>
+        </form>
+      </Form>
+      <div className="text-center">
+        <p className="text-sm text-gray-600">
+          Nu ai cont?{" "}
+          <Button variant="link" className="p-0" onClick={onToggleForm}>
+            Înregistrează-te
+          </Button>
+        </p>
+      </div>
+    </div>
   );
-};
+}

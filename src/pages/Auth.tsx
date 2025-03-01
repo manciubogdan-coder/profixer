@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AuthContainer } from "@/components/auth/AuthContainer";
 import { AuthHeader } from "@/components/auth/AuthHeader";
@@ -15,7 +16,7 @@ const Auth = () => {
       {isLogin ? (
         <LoginForm onToggleForm={toggleForm} />
       ) : (
-        <RegisterForm onToggleForm={toggleForm} />
+        <RegisterForm />
       )}
     </AuthContainer>
   );
