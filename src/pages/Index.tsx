@@ -15,31 +15,11 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-// Lazy load all non-critical components
+// Lazy load all non-critical components with proper type handling
 const CookieConsent = lazy(() => import("@/components/CookieConsent").then(module => ({ default: module.CookieConsent })));
 const Footer = lazy(() => import("@/components/Footer").then(module => ({ default: module.Footer })));
-
-// Even more aggressively lazy load these components that are likely below the fold
-const Testimonials = lazy(() => 
-  new Promise<{ default: React.ComponentType<any> }>(resolve => {
-    // Delay loading of below-the-fold components to prioritize critical content
-    setTimeout(() => {
-      import("@/components/Testimonials").then(module => 
-        resolve({ default: module.Testimonials })
-      );
-    }, 2000);
-  })
-);
-
-const CallToAction = lazy(() => 
-  new Promise<{ default: React.ComponentType<any> }>(resolve => {
-    setTimeout(() => {
-      import("@/components/CallToAction").then(module => 
-        resolve({ default: module.CallToAction })
-      );
-    }, 2000);
-  })
-);
+const Testimonials = lazy(() => import("@/components/Testimonials").then(module => ({ default: module.Testimonials })));
+const CallToAction = lazy(() => import("@/components/CallToAction").then(module => ({ default: module.CallToAction })));
 
 const Index = () => {
   const [showInstructions, setShowInstructions] = useState(false);
@@ -131,8 +111,8 @@ const Index = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Lazy loaded components with minimal loading indicator */}
-      <Suspense fallback={<div className="h-8"></div>}>
+      {/* Optimized lazy loading with minimal fallback */}
+      <Suspense fallback={<div aria-hidden="true" className="h-4" />}>
         <Testimonials />
         <CallToAction />
         <Footer />
