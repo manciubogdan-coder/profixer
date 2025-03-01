@@ -7,7 +7,6 @@ import { SubscriptionPlan } from '@/types/subscription';
 import { toast } from "sonner";
 import { LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from '@/integrations/supabase/client';
 
 const Checkout = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -27,37 +26,9 @@ const Checkout = () => {
     const initializePayment = async () => {
       try {
         console.log('Creating payment link for plan:', plan);
-        
-        // Check user session first
-        const { data: session } = await supabase.auth.getSession();
-        if (!session?.session) {
-          throw new Error('Nu ești autentificat. Te rugăm să te autentifici pentru a continua.');
-        }
-
-        // Check profile and role
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.session.user.id)
-          .single();
-
-        if (profileError) {
-          throw new Error('Nu am putut verifica profilul tău. Te rugăm să încerci din nou.');
-        }
-
-        if (profile.role !== 'professional') {
-          throw new Error('Doar utilizatorii cu cont de meșter pot achiziționa abonamente.');
-        }
-
-        // Try to create payment intent
         const paymentUrl = await createPaymentIntent(plan);
         console.log('Payment link created, redirecting to:', paymentUrl);
-        
-        // Add a small delay to ensure logs are captured
-        setTimeout(() => {
-          window.location.href = paymentUrl;
-        }, 500);
-        
+        window.location.href = paymentUrl;
       } catch (error: any) {
         console.error('Error creating payment:', error);
         

@@ -1,226 +1,85 @@
 
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-  Navigate,
-} from "react-router-dom";
-import { useAuth } from "./contexts/AuthContext";
-import Auth from "./pages/Auth";
-import Home from "./pages/Home";
-import Profile from "./pages/Profile";
-import AdminLayout from "./layouts/AdminLayout";
-import Dashboard from "./pages/admin/Dashboard";
-import { Users } from "./pages/admin/Users";
-import { JobListings } from "./pages/admin/JobListings";
-import { Messages } from "./pages/admin/Messages";
-import { SubscriptionManagement } from "./pages/admin/SubscriptionManagement";
-import { AdminNavbar } from "./components/admin/AdminNavbar";
-import {
-  HomeIcon,
-  UsersIcon,
-  ListChecks,
-  MessageSquare,
-  Settings,
-  TicketIcon,
-} from "lucide-react";
-import SubscriptionActivate from "./pages/subscription/SubscriptionActivate";
-import Checkout from "./pages/subscription/Checkout";
-import SubscriptionSuccess from "./pages/subscription/SubscriptionSuccess";
-import ActivateAllSubscriptions from './pages/admin/ActivateAllSubscriptions';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/contexts/AuthContext";
+import Index from "@/pages/Index";
+import Auth from "@/pages/Auth";
+import Search from "@/pages/Search";
+import ClientProfile from "@/pages/profile/ClientProfile";
+import CraftsmanPublicProfile from "@/pages/profile/CraftsmanPublicProfile";
+import { AddJobListing } from "@/pages/jobs/AddJobListing";
+import { EditJobListing } from "@/pages/jobs/EditJobListing";
+import JobListings from "@/pages/jobs/JobListings";
+import MyJobs from "@/pages/jobs/MyJobs";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminDashboard } from "@/pages/admin/Dashboard";
+import { Users } from "@/pages/admin/Users";
+import { Messages } from "@/pages/admin/Messages";
+import { SubscriptionManagement } from "@/pages/admin/SubscriptionManagement";
+import ActivateSubscription from "@/pages/subscription/ActivateSubscription";
+import Checkout from "@/pages/subscription/Checkout";
+import SubscriptionSuccess from "@/pages/subscription/SubscriptionSuccess";
+import { Privacy } from "@/pages/legal/Privacy";
+import { Terms } from "@/pages/legal/Terms";
+import { Cookies } from "@/pages/legal/Cookies";
+import { GDPR } from "@/pages/legal/GDPR";
+import { ANPC } from "@/pages/legal/ANPC";
+import { About } from "@/pages/About";
+import { Contact } from "@/pages/Contact";
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: "admin" | "client" | "professional";
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  children,
-  requiredRole,
-}) => {
-  const { user, loading, profile } = useAuth();
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" />;
-  }
-
-  if (requiredRole && profile?.role !== requiredRole) {
-    return <Navigate to="/" />;
-  }
-
-  return <>{children}</>;
-};
-
-const AdminRoutesConfig = [
-  {
-    path: "/admin",
-    name: "Dashboard",
-    icon: <HomeIcon className="h-5 w-5" />,
-    element: <Dashboard />,
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
   },
-  {
-    path: "/admin/users",
-    name: "Utilizatori",
-    icon: <UsersIcon className="h-5 w-5" />,
-    element: <Users />,
-  },
-  {
-    path: "/admin/job-listings",
-    name: "Listări de Lucrări",
-    icon: <ListChecks className="h-5 w-5" />,
-    element: <JobListings />,
-  },
-  {
-    path: "/admin/messages",
-    name: "Mesaje",
-    icon: <MessageSquare className="h-5 w-5" />,
-    element: <Messages />,
-  },
-  {
-    path: "/admin/subscriptions",
-    name: "Abonamente",
-    icon: <TicketIcon className="h-5 w-5" />,
-    element: <SubscriptionManagement />,
-  },
-  {
-    path: "/admin/settings",
-    name: "Setări",
-    icon: <Settings className="h-5 w-5" />,
-    element: <div>Settings Component</div>,
-  },
-];
-
-const AdminRoutes = () => {
-  return (
-    <>
-      {AdminRoutesConfig.map((route) => (
-        <Route key={route.path} path={route.path} element={route.element} />
-      ))}
-    </>
-  );
-};
+});
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/auth" element={<Auth />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile/me"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/subscription/activate"
-          element={
-            <ProtectedRoute>
-              <SubscriptionActivate />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/subscription/checkout"
-          element={
-            <ProtectedRoute>
-              <Checkout />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/subscription/success"
-          element={
-            <ProtectedRoute>
-              <SubscriptionSuccess />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout>
-                <Dashboard />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout>
-                <Users />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/job-listings"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout>
-                <JobListings />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/messages"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout>
-                <Messages />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/subscriptions"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout>
-                <SubscriptionManagement />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/settings"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout>
-                <div>Settings Component</div>
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/activate-subscriptions"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout>
-                <ActivateAllSubscriptions />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/profile/me" element={<ClientProfile />} />
+            <Route path="/profile/:id" element={<CraftsmanPublicProfile />} />
+            <Route path="/jobs/add" element={<AddJobListing />} />
+            <Route path="/jobs/edit/:id" element={<EditJobListing />} />
+            <Route path="/jobs" element={<JobListings />} />
+            <Route path="/jobs/my" element={<MyJobs />} />
+            <Route path="/profile" element={<Navigate to="/profile/me" replace />} />
+            <Route path="/subscription/activate" element={<ActivateSubscription />} />
+            <Route path="/subscription/checkout" element={<Checkout />} />
+            <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+            
+            {/* Static pages */}
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            
+            {/* Legal routes */}
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/cookies" element={<Cookies />} />
+            <Route path="/gdpr" element={<GDPR />} />
+            <Route path="/anpc" element={<ANPC />} />
+            
+            {/* Admin routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="subscriptions" element={<SubscriptionManagement />} />
+              <Route path="users" element={<Users />} />
+              <Route path="messages" element={<Messages />} />
+            </Route>
+          </Routes>
+          <Toaster />
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 
