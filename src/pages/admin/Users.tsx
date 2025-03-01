@@ -128,7 +128,24 @@ export const Users = () => {
       const isClient = userProfile.role === 'client';
       console.log(`User is a ${userProfile.role}`);
       
-      // Delete data associated with both clients and professionals
+      // First delete the records from tables that have foreign key constraints pointing to profiles
+      // For both clients and professionals:
+
+      // Delete notifications first since they reference the user
+      console.log("Deleting notifications...");
+      const { error: notificationsError } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("user_id", userId);
+      
+      if (notificationsError) {
+        console.error("Error deleting notifications:", notificationsError);
+        toast.error(`Ștergere notificări eșuată: ${notificationsError.message}`);
+      } else {
+        console.log("Notifications deleted successfully");
+      }
+
+      // Delete messages
       console.log("Deleting messages...");
       const { error: messagesError } = await supabase
         .from("messages")
@@ -142,6 +159,7 @@ export const Users = () => {
         console.log("Messages deleted successfully");
       }
       
+      // Delete reviews
       console.log("Deleting reviews...");
       const { error: reviewsError } = await supabase
         .from("reviews")
@@ -155,19 +173,7 @@ export const Users = () => {
         console.log("Reviews deleted successfully");
       }
       
-      console.log("Deleting notifications...");
-      const { error: notificationsError } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("user_id", userId);
-      
-      if (notificationsError) {
-        console.error("Error deleting notifications:", notificationsError);
-        toast.error(`Ștergere notificări eșuată: ${notificationsError.message}`);
-      } else {
-        console.log("Notifications deleted successfully");
-      }
-      
+      // Delete profile interactions
       console.log("Deleting profile interactions...");
       const { error: profileInteractionsError } = await supabase
         .from("profile_interactions")
@@ -226,20 +232,52 @@ export const Users = () => {
           console.log("Subscriptions deleted successfully");
         }
         
-        // Delete portfolios
-        const { error: portfoliosError } = await supabase
-          .from("portfolios")
-          .delete()
-          .eq("craftsman_id", userId);
-        
-        if (portfoliosError) {
-          console.error("Error deleting portfolios:", portfoliosError);
-          toast.error(`Ștergere portofolii eșuată: ${portfoliosError.message}`);
-        } else {
-          console.log("Portfolios deleted successfully");
+        // Delete portfolios and related images
+        try {
+          console.log("Fetching portfolio IDs...");
+          const { data: portfolios, error: portfoliosFetchError } = await supabase
+            .from("portfolios")
+            .select("id")
+            .eq("craftsman_id", userId);
+            
+          if (portfoliosFetchError) {
+            throw portfoliosFetchError;
+          }
+          
+          if (portfolios && portfolios.length > 0) {
+            const portfolioIds = portfolios.map(p => p.id);
+            
+            console.log("Deleting portfolio images...");
+            const { error: portfolioImagesError } = await supabase
+              .from("portfolio_images")
+              .delete()
+              .in("portfolio_id", portfolioIds);
+              
+            if (portfolioImagesError) {
+              console.error("Error deleting portfolio images:", portfolioImagesError);
+              toast.error(`Ștergere imagini portofoliu eșuată: ${portfolioImagesError.message}`);
+            }
+          }
+          
+          console.log("Deleting portfolios...");
+          const { error: portfoliosError } = await supabase
+            .from("portfolios")
+            .delete()
+            .eq("craftsman_id", userId);
+          
+          if (portfoliosError) {
+            console.error("Error deleting portfolios:", portfoliosError);
+            toast.error(`Ștergere portofolii eșuată: ${portfoliosError.message}`);
+          } else {
+            console.log("Portfolios deleted successfully");
+          }
+        } catch (error) {
+          console.error("Error in portfolio deletion process:", error);
+          toast.error("A apărut o eroare la ștergerea portofoliilor");
         }
         
         // Delete qualifications
+        console.log("Deleting qualifications...");
         const { error: qualificationsError } = await supabase
           .from("qualifications")
           .delete()
@@ -253,6 +291,7 @@ export const Users = () => {
         }
         
         // Delete specializations
+        console.log("Deleting specializations...");
         const { error: specializationsError } = await supabase
           .from("specializations")
           .delete()
