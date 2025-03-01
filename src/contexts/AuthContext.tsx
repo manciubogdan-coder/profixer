@@ -21,12 +21,14 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   profile: ProfileType | null;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   profile: null,
+  signOut: async () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -55,25 +57,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      navigate("/auth");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast.error("Error signing out. Please try again.");
+    }
+  };
+
   useEffect(() => {
+    let mounted = true;
+    
     // Set up initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        const userProfile = await fetchProfile(session.user.id);
-        setProfile(userProfile);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (session?.user) {
+          setUser(session.user);
+          const userProfile = await fetchProfile(session.user.id);
+          if (mounted) setProfile(userProfile);
+        }
+        
+        if (mounted) setLoading(false);
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        if (mounted) setLoading(false);
       }
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
       
+      if (!mounted) return;
+      
       if (session?.user) {
         setUser(session.user);
         const userProfile = await fetchProfile(session.user.id);
-        setProfile(userProfile);
+        if (mounted) setProfile(userProfile);
         
         if (window.location.pathname === "/auth") {
           navigate("/");
@@ -82,16 +112,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(null);
         setProfile(null);
       }
-      setLoading(false);
+      
+      if (mounted) setLoading(false);
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [navigate]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, profile }}>
+    <AuthContext.Provider value={{ user, loading, profile, signOut }}>
       {children}
     </AuthContext.Provider>
   );
