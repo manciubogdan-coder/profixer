@@ -3,8 +3,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import autoprefixer from 'autoprefixer';
-import cssnano from 'cssnano';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -14,12 +12,10 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react({
-      // Optimize React runtime
-      jsxImportSource: undefined,
-      // Fastest possible development mode
-      devTarget: 'es2022',
-      // Optimize SSR components
-      plugins: []
+      // Optimize React rendering
+      fastRefresh: true,
+      // Use SWC's optimizations
+      swcPlugins: []
     }),
     mode === 'development' &&
     componentTagger(),
@@ -29,105 +25,43 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Extreme optimization for build
   build: {
-    target: 'esnext', // Modern browsers only for maximum performance
+    target: 'es2015',
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: false,
-    minify: 'terser',
-    cssCodeSplit: false, // Bundle all CSS together for LCP optimization
-    modulePreload: false, // Skip module preload for faster initial load
-    reportCompressedSize: false, // Skip compression calculation
-    chunkSizeWarningLimit: 1000,
-    emptyOutDir: true,
-    cssMinify: true,
+    minify: 'terser', // Use terser for better minification
+    cssCodeSplit: true,
+    modulePreload: { polyfill: true },
+    chunkSizeWarningLimit: 500, // Warn for chunks above 500kb
     terserOptions: {
-      ecma: 2020,
       compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.debug', 'console.info'],
-        passes: 3, // Additional compression passes
-        toplevel: true,
-        unsafe: true,
-        unsafe_arrows: true,
-        unsafe_methods: true
-      },
-      mangle: {
-        safari10: false, // Skip Safari 10 support for better minification
-        toplevel: true
-      },
-      format: {
-        comments: false
+        drop_console: true, // Remove console logs in production
+        drop_debugger: true // Remove debugger statements
       }
     },
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/[hash].js',
-        chunkFileNames: 'assets/[hash].js',
-        assetFileNames: 'assets/[hash].[ext]',
+        entryFileNames: 'assets/js/[name].[hash].js',
+        chunkFileNames: 'assets/js/[name].[hash].js',
+        assetFileNames: 'assets/[ext]/[name].[hash].[ext]',
         // Improved code splitting strategy
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor-react';
-            }
-            if (id.includes('lucide') || id.includes('svg')) {
-              return 'vendor-icons';
-            }
-            return 'vendor';
-          }
-          if (id.includes('components/ui')) {
-            return 'ui';
-          }
+        manualChunks: {
+          'vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui': [
+            '@/components/ui/button', 
+            '@/components/ui/dialog',
+            '@/components/ui/alert'
+          ],
         },
         // Format for modern browsers
         format: 'es'
       },
     },
   },
-  // Pre-bundle dependencies for faster startup
+  // Add this to optimize dependencies
   optimizeDeps: {
-    include: [
-      'react', 
-      'react-dom', 
-      'react-router-dom', 
-      'lucide-react', 
-      'sonner',
-      '@radix-ui/react-slot'
-    ],
-    esbuildOptions: {
-      target: 'esnext',
-      legalComments: 'none',
-      treeShaking: true,
-      minify: true,
-      minifyWhitespace: true,
-      minifyIdentifiers: true,
-      minifySyntax: true
-    }
-  },
-  css: {
-    devSourcemap: false,
-    // Optimizer CSS output
-    postcss: {
-      plugins: [
-        autoprefixer({
-          flexbox: 'no-2009',
-        }),
-        cssnano({
-          preset: ['default', {
-            discardComments: { removeAll: true },
-            minifyFontValues: { removeQuotes: false }
-          }]
-        })
-      ],
-    }
-  },
-  // Enable top-level await when supported
-  esbuild: {
-    supported: {
-      'top-level-await': true
-    },
+    include: ['react', 'react-dom', 'react-router-dom', 'lucide-react', 'sonner'],
+    exclude: []
   }
 }));
