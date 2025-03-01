@@ -28,6 +28,12 @@ const SubscriptionSuccess = () => {
       try {
         console.log(`Verifying payment ${paymentId} for plan ${plan}`);
         
+        // Get current user session
+        const { data: session } = await supabase.auth.getSession();
+        if (!session?.session?.user) {
+          throw new Error('Nu ești autentificat');
+        }
+
         // Verificăm starea plății
         const { data: payment, error: paymentError } = await supabase
           .from('payments')
@@ -70,6 +76,17 @@ const SubscriptionSuccess = () => {
           console.error('Error checking existing subscription:', existingSubError);
         }
 
+        // Deactivate any existing active subscriptions for this user
+        const { error: deactivateError } = await supabase
+          .from('subscriptions')
+          .update({ status: 'inactive' })
+          .eq('craftsman_id', payment.craftsman_id)
+          .eq('status', 'active');
+
+        if (deactivateError) {
+          console.error('Error deactivating existing subscriptions:', deactivateError);
+        }
+
         if (existingSub) {
           console.log('Updating existing subscription');
           // Actualizăm abonamentul existent
@@ -102,6 +119,7 @@ const SubscriptionSuccess = () => {
 
           if (createSubError) {
             console.error('Error creating new subscription:', createSubError);
+            throw new Error(`Nu s-a putut crea abonamentul: ${createSubError.message}`);
           }
         }
 
@@ -116,9 +134,16 @@ const SubscriptionSuccess = () => {
 
         if (statusUpdateError) {
           console.error('Error updating subscription status via RPC:', statusUpdateError);
+          throw new Error(`Nu s-a putut actualiza starea abonamentului: ${statusUpdateError.message}`);
         } else {
           console.log('Successfully updated subscription status via RPC');
         }
+
+        // Invalidate any cached subscription data
+        await Promise.all([
+          supabase.auth.refreshSession(),
+          new Promise(resolve => setTimeout(resolve, 1000)) // Wait for DB updates to propagate
+        ]);
 
         setIsLoading(false);
         toast.success('Abonamentul a fost activat cu succes!');
