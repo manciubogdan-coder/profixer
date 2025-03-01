@@ -83,6 +83,19 @@ const CraftsmanPublicProfile = () => {
         throw error;
       }
 
+      // Record a profile view for statistics
+      if (user && user.id !== id) {
+        try {
+          await supabase.from("profile_interactions").insert({
+            craftsman_id: id,
+            visitor_id: user.id,
+            interaction_type: "profile_view"
+          });
+        } catch (e) {
+          console.error("Failed to record profile view:", e);
+        }
+      }
+
       console.log("Fetched profile:", profile);
       return profile;
     },

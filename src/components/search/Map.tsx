@@ -124,6 +124,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
     return () => {
       if (map.current) {
+        console.log("Removing map instance");
         map.current.remove();
         map.current = null;
         mapInitializedRef.current = false;
@@ -165,21 +166,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         .addTo(map.current);
       
       console.log("User location marker added/updated");
-      
-      // Center on user location if it's the initial load
-      if (map.current.getZoom() < 8) {
-        map.current.flyTo({
-          center: [userLocation.lng, userLocation.lat],
-          zoom: 10,
-          essential: true
-        });
-      }
     } catch (error) {
       console.error("Error adding user location marker:", error);
     }
   }, [userLocation]);
 
-  // Update craftsmen markers
+  // Update craftsmen markers - this is the critical function for showing craftsmen on the map
   useEffect(() => {
     if (!map.current || !mapInitializedRef.current) {
       console.log("Map not initialized, cannot add craftsmen markers");
@@ -194,11 +186,15 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
     // Filter craftsmen with valid coordinates
     const craftsmenWithCoordinates = craftsmen.filter(c => 
-      typeof c.latitude === 'number' && !isNaN(c.latitude) && 
-      typeof c.longitude === 'number' && !isNaN(c.longitude)
+      c.latitude !== null && c.latitude !== undefined && 
+      c.longitude !== null && c.longitude !== undefined &&
+      typeof c.latitude === 'number' && typeof c.longitude === 'number' &&
+      !isNaN(c.latitude) && !isNaN(c.longitude) &&
+      c.latitude >= -90 && c.latitude <= 90 &&
+      c.longitude >= -180 && c.longitude <= 180
     );
     
-    console.log(`Craftsmen with valid coordinates: ${craftsmenWithCoordinates.length} out of ${craftsmen.length}`);
+    console.log(`Craftsmen with valid coordinates after filtering: ${craftsmenWithCoordinates.length} out of ${craftsmen.length}`);
     
     if (craftsmenWithCoordinates.length === 0) {
       console.warn("No craftsmen have valid coordinates to display on the map");
@@ -210,13 +206,13 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     
     // Add markers for craftsmen with coordinates
     craftsmenWithCoordinates.forEach((craftsman) => {
-      if (typeof craftsman.latitude !== 'number' || typeof craftsman.longitude !== 'number' ||
-          isNaN(craftsman.latitude) || isNaN(craftsman.longitude)) {
-        console.warn(`Skipping craftsman ${craftsman.id} due to invalid coordinates`);
-        return;
-      }
-
       try {
+        if (!craftsman.latitude || !craftsman.longitude || 
+            typeof craftsman.latitude !== 'number' || 
+            typeof craftsman.longitude !== 'number') {
+          return;
+        }
+        
         console.log(`Adding marker for ${craftsman.first_name} ${craftsman.last_name} at [${craftsman.longitude}, ${craftsman.latitude}]`);
         
         // Create marker element

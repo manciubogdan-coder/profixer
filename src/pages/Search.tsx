@@ -85,7 +85,9 @@ const Search = () => {
           reviews!reviews_craftsman_id_fkey(rating),
           trade:craftsman_type(name)
         `)
-        .eq("role", "professional");
+        .eq("role", "professional")
+        .not("latitude", "is", null)
+        .not("longitude", "is", null);
 
       if (searchTerm) {
         query = query.or(
@@ -126,18 +128,29 @@ const Search = () => {
         let lat = null;
         let lng = null;
         
-        if (craftsman.latitude !== null && craftsman.longitude !== null) {
-          lat = parseFloat(String(craftsman.latitude));
-          lng = parseFloat(String(craftsman.longitude));
-          
-          // Validate coordinates are within reasonable range
-          if (isNaN(lat) || isNaN(lng) || 
-              lat < -90 || lat > 90 || 
-              lng < -180 || lng > 180) {
-            console.warn(`Invalid coordinates for craftsman ${craftsman.id}: lat=${lat}, lng=${lng}`);
-            lat = null;
-            lng = null;
+        try {
+          if (craftsman.latitude !== null && craftsman.longitude !== null) {
+            lat = typeof craftsman.latitude === 'string' 
+              ? parseFloat(craftsman.latitude) 
+              : Number(craftsman.latitude);
+            
+            lng = typeof craftsman.longitude === 'string' 
+              ? parseFloat(craftsman.longitude) 
+              : Number(craftsman.longitude);
+            
+            // Validate coordinates are within reasonable range
+            if (isNaN(lat) || isNaN(lng) || 
+                lat < -90 || lat > 90 || 
+                lng < -180 || lng > 180) {
+              console.warn(`Invalid coordinates for craftsman ${craftsman.id}: lat=${lat}, lng=${lng}`);
+              lat = null;
+              lng = null;
+            }
           }
+        } catch (e) {
+          console.error(`Error parsing coordinates for craftsman ${craftsman.id}:`, e);
+          lat = null;
+          lng = null;
         }
 
         return {
@@ -148,7 +161,10 @@ const Search = () => {
         };
       });
 
-      const craftsmenWithCoordinates = processedCraftsmen.filter(c => c.latitude !== null && c.longitude !== null);
+      const craftsmenWithCoordinates = processedCraftsmen.filter(c => 
+        c.latitude !== null && c.longitude !== null && 
+        typeof c.latitude === 'number' && typeof c.longitude === 'number');
+        
       console.log(`Craftsmen with valid coordinates: ${craftsmenWithCoordinates.length} out of ${processedCraftsmen.length}`);
       
       if (craftsmenWithCoordinates.length === 0) {
@@ -156,7 +172,7 @@ const Search = () => {
       }
 
       // Apply filters
-      const filteredCraftsmen = processedCraftsmen.filter((craftsman) => {
+      const filteredCraftsmen = craftsmenWithCoordinates.filter((craftsman) => {
         // Skip craftsmen without coordinates for distance filtering only
         if ((craftsman.average_rating || 0) < minRating) return false;
 
@@ -209,7 +225,8 @@ const Search = () => {
   // Calculate how many craftsmen have valid coordinates
   const craftsmenWithCoordinates = craftsmen.filter(c => 
     c.latitude !== null && c.latitude !== undefined && 
-    c.longitude !== null && c.longitude !== undefined
+    c.longitude !== null && c.longitude !== undefined &&
+    typeof c.latitude === 'number' && typeof c.longitude === 'number'
   ).length;
   
   return (
