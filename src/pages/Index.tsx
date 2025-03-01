@@ -23,20 +23,13 @@ const Index = () => {
   const [showInstructions, setShowInstructions] = useState(false);
 
   const handleDownloadAndroid = () => {
-    // Link direct pentru descărcare
-    const downloadUrl = "https://profixer.ro/profixer.apk";
+    // Link de pe Google Drive pentru descărcare
+    const downloadUrl = "https://drive.google.com/file/d/1AJb4iV8V4mpUA3nsVRC3MAEfrf1QSolK/view?usp=drivesdk";
     
-    // Create a link and trigger the download
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = 'ProFixer.apk';
-    link.type = 'application/vnd.android.package-archive';
+    // Deschide link-ul într-o fereastră nouă
+    window.open(downloadUrl, "_blank");
     
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success("Descărcare începută! Urmează instrucțiunile pentru instalare.");
+    toast.success("Redirecționare către pagina de descărcare! Urmează instrucțiunile pentru descărcare și instalare.");
   };
 
   return (
@@ -100,6 +93,7 @@ const Index = () => {
               <h3 className="font-semibold">Pentru Android:</h3>
               <ol className="list-decimal pl-5 space-y-2">
                 <li>Apasă pe butonul "Descarcă pentru Android"</li>
+                <li>Vei fi redirecționat către Google Drive. Apasă pe butonul de descărcare din partea de sus</li>
                 <li>Când descărcarea se termină, apasă pe fișierul .apk</li>
                 <li>Dacă primești avertisment despre "surse necunoscute", mergi în Setări &gt; Securitate &gt; Surse necunoscute și activează opțiunea</li>
                 <li>Revino și apasă din nou pe fișierul .apk</li>
