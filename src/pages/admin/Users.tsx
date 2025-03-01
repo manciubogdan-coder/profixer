@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -110,166 +109,188 @@ export const Users = () => {
     try {
       setLoading(true);
       
-      // Pașii de ștergere în cascadă
-      console.log("Începem ștergerea utilizatorului și a datelor asociate...", userId);
+      console.log(`Starting deletion process for user ${userId}`);
       
-      // Ștergem toate mesajele asociate utilizatorului
       const { error: messagesError } = await supabase
         .from("messages")
         .delete()
         .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
       
       if (messagesError) {
-        console.error("Eroare la ștergerea mesajelor:", messagesError);
+        console.error("Error deleting messages:", messagesError);
+        toast.error(`Ștergere mesaje eșuată: ${messagesError.message}`);
       } else {
-        console.log("Mesajele utilizatorului au fost șterse cu succes");
+        console.log("Messages deleted successfully");
       }
       
-      // Ștergem toate plățile asociate utilizatorului
       const { error: paymentsError } = await supabase
         .from("payments")
         .delete()
         .eq("craftsman_id", userId);
       
       if (paymentsError) {
-        console.error("Eroare la ștergerea plăților:", paymentsError);
+        console.error("Error deleting payments:", paymentsError);
+        toast.error(`Ștergere plăți eșuată: ${paymentsError.message}`);
       } else {
-        console.log("Plățile utilizatorului au fost șterse cu succes");
+        console.log("Payments deleted successfully");
       }
       
-      // Ștergem abonamentele asociate utilizatorului
       const { error: subscriptionsError } = await supabase
         .from("subscriptions")
         .delete()
         .eq("craftsman_id", userId);
       
       if (subscriptionsError) {
-        console.error("Eroare la ștergerea abonamentelor:", subscriptionsError);
+        console.error("Error deleting subscriptions:", subscriptionsError);
+        toast.error(`Ștergere abonamente eșuată: ${subscriptionsError.message}`);
       } else {
-        console.log("Abonamentele utilizatorului au fost șterse cu succes");
+        console.log("Subscriptions deleted successfully");
       }
       
-      // Ștergem recenziile date de sau despre utilizator
       const { error: reviewsError } = await supabase
         .from("reviews")
         .delete()
         .or(`client_id.eq.${userId},craftsman_id.eq.${userId}`);
       
       if (reviewsError) {
-        console.error("Eroare la ștergerea recenziilor:", reviewsError);
+        console.error("Error deleting reviews:", reviewsError);
+        toast.error(`Ștergere recenzii eșuată: ${reviewsError.message}`);
       } else {
-        console.log("Recenziile utilizatorului au fost șterse cu succes");
+        console.log("Reviews deleted successfully");
       }
       
-      // Ștergem portofoliile utilizatorului
       const { error: portfoliosError } = await supabase
         .from("portfolios")
         .delete()
         .eq("craftsman_id", userId);
       
       if (portfoliosError) {
-        console.error("Eroare la ștergerea portofoliilor:", portfoliosError);
+        console.error("Error deleting portfolios:", portfoliosError);
+        toast.error(`Ștergere portofolii eșuată: ${portfoliosError.message}`);
       } else {
-        console.log("Portofoliile utilizatorului au fost șterse cu succes");
+        console.log("Portfolios deleted successfully");
       }
       
-      // Ștergem calificările utilizatorului
       const { error: qualificationsError } = await supabase
         .from("qualifications")
         .delete()
         .eq("craftsman_id", userId);
       
       if (qualificationsError) {
-        console.error("Eroare la ștergerea calificărilor:", qualificationsError);
+        console.error("Error deleting qualifications:", qualificationsError);
+        toast.error(`Ștergere calificări eșuată: ${qualificationsError.message}`);
       } else {
-        console.log("Calificările utilizatorului au fost șterse cu succes");
+        console.log("Qualifications deleted successfully");
       }
       
-      // Ștergem specializările utilizatorului
       const { error: specializationsError } = await supabase
         .from("specializations")
         .delete()
         .eq("craftsman_id", userId);
       
       if (specializationsError) {
-        console.error("Eroare la ștergerea specializărilor:", specializationsError);
+        console.error("Error deleting specializations:", specializationsError);
+        toast.error(`Ștergere specializări eșuată: ${specializationsError.message}`);
       } else {
-        console.log("Specializările utilizatorului au fost șterse cu succes");
+        console.log("Specializations deleted successfully");
       }
       
-      // Ștergem notificările utilizatorului
       const { error: notificationsError } = await supabase
         .from("notifications")
         .delete()
         .eq("user_id", userId);
       
       if (notificationsError) {
-        console.error("Eroare la ștergerea notificărilor:", notificationsError);
+        console.error("Error deleting notifications:", notificationsError);
+        toast.error(`Ștergere notificări eșuată: ${notificationsError.message}`);
       } else {
-        console.log("Notificările utilizatorului au fost șterse cu succes");
+        console.log("Notifications deleted successfully");
       }
       
-      // Ștergem anunțurile de job create de utilizator
       const { error: jobListingsError } = await supabase
         .from("job_listings")
         .delete()
         .eq("client_id", userId);
       
       if (jobListingsError) {
-        console.error("Eroare la ștergerea anunțurilor de job:", jobListingsError);
+        console.error("Error deleting job listings:", jobListingsError);
+        toast.error(`Ștergere anunțuri de job eșuată: ${jobListingsError.message}`);
       } else {
-        console.log("Anunțurile de job ale utilizatorului au fost șterse cu succes");
+        console.log("Job listings deleted successfully");
       }
       
-      // Ștergem interacțiunile cu profilul
       const { error: profileInteractionsError } = await supabase
         .from("profile_interactions")
         .delete()
         .or(`visitor_id.eq.${userId},craftsman_id.eq.${userId}`);
       
       if (profileInteractionsError) {
-        console.error("Eroare la ștergerea interacțiunilor cu profilul:", profileInteractionsError);
+        console.error("Error deleting profile interactions:", profileInteractionsError);
+        toast.error(`Ștergere interacțiuni profil eșuată: ${profileInteractionsError.message}`);
       } else {
-        console.log("Interacțiunile cu profilul utilizatorului au fost șterse cu succes");
+        console.log("Profile interactions deleted successfully");
       }
       
-      // După ce toate datele asociate au fost șterse, ștergem utilizatorul
-      console.log("Toate datele asociate au fost șterse, acum ștergem utilizatorul");
-      
-      // Ștergerea profilului și a contului utilizatorului
       const { error: profileError } = await supabase
         .from("profiles")
         .delete()
         .eq("id", userId);
       
       if (profileError) {
-        console.error("Eroare la ștergerea profilului:", profileError);
+        console.error("Error deleting profile:", profileError);
+        toast.error(`Ștergere profil eșuată: ${profileError.message}`);
+        throw new Error(`Nu s-a putut șterge profilul: ${profileError.message}`);
       } else {
-        console.log("Profilul utilizatorului a fost șters cu succes");
+        console.log("Profile deleted successfully");
+      }
+
+      console.log("Attempting to delete user from auth system...");
+      
+      try {
+        const { error: rpcError } = await supabase.rpc('delete_user', { user_id: userId });
+        
+        if (rpcError) {
+          console.log("RPC method failed, trying auth admin API next:", rpcError);
+          
+          const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+          
+          if (authError) {
+            console.log("Auth admin API failed, trying direct DB delete:", authError);
+            
+            const { error: directDeleteError } = await supabase
+              .from('auth.users')
+              .delete()
+              .eq('id', userId);
+              
+            if (directDeleteError) {
+              console.error("All deletion methods failed:", directDeleteError);
+              throw new Error("Nu s-a putut șterge contul de autentificare după ștergerea datelor asociate");
+            }
+          }
+        }
+        
+        console.log("Auth user deleted successfully");
+        
+        await supabase.from("admin_audit_logs").insert({
+          admin_id: (await supabase.auth.getUser()).data.user?.id,
+          action: "delete_user",
+          entity_type: "user",
+          entity_id: userId,
+          details: { cascade_delete: true }
+        });
+        
+        toast.success("Utilizatorul și toate datele asociate au fost șterse cu succes");
+        setUsers(users.filter(user => user.id !== userId));
+        
+      } catch (finalError) {
+        console.error("Authentication deletion failed:", finalError);
+        toast.error("Profilul utilizatorului a fost șters, dar contul de autentificare nu a putut fi șters complet");
+        setUsers(users.filter(user => user.id !== userId));
       }
       
-      // Încercarea finală de ștergere a contului de autentificare
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (authError) {
-        console.error("Eroare la ștergerea contului de autentificare:", authError);
-        throw new Error("Nu s-a putut șterge contul de autentificare după ștergerea datelor asociate");
-      }
-      
-      await supabase.from("admin_audit_logs").insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        action: "delete_user",
-        entity_type: "user",
-        entity_id: userId,
-        details: { cascade_delete: true }
-      });
-      
-      toast.success("Utilizatorul și toate datele asociate au fost șterse cu succes");
-      
-      setUsers(users.filter(user => user.id !== userId));
     } catch (error) {
-      console.error("Eroare finală la ștergerea utilizatorului:", error);
-      toast.error("Nu am putut șterge complet utilizatorul. Verificați consola pentru detalii.");
+      console.error("Final error in deletion process:", error);
+      toast.error("Procesul de ștergere a eșuat. Verificați consola pentru detalii.");
     } finally {
       setUserToDelete(null);
       setDeleteDialogOpen(false);
@@ -380,10 +401,11 @@ export const Users = () => {
         </div>
       </div>
 
-      <Alert className="mb-4">
+      <Alert variant="destructive" className="mb-4">
         <AlertTitle>Mod de ștergere</AlertTitle>
         <AlertDescription>
           Ștergerea unui utilizator va șterge automat toate datele asociate acestuia: mesaje, plăți, abonamente, recenzii, anunțuri, etc.
+          Această acțiune este permanentă și nu poate fi anulată.
         </AlertDescription>
       </Alert>
 
@@ -478,7 +500,16 @@ export const Users = () => {
                 <span>
                   Ești sigur că vrei să ștergi utilizatorul <strong>{userToDelete.first_name} {userToDelete.last_name}</strong> ({userToDelete.email})?
                   <br /><br />
-                  Această acțiune este ireversibilă și va șterge toate datele asociate acestui utilizator.
+                  Această acțiune este ireversibilă și va șterge toate datele asociate acestui utilizator, inclusiv:
+                  <ul className="list-disc pl-5 mt-2 space-y-1">
+                    <li>Mesaje trimise și primite</li>
+                    <li>Plăți și abonamente</li>
+                    <li>Recenzii date și primite</li>
+                    <li>Portofolii și lucrări</li>
+                    <li>Calificări și specializări</li>
+                    <li>Anunțuri de job</li>
+                    <li>Notificări și interacțiuni</li>
+                  </ul>
                 </span>
               )}
             </AlertDialogDescription>
@@ -489,7 +520,7 @@ export const Users = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => userToDelete && deleteUser(userToDelete.id)}
             >
-              Șterge
+              Șterge definitiv
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
