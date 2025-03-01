@@ -1,4 +1,3 @@
-
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
@@ -17,31 +16,24 @@ import {
   DialogTitle, 
   DialogDescription
 } from "@/components/ui/dialog";
+import { toast } from "react-toastify";
 
 const Index = () => {
   const [showInstructions, setShowInstructions] = useState(false);
 
   const handleDownloadAndroid = () => {
-    // Setăm calea directă către APK și forțăm descărcarea
-    const apkUrl = '/profixer.apk';
-    
-    // Creăm un element 'a' cu atributul download
     const link = document.createElement('a');
-    link.href = apkUrl;
+    link.href = '/profixer.apk';
+    link.download = 'profixer.apk';
+    link.type = 'application/vnd.android.package-archive';
+    
     link.setAttribute('download', 'profixer.apk');
-    link.setAttribute('type', 'application/vnd.android.package-archive');
     
-    // Ascundem link-ul și îl adăugăm în DOM
-    link.style.display = 'none';
     document.body.appendChild(link);
-    
-    // Simulăm click și apoi ștergem elementul
     link.click();
+    document.body.removeChild(link);
     
-    // Curățăm după descărcare
-    setTimeout(() => {
-      document.body.removeChild(link);
-    }, 100);
+    toast.success("Descărcare începută! Urmează instrucțiunile pentru instalare.");
   };
 
   return (
@@ -56,7 +48,6 @@ const Index = () => {
       <Hero />
       <Features />
       
-      {/* Mobile App Download Section */}
       <section className="py-16 bg-secondary/30">
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center gap-2 mb-6">
@@ -92,7 +83,6 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Instructions Dialog */}
       <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
         <DialogContent className="max-w-md">
           <DialogHeader>

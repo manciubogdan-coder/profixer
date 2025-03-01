@@ -1,125 +1,103 @@
 
-// Follow this setup guide to integrate the Stripe API with your Supabase function:
-// https://supabase.com/docs/guides/functions/secrets
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import Stripe from 'https://esm.sh/stripe@12.12.0?dts';
 
-// Import the cors configuration
-import { corsHeaders } from "../_shared/cors.ts";
-
-interface RequestBody {
-  craftsman_id: string;
-  plan: 'lunar' | 'anual';
-}
-
-const PRICE_MAP = {
-  'lunar': 199 * 100,  // 199 RON in bani (smallest currency unit)
-  'anual': 1999 * 100  // 1999 RON in bani (if annual plan is added later)
+// Configurare CORS pentru a permite accesul de la aplicația web
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Folosim cheia secretă în modul live, nu în modul test
+const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY') || '';
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: '2023-10-16',
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, {
+      headers: corsHeaders,
+    });
   }
 
   try {
-    // Configurare Stripe
-    const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
-    const STRIPE_PRICE_ID = Deno.env.get('STRIPE_PRICE_ID'); // Prețul Stripe (opțional)
-    
-    if (!STRIPE_SECRET_KEY) {
-      throw new Error('Missing Stripe secret key');
+    // Verificăm dacă este un request POST
+    if (req.method !== 'POST') {
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const stripe = new Stripe(STRIPE_SECRET_KEY, {
-      apiVersion: '2022-11-15', // Use a consistent API version
-      httpClient: Stripe.createFetchHttpClient(), // Necessary for Deno
-    });
-    
-    // Extract request body
-    const requestData: RequestBody = await req.json();
-    const { craftsman_id, plan } = requestData;
+    // Extragem datele din request
+    const { craftsman_id, plan } = await req.json();
+
+    console.log(`Processing payment intent for craftsman: ${craftsman_id}, plan: ${plan}`);
 
     if (!craftsman_id) {
-      throw new Error('Missing craftsman_id');
+      throw new Error('ID-ul meșterului lipsește');
     }
-    
-    if (!plan || !['lunar', 'anual'].includes(plan)) {
-      throw new Error('Invalid plan type');
-    }
-    
-    // Setup Supabase client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
 
-    // Check if craftsman exists
-    const { data: craftsman, error: craftsmanError } = await supabaseAdmin
+    // Verificăm dacă meșterul există
+    const { data: craftsman, error: craftsmanError } = await supabase
       .from('profiles')
-      .select('id, role')
+      .select('*')
       .eq('id', craftsman_id)
       .eq('role', 'professional')
       .single();
 
     if (craftsmanError || !craftsman) {
-      throw new Error('Invalid craftsman ID or not a professional account');
+      throw new Error(`Meșterul nu a fost găsit: ${craftsmanError?.message || 'Unknown error'}`);
     }
-    
-    // Check if craftsman already has an active subscription
-    const { data: activeSubscription, error: subError } = await supabaseAdmin
+
+    // Verificăm dacă meșterul are deja un abonament activ
+    const { data: activeSub, error: subError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('craftsman_id', craftsman_id)
       .eq('status', 'active')
       .gt('end_date', new Date().toISOString())
       .maybeSingle();
-    
-    if (activeSubscription) {
-      throw new Error('Ai deja un abonament activ. Nu poți crea un nou abonament până când cel curent nu expiră.');
+
+    if (subError && subError.code !== 'PGRST116') {
+      throw new Error(`Eroare la verificarea abonamentului: ${subError.message}`);
     }
-    
-    // Create a payment record
-    const { data: payment, error: paymentError } = await supabaseAdmin
+
+    if (activeSub) {
+      throw new Error(`Ai deja un abonament activ până la ${new Date(activeSub.end_date).toLocaleDateString()}`);
+    }
+
+    // Determinăm prețul în funcție de plan
+    const amount = plan === 'anual' ? 1990 : 199; // 199 RON lunar sau 1990 RON anual
+    const planName = plan === 'anual' ? 'Anual' : 'Lunar';
+
+    console.log(`Creating payment with amount: ${amount} RON for plan: ${planName}`);
+
+    // Creăm o nouă înregistrare de plată în baza de date
+    const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .insert({
-        craftsman_id: craftsman_id,
-        amount: plan === 'lunar' ? 199 : 1999, // Amount in RON
+        craftsman_id,
+        amount,
         status: 'pending',
-        currency: 'RON'
+        plan,
+        payment_type: 'stripe'
       })
-      .select()
+      .select('id')
       .single();
-    
+
     if (paymentError) {
-      console.error("Error creating payment record:", paymentError);
-      throw new Error('Could not create payment record');
+      throw new Error(`Eroare la crearea înregistrării de plată: ${paymentError.message}`);
     }
-    
-    // Create a subscription record linked to the payment
-    const { error: subscriptionError } = await supabaseAdmin
-      .from('subscriptions')
-      .insert({
-        craftsman_id: craftsman_id,
-        status: 'inactive',
-        plan: plan,
-        payment_id: payment.id
-      });
-    
-    if (subscriptionError) {
-      console.error("Error creating subscription record:", subscriptionError);
-      throw new Error('Could not create subscription record');
-    }
-    
-    // Create Stripe Checkout Session
+
+    // Creăm o sesiune de checkout cu Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -127,57 +105,68 @@ serve(async (req) => {
           price_data: {
             currency: 'ron',
             product_data: {
-              name: `Abonament ProFixer ${plan === 'lunar' ? 'Lunar' : 'Anual'}`,
-              description: `Acces complet la platforma ProFixer pentru ${plan === 'lunar' ? '1 lună' : '12 luni'}`
+              name: `Abonament ProFixer ${planName}`,
+              description: `Acces la toate funcționalitățile platformei ProFixer timp de ${plan === 'anual' ? '12 luni' : '1 lună'}`,
             },
-            unit_amount: PRICE_MAP[plan],
+            unit_amount: amount * 100, // Stripe folosește cenți
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      success_url: `${req.headers.get('origin')}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${req.headers.get('origin')}/subscription/success?payment_id=${payment.id}&plan=${plan}`,
       cancel_url: `${req.headers.get('origin')}/subscription/activate`,
+      client_reference_id: craftsman_id,
       metadata: {
-        craftsman_id: craftsman_id,
         payment_id: payment.id,
-        plan: plan
+        plan: plan,
       },
-      client_reference_id: payment.id,
     });
-    
-    // Update payment record with Stripe session ID
-    await supabaseAdmin
+
+    // Actualizăm înregistrarea de plată cu ID-ul sesiunii Stripe
+    const { error: updateError } = await supabase
       .from('payments')
       .update({
-        stripe_payment_id: session.id
+        stripe_payment_id: session.id,
       })
       .eq('id', payment.id);
-    
-    // Return the session URL
-    return new Response(
-      JSON.stringify({ url: session.url }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        },
-        status: 200 
-      }
-    );
-    
+
+    if (updateError) {
+      console.error(`Eroare la actualizarea înregistrării de plată: ${updateError.message}`);
+    }
+
+    console.log(`Payment session created: ${session.id}, redirecting to: ${session.url}`);
+
+    // Înregistrăm abonamentul cu status pending
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + (plan === 'anual' ? 365 : 30));
+
+    const { error: subCreateError } = await supabase
+      .from('subscriptions')
+      .insert({
+        craftsman_id,
+        status: 'pending',
+        plan,
+        payment_id: payment.id,
+        stripe_subscription_id: session.id,
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+      });
+
+    if (subCreateError) {
+      console.error(`Eroare la crearea abonamentului: ${subCreateError.message}`);
+    }
+
+    return new Response(JSON.stringify({ url: session.url }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    console.error("Error:", error.message);
-    
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        },
-        status: 400 
-      }
-    );
+    console.error('Error processing payment:', error);
+    return new Response(JSON.stringify({ error: error.message || 'An unknown error occurred' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
