@@ -21,6 +21,16 @@ import {
 const Index = () => {
   const [showInstructions, setShowInstructions] = useState(false);
 
+  const handleDownloadAndroid = () => {
+    // Create an anchor element and trigger download
+    const link = document.createElement('a');
+    link.href = '/profixer.apk';
+    link.download = 'profixer.apk'; 
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Alert className="bg-primary/10 border-primary text-primary">
@@ -50,7 +60,7 @@ const Index = () => {
             <Button 
               size="lg" 
               className="w-full sm:w-auto" 
-              onClick={() => window.open('/profixer.apk')}
+              onClick={handleDownloadAndroid}
             >
               <Download className="mr-2" />
               Descarcă pentru Android
