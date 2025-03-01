@@ -65,18 +65,23 @@ const SubscriptionSuccess = () => {
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + 30); // Adăugăm 30 de zile pentru abonament lunar
 
-        // Dezactivăm orice abonament existent
-        const { error: deactivateError } = await supabase
-          .from('subscriptions')
-          .update({ status: 'inactive' })
-          .eq('craftsman_id', payment.craftsman_id)
-          .eq('status', 'active');
+        // Dezactivăm orice abonament existent folosind RPC
+        try {
+          const { error: deactivateError } = await supabase
+            .rpc('update_craftsman_subscription_status', {
+              p_craftsman_id: payment.craftsman_id,
+              p_is_active: false,
+              p_end_date: new Date().toISOString()
+            });
 
-        if (deactivateError) {
-          console.error('Error deactivating existing subscriptions:', deactivateError);
+          if (deactivateError) {
+            console.error('Error deactivating existing subscriptions via RPC:', deactivateError);
+          } else {
+            console.log('Deactivated existing subscriptions via RPC');
+          }
+        } catch (deactivateErr) {
+          console.error('Exception while deactivating subscriptions:', deactivateErr);
         }
-
-        console.log('Deactivated any existing subscriptions');
 
         // Forțăm actualizarea stării abonamentului prin RPC
         console.log('Updating subscription status via RPC for user:', payment.craftsman_id);
@@ -98,7 +103,7 @@ const SubscriptionSuccess = () => {
         // Invalidate any cached subscription data
         await Promise.all([
           supabase.auth.refreshSession(),
-          new Promise(resolve => setTimeout(resolve, 1000)) // Wait for DB updates to propagate
+          new Promise(resolve => setTimeout(resolve, 2000)) // Wait for DB updates to propagate
         ]);
 
         setIsLoading(false);
