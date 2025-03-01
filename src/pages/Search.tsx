@@ -144,24 +144,8 @@ const Search = () => {
         userLocation
       });
       
-      // First, let's log who the current user is
-      console.log("Current user:", user?.id);
-      
       try {
-        // Log all professionals in the system for debugging
-        const { data: allProfessionals, error: debugError } = await supabase
-          .from("profiles")
-          .select("id, first_name, last_name, role, latitude, longitude")
-          .eq("role", "professional");
-        
-        if (debugError) {
-          console.error("Error fetching all professionals:", debugError);
-        } else {
-          console.log("All professionals in the system:", allProfessionals);
-          console.log(`Found ${allProfessionals?.length || 0} professionals in total`);
-        }
-        
-        // Let's use a simpler query first to make sure we're getting data
+        // Use a simpler query to get all professionals without role checks
         let query = supabase
           .from("user_profiles_with_email")
           .select(`
@@ -171,17 +155,8 @@ const Search = () => {
           `)
           .eq("role", "professional");  // Filter only for professional users (craftsmen)
 
-        // Add search term filter if provided
-        if (searchTerm) {
-          query = query.or(
-            `first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`
-          );
-        }
-
-        // Add type filter if provided
-        if (selectedType) {
-          query = query.eq("craftsman_type", selectedType);
-        }
+        // Log the query to debug
+        console.log("Executing query for professionals");
 
         // Execute query
         const { data: craftsmenData, error } = await query;
@@ -214,20 +189,12 @@ const Search = () => {
             ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
             : 0;
 
-          // Ensure latitude and longitude are numbers and valid
-          let lat = craftsman.latitude;
-          let lng = craftsman.longitude;
-          
-          if (lat === null || lng === null) {
-            console.warn(`Coordonate lipsă pentru meșterul ${craftsman.id} (${craftsman.email || 'email necunoscut'})`);
-          }
-          
           // Build processed craftsman object
           return {
             ...craftsman,
             average_rating: avgRating,
-            latitude: typeof lat === 'number' ? lat : null,
-            longitude: typeof lng === 'number' ? lng : null,
+            latitude: typeof craftsman.latitude === 'number' ? craftsman.latitude : null,
+            longitude: typeof craftsman.longitude === 'number' ? craftsman.longitude : null,
             email: craftsman.email
           };
         });
