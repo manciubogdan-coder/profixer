@@ -98,15 +98,10 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
   const mapInitializedRef = useRef(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
+  // Debug logging for craftsmen data received
   useEffect(() => {
-    console.log("Date despre meșteri primite în componenta Map:", craftsmen.length);
-    craftsmen.forEach((c, idx) => {
-      if (c.latitude !== null && c.longitude !== null) {
-        console.log(`[${idx}] Meșter valid pentru afișare: ${c.id}, ${c.first_name} ${c.last_name}, lat: ${c.latitude}, lng: ${c.longitude}, meserie: ${c.trade?.name}`);
-      } else {
-        console.log(`[${idx}] Meșter fără coordonate: ${c.id}, ${c.first_name} ${c.last_name}`);
-      }
-    });
+    console.log("Map component received craftsmen:", craftsmen.length);
+    console.log("Craftsmen with coordinates:", craftsmen.filter(c => c.latitude !== null && c.longitude !== null).length);
   }, [craftsmen]);
 
   useEffect(() => {
@@ -134,6 +129,9 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         if (map.current) {
           const center = map.current.getCenter();
           console.log("Centrul hărții:", center.lng, center.lat);
+          
+          // Force markers update when map loads
+          updateMarkers();
         }
       });
       
@@ -185,12 +183,16 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         .addTo(map.current);
       
       console.log("Marker-ul locației utilizatorului a fost adăugat/actualizat");
+      
+      // Update markers when user location changes
+      updateMarkers();
     } catch (error) {
       console.error("Eroare la adăugarea marker-ului pentru locația utilizatorului:", error);
     }
   }, [userLocation]);
 
-  useEffect(() => {
+  // Function to update craftsmen markers
+  const updateMarkers = () => {
     if (!map.current || !mapInitializedRef.current) {
       console.log("Harta nu este inițializată, nu se pot adăuga markerii meșterilor");
       return;
@@ -204,8 +206,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
 
     // Filter craftsmen to only include those with valid coordinates
     const craftsmenWithCoordinates = craftsmen.filter(c => 
-      c.latitude !== null && c.latitude !== undefined && 
-      c.longitude !== null && c.longitude !== undefined &&
+      c.latitude !== null && c.longitude !== null &&
       typeof c.latitude === 'number' && typeof c.longitude === 'number' &&
       !isNaN(c.latitude) && !isNaN(c.longitude) &&
       c.latitude >= -90 && c.latitude <= 90 &&
@@ -230,15 +231,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     
     craftsmenWithCoordinates.forEach((craftsman) => {
       try {
-        if (!craftsman.latitude || !craftsman.longitude || 
-            typeof craftsman.latitude !== 'number' || 
-            typeof craftsman.longitude !== 'number') {
-          console.warn(`Se omite meșterul ${craftsman.id} din cauza coordonatelor invalide:`, 
-            craftsman.latitude, craftsman.longitude);
+        if (craftsman.latitude === null || craftsman.longitude === null || 
+            typeof craftsman.latitude !== 'number' || typeof craftsman.longitude !== 'number') {
           return;
         }
         
-        console.log(`Se adaugă marker pentru ${craftsman.first_name} ${craftsman.last_name} la [${craftsman.longitude}, ${craftsman.latitude}], meserie: ${craftsman.trade?.name}`);
+        console.log(`Se adaugă marker pentru ${craftsman.first_name} ${craftsman.last_name} la [${craftsman.longitude}, ${craftsman.latitude}]`);
         
         const el = document.createElement("div");
         el.className = "craftsman-marker";
@@ -375,7 +373,12 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         });
       }
     }
-  }, [craftsmen, onCraftsmanClick, userLocation]);
+  };
+
+  // Effect to update markers when craftsmen data changes
+  useEffect(() => {
+    updateMarkers();
+  }, [craftsmen, onCraftsmanClick]);
 
   return (
     <div className="flex-1 relative h-full">
