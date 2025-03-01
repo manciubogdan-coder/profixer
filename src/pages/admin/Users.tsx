@@ -255,17 +255,8 @@ export const Users = () => {
           const { error: authError } = await supabase.auth.admin.deleteUser(userId);
           
           if (authError) {
-            console.log("Auth admin API failed, trying direct DB delete:", authError);
-            
-            const { error: directDeleteError } = await supabase
-              .from('auth.users')
-              .delete()
-              .eq('id', userId);
-              
-            if (directDeleteError) {
-              console.error("All deletion methods failed:", directDeleteError);
-              throw new Error("Nu s-a putut șterge contul de autentificare după ștergerea datelor asociate");
-            }
+            console.error("Auth admin API failed:", authError);
+            throw new Error("Nu s-a putut șterge contul de autentificare după ștergerea datelor asociate");
           }
         }
         
