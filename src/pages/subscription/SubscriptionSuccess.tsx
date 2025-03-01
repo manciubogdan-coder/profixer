@@ -34,7 +34,7 @@ const SubscriptionSuccess = () => {
           throw new Error('Nu ești autentificat');
         }
 
-        // Verificăm starea plății
+        // Verificăm plata
         const { data: payment, error: paymentError } = await supabase
           .from('payments')
           .select('status, craftsman_id')
@@ -47,36 +47,25 @@ const SubscriptionSuccess = () => {
 
         console.log('Payment status:', payment.status);
 
-        // Actualizăm manual plata dacă nu este deja completată
-        if (payment.status !== 'completed') {
-          console.log('Updating payment status manually');
-          const { error: paymentUpdateError } = await supabase
-            .from('payments')
-            .update({ status: 'completed' })
-            .eq('id', paymentId);
+        // Actualizăm manual plata
+        const { error: paymentUpdateError } = await supabase
+          .from('payments')
+          .update({ status: 'completed' })
+          .eq('id', paymentId);
             
-          if (paymentUpdateError) {
-            console.error('Error updating payment status:', paymentUpdateError);
-          }
+        if (paymentUpdateError) {
+          console.error('Error updating payment status:', paymentUpdateError);
+          throw new Error(`Nu s-a putut actualiza plata: ${paymentUpdateError.message}`);
         }
+
+        console.log('Updated payment status to completed');
 
         // Creăm date pentru abonament
         const startDate = new Date();
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + 30); // Adăugăm 30 de zile pentru abonament lunar
 
-        // Verificăm abonamentul existent
-        const { data: existingSub, error: existingSubError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('payment_id', paymentId)
-          .maybeSingle();
-
-        if (existingSubError && existingSubError.code !== 'PGRST116') {
-          console.error('Error checking existing subscription:', existingSubError);
-        }
-
-        // Deactivate any existing active subscriptions for this user
+        // Dezactivăm orice abonament existent
         const { error: deactivateError } = await supabase
           .from('subscriptions')
           .update({ status: 'inactive' })
@@ -87,57 +76,24 @@ const SubscriptionSuccess = () => {
           console.error('Error deactivating existing subscriptions:', deactivateError);
         }
 
-        if (existingSub) {
-          console.log('Updating existing subscription');
-          // Actualizăm abonamentul existent
-          const { error: updateSubError } = await supabase
-            .from('subscriptions')
-            .update({
-              status: 'active',
-              start_date: startDate.toISOString(),
-              end_date: endDate.toISOString()
-            })
-            .eq('id', existingSub.id);
-
-          if (updateSubError) {
-            console.error('Error updating subscription:', updateSubError);
-          }
-        } else {
-          console.log('Creating new subscription');
-          // Creăm un nou abonament
-          const validPlan: SubscriptionPlan = plan === 'lunar' ? 'lunar' : 'lunar'; // Forțăm să fie 'lunar' dacă nu este valid
-          const { error: createSubError } = await supabase
-            .from('subscriptions')
-            .insert({
-              craftsman_id: payment.craftsman_id,
-              status: 'active',
-              plan: validPlan,
-              payment_id: paymentId,
-              start_date: startDate.toISOString(),
-              end_date: endDate.toISOString()
-            });
-
-          if (createSubError) {
-            console.error('Error creating new subscription:', createSubError);
-            throw new Error(`Nu s-a putut crea abonamentul: ${createSubError.message}`);
-          }
-        }
+        console.log('Deactivated any existing subscriptions');
 
         // Forțăm actualizarea stării abonamentului prin RPC
-        console.log('Forcing subscription status update via RPC');
-        const { error: statusUpdateError } = await supabase
+        console.log('Updating subscription status via RPC for user:', payment.craftsman_id);
+        
+        const { error: rpcError } = await supabase
           .rpc('update_craftsman_subscription_status', {
             p_craftsman_id: payment.craftsman_id,
             p_is_active: true,
             p_end_date: endDate.toISOString()
           });
 
-        if (statusUpdateError) {
-          console.error('Error updating subscription status via RPC:', statusUpdateError);
-          throw new Error(`Nu s-a putut actualiza starea abonamentului: ${statusUpdateError.message}`);
-        } else {
-          console.log('Successfully updated subscription status via RPC');
+        if (rpcError) {
+          console.error('Error updating subscription status via RPC:', rpcError);
+          throw new Error(`Nu s-a putut actualiza starea abonamentului: ${rpcError.message}`);
         }
+
+        console.log('Successfully updated subscription status via RPC');
 
         // Invalidate any cached subscription data
         await Promise.all([

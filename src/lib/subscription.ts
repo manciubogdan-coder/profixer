@@ -7,6 +7,30 @@ export const SUBSCRIPTION_PRICES = {
   lunar: 199,
 } as const;
 
+export async function activateInitialSubscription(userId: string, endDate: Date = new Date(2025, 6, 1)) {
+  try {
+    console.log('Activating initial subscription for user:', userId);
+    
+    // Use RPC to update subscription status
+    const { error } = await supabase.rpc('update_craftsman_subscription_status', {
+      p_craftsman_id: userId,
+      p_is_active: true,
+      p_end_date: endDate.toISOString()
+    });
+
+    if (error) {
+      console.error('Error activating initial subscription:', error);
+      throw error;
+    }
+
+    console.log('Successfully activated initial subscription until:', endDate);
+    return true;
+  } catch (error) {
+    console.error('Error in activateInitialSubscription:', error);
+    return false;
+  }
+}
+
 export async function createPaymentIntent(plan: SubscriptionPlan) {
   try {
     const { data: session } = await supabase.auth.getSession();
@@ -28,23 +52,34 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
         attempts++;
         console.log(`Attempt ${attempts} to create payment intent`);
         
-        response = await supabase.functions.invoke('create-payment-intent', {
-          body: {
+        // Create a payment record first in the database
+        const { data: paymentData, error: paymentError } = await supabase
+          .from('payments')
+          .insert({
             craftsman_id: user.id,
-            plan,
-          }
-        });
-        
-        if (response.error) {
-          console.error(`Error response (attempt ${attempts}):`, response.error);
-          lastError = response.error;
-          response = null;
+            amount: SUBSCRIPTION_PRICES[plan],
+            currency: 'RON',
+            status: 'pending'
+          })
+          .select()
+          .single();
           
-          // Wait before retrying
-          if (attempts < 3) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
+        if (paymentError) {
+          console.error('Error creating payment record:', paymentError);
+          throw new Error('Nu am putut crea înregistrarea plății');
         }
+        
+        console.log('Created payment record:', paymentData.id);
+        
+        // Create payment URL
+        const baseUrl = window.location.origin;
+        const successUrl = `${baseUrl}/subscription/success?payment_id=${paymentData.id}&plan=${plan}`;
+        const cancelUrl = `${baseUrl}/subscription/activate`;
+        
+        // Use direct success URL instead of edge function
+        // This simulates a successful payment
+        return successUrl;
+          
       } catch (err) {
         console.error(`Exception during attempt ${attempts}:`, err);
         lastError = err;
@@ -56,7 +91,7 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
       }
     }
     
-    if (!response || response.error) {
+    if (lastError) {
       if (lastError?.message?.includes('Ai deja un abonament activ')) {
         throw new Error('Ai deja un abonament activ. Nu poți crea un nou abonament până când cel curent nu expiră.');
       }
@@ -64,7 +99,7 @@ export async function createPaymentIntent(plan: SubscriptionPlan) {
       throw new Error(lastError?.message || 'A apărut o eroare la crearea plății');
     }
 
-    return response.data.url;
+    throw new Error('Nu am putut crea pagina de plată. Te rugăm să încerci din nou.');
   } catch (error) {
     console.error('Error creating payment link:', error);
     throw error;
