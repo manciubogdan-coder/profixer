@@ -50,7 +50,7 @@ const Index = () => {
             <Button 
               size="lg" 
               className="w-full sm:w-auto" 
-              onClick={() => window.open('/app-debug.apk')}
+              onClick={() => window.open('/profixer.apk')}
             >
               <Download className="mr-2" />
               Descarcă pentru Android

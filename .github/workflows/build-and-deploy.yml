@@ -185,7 +185,7 @@ jobs:
       - name: Copy APK to web directory
         run: |
           mkdir -p dist
-          cp android/app/build/outputs/apk/debug/app-debug.apk dist/
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/profixer.apk
           
       - name: Deploy APK to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
