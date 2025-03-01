@@ -28,6 +28,7 @@ import {
 import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Use your Mapbox token here
 const MAPBOX_TOKEN = "pk.eyJ1Ijoid2VzdGVyMTIiLCJhIjoiY201aHpmbW8xMGs1ZDJrc2ZncXVpdnVidCJ9.l1qMsSzaQBOq8sopVis4BQ";
@@ -77,6 +78,20 @@ const getCraftsmanIcon = (tradeName: string | null) => {
   }
 };
 
+// Helper function to record profile interaction
+const recordProfileInteraction = async (craftsmanId: string, visitorId: string | undefined, interactionType: string) => {
+  try {
+    await supabase.from('profile_interactions').insert({
+      craftsman_id: craftsmanId,
+      visitor_id: visitorId,
+      interaction_type: interactionType
+    });
+    console.log(`Recorded ${interactionType} for craftsman ${craftsmanId}`);
+  } catch (error) {
+    console.error('Error recording profile interaction:', error);
+  }
+};
+
 export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -89,6 +104,7 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     if (!mapContainer.current || mapInitializedRef.current) return;
 
     try {
+      console.log("Initializing map...");
       mapboxgl.accessToken = MAPBOX_TOKEN;
 
       // Default center for Romania
@@ -165,7 +181,14 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         .setLngLat([userLocation.lng, userLocation.lat])
         .addTo(map.current);
       
-      console.log("User location marker added/updated");
+      // Force fly to user location to ensure the map centers on it
+      map.current.flyTo({
+        center: [userLocation.lng, userLocation.lat],
+        zoom: 8,
+        essential: true
+      });
+      
+      console.log("User location marker added/updated and map centered");
     } catch (error) {
       console.error("Error adding user location marker:", error);
     }
@@ -184,6 +207,16 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
+    // Debug each craftsman's coordinates
+    craftsmen.forEach((c, index) => {
+      console.log(`Craftsman ${index} - ${c.first_name} ${c.last_name}:`, 
+        c.id, 
+        "lat:", c.latitude, 
+        "lng:", c.longitude, 
+        "type:", typeof c.latitude, typeof c.longitude,
+        "trade:", c.trade?.name);
+    });
+
     // Filter craftsmen with valid coordinates
     const craftsmenWithCoordinates = craftsmen.filter(c => 
       c.latitude !== null && c.latitude !== undefined && 
@@ -198,6 +231,14 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
     
     if (craftsmenWithCoordinates.length === 0) {
       console.warn("No craftsmen have valid coordinates to display on the map");
+      
+      // If user location is available, center the map there
+      if (userLocation && map.current) {
+        map.current.flyTo({
+          center: [userLocation.lng, userLocation.lat],
+          zoom: 8
+        });
+      }
       return;
     }
 
@@ -210,6 +251,8 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
         if (!craftsman.latitude || !craftsman.longitude || 
             typeof craftsman.latitude !== 'number' || 
             typeof craftsman.longitude !== 'number') {
+          console.warn(`Skipping craftsman ${craftsman.id} due to invalid coordinates:`, 
+            craftsman.latitude, craftsman.longitude);
           return;
         }
         
@@ -282,10 +325,24 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           if (!button) return;
 
           if (button.hasAttribute('data-craftsman-id')) {
+            // Record profile view interaction
+            const userId = (async () => {
+              const { data } = await supabase.auth.getUser();
+              return data.user?.id;
+            })();
+            
+            recordProfileInteraction(craftsman.id, userId, 'profile_view');
             onCraftsmanClick(craftsman);
           } else if (button.hasAttribute('data-phone')) {
             const phone = button.getAttribute('data-phone');
             if (phone) {
+              // Record phone click interaction
+              const userId = (async () => {
+                const { data } = await supabase.auth.getUser();
+                return data.user?.id;
+              })();
+              
+              recordProfileInteraction(craftsman.id, userId, 'phone_click');
               window.location.href = `tel:${phone}`;
             }
           }
@@ -306,6 +363,13 @@ export const Map = ({ craftsmen, userLocation, onCraftsmanClick }: MapProps) => 
           .setLngLat([craftsman.longitude, craftsman.latitude])
           .setPopup(popup)
           .addTo(map.current);
+
+        // Add marker click handler to record interaction
+        el.addEventListener('click', async () => {
+          const { data } = await supabase.auth.getUser();
+          const userId = data.user?.id;
+          recordProfileInteraction(craftsman.id, userId, 'map_click');
+        });
 
         // Save marker reference
         markersRef.current.push(marker);
