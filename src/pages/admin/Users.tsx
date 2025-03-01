@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -111,6 +112,24 @@ export const Users = () => {
       
       console.log(`Starting deletion process for user ${userId}`);
       
+      // First check the user's role to handle clients and professionals differently
+      const { data: userProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
+      
+      if (profileError) {
+        console.error("Error fetching user profile:", profileError);
+        toast.error(`Eroare la verificarea profilului: ${profileError.message}`);
+        throw profileError;
+      }
+      
+      const isClient = userProfile.role === 'client';
+      console.log(`User is a ${userProfile.role}`);
+      
+      // Delete data associated with both clients and professionals
+      console.log("Deleting messages...");
       const { error: messagesError } = await supabase
         .from("messages")
         .delete()
@@ -123,30 +142,7 @@ export const Users = () => {
         console.log("Messages deleted successfully");
       }
       
-      const { error: paymentsError } = await supabase
-        .from("payments")
-        .delete()
-        .eq("craftsman_id", userId);
-      
-      if (paymentsError) {
-        console.error("Error deleting payments:", paymentsError);
-        toast.error(`Ștergere plăți eșuată: ${paymentsError.message}`);
-      } else {
-        console.log("Payments deleted successfully");
-      }
-      
-      const { error: subscriptionsError } = await supabase
-        .from("subscriptions")
-        .delete()
-        .eq("craftsman_id", userId);
-      
-      if (subscriptionsError) {
-        console.error("Error deleting subscriptions:", subscriptionsError);
-        toast.error(`Ștergere abonamente eșuată: ${subscriptionsError.message}`);
-      } else {
-        console.log("Subscriptions deleted successfully");
-      }
-      
+      console.log("Deleting reviews...");
       const { error: reviewsError } = await supabase
         .from("reviews")
         .delete()
@@ -159,42 +155,7 @@ export const Users = () => {
         console.log("Reviews deleted successfully");
       }
       
-      const { error: portfoliosError } = await supabase
-        .from("portfolios")
-        .delete()
-        .eq("craftsman_id", userId);
-      
-      if (portfoliosError) {
-        console.error("Error deleting portfolios:", portfoliosError);
-        toast.error(`Ștergere portofolii eșuată: ${portfoliosError.message}`);
-      } else {
-        console.log("Portfolios deleted successfully");
-      }
-      
-      const { error: qualificationsError } = await supabase
-        .from("qualifications")
-        .delete()
-        .eq("craftsman_id", userId);
-      
-      if (qualificationsError) {
-        console.error("Error deleting qualifications:", qualificationsError);
-        toast.error(`Ștergere calificări eșuată: ${qualificationsError.message}`);
-      } else {
-        console.log("Qualifications deleted successfully");
-      }
-      
-      const { error: specializationsError } = await supabase
-        .from("specializations")
-        .delete()
-        .eq("craftsman_id", userId);
-      
-      if (specializationsError) {
-        console.error("Error deleting specializations:", specializationsError);
-        toast.error(`Ștergere specializări eșuată: ${specializationsError.message}`);
-      } else {
-        console.log("Specializations deleted successfully");
-      }
-      
+      console.log("Deleting notifications...");
       const { error: notificationsError } = await supabase
         .from("notifications")
         .delete()
@@ -207,18 +168,7 @@ export const Users = () => {
         console.log("Notifications deleted successfully");
       }
       
-      const { error: jobListingsError } = await supabase
-        .from("job_listings")
-        .delete()
-        .eq("client_id", userId);
-      
-      if (jobListingsError) {
-        console.error("Error deleting job listings:", jobListingsError);
-        toast.error(`Ștergere anunțuri de job eșuată: ${jobListingsError.message}`);
-      } else {
-        console.log("Job listings deleted successfully");
-      }
-      
+      console.log("Deleting profile interactions...");
       const { error: profileInteractionsError } = await supabase
         .from("profile_interactions")
         .delete()
@@ -231,27 +181,117 @@ export const Users = () => {
         console.log("Profile interactions deleted successfully");
       }
       
-      const { error: profileError } = await supabase
+      // Delete data specific to clients
+      if (isClient) {
+        console.log("Deleting job listings for client...");
+        const { error: jobListingsError } = await supabase
+          .from("job_listings")
+          .delete()
+          .eq("client_id", userId);
+        
+        if (jobListingsError) {
+          console.error("Error deleting job listings:", jobListingsError);
+          toast.error(`Ștergere anunțuri de job eșuată: ${jobListingsError.message}`);
+        } else {
+          console.log("Job listings deleted successfully");
+        }
+      } 
+      // Delete data specific to professionals
+      else {
+        console.log("Deleting professional-specific data...");
+        
+        // Delete payments
+        const { error: paymentsError } = await supabase
+          .from("payments")
+          .delete()
+          .eq("craftsman_id", userId);
+        
+        if (paymentsError) {
+          console.error("Error deleting payments:", paymentsError);
+          toast.error(`Ștergere plăți eșuată: ${paymentsError.message}`);
+        } else {
+          console.log("Payments deleted successfully");
+        }
+        
+        // Delete subscriptions
+        const { error: subscriptionsError } = await supabase
+          .from("subscriptions")
+          .delete()
+          .eq("craftsman_id", userId);
+        
+        if (subscriptionsError) {
+          console.error("Error deleting subscriptions:", subscriptionsError);
+          toast.error(`Ștergere abonamente eșuată: ${subscriptionsError.message}`);
+        } else {
+          console.log("Subscriptions deleted successfully");
+        }
+        
+        // Delete portfolios
+        const { error: portfoliosError } = await supabase
+          .from("portfolios")
+          .delete()
+          .eq("craftsman_id", userId);
+        
+        if (portfoliosError) {
+          console.error("Error deleting portfolios:", portfoliosError);
+          toast.error(`Ștergere portofolii eșuată: ${portfoliosError.message}`);
+        } else {
+          console.log("Portfolios deleted successfully");
+        }
+        
+        // Delete qualifications
+        const { error: qualificationsError } = await supabase
+          .from("qualifications")
+          .delete()
+          .eq("craftsman_id", userId);
+        
+        if (qualificationsError) {
+          console.error("Error deleting qualifications:", qualificationsError);
+          toast.error(`Ștergere calificări eșuată: ${qualificationsError.message}`);
+        } else {
+          console.log("Qualifications deleted successfully");
+        }
+        
+        // Delete specializations
+        const { error: specializationsError } = await supabase
+          .from("specializations")
+          .delete()
+          .eq("craftsman_id", userId);
+        
+        if (specializationsError) {
+          console.error("Error deleting specializations:", specializationsError);
+          toast.error(`Ștergere specializări eșuată: ${specializationsError.message}`);
+        } else {
+          console.log("Specializations deleted successfully");
+        }
+      }
+      
+      // Delete the profile as the last step before deleting the auth user
+      console.log("Deleting user profile...");
+      const { error: profileDeleteError } = await supabase
         .from("profiles")
         .delete()
         .eq("id", userId);
       
-      if (profileError) {
-        console.error("Error deleting profile:", profileError);
-        toast.error(`Ștergere profil eșuată: ${profileError.message}`);
-        throw new Error(`Nu s-a putut șterge profilul: ${profileError.message}`);
+      if (profileDeleteError) {
+        console.error("Error deleting profile:", profileDeleteError);
+        toast.error(`Ștergere profil eșuată: ${profileDeleteError.message}`);
+        throw new Error(`Nu s-a putut șterge profilul: ${profileDeleteError.message}`);
       } else {
         console.log("Profile deleted successfully");
       }
 
+      // Try multiple approaches to delete the user from auth system
       console.log("Attempting to delete user from auth system...");
       
+      // First approach: Use RPC function
       try {
         const { error: rpcError } = await supabase.rpc('delete_user', { user_id: userId });
         
         if (rpcError) {
           console.log("RPC method failed, trying auth admin API next:", rpcError);
           
+          // Second approach: Use auth admin API
           const { error: authError } = await supabase.auth.admin.deleteUser(userId);
           
           if (authError) {
@@ -262,12 +302,16 @@ export const Users = () => {
         
         console.log("Auth user deleted successfully");
         
+        // Log the successful delete operation
         await supabase.from("admin_audit_logs").insert({
           admin_id: (await supabase.auth.getUser()).data.user?.id,
           action: "delete_user",
           entity_type: "user",
           entity_id: userId,
-          details: { cascade_delete: true }
+          details: { 
+            cascade_delete: true,
+            user_role: userProfile.role 
+          }
         });
         
         toast.success("Utilizatorul și toate datele asociate au fost șterse cu succes");
@@ -275,7 +319,9 @@ export const Users = () => {
         
       } catch (finalError) {
         console.error("Authentication deletion failed:", finalError);
-        toast.error("Profilul utilizatorului a fost șters, dar contul de autentificare nu a putut fi șters complet");
+        
+        // Even if auth deletion fails, we've already deleted the profile and associated data
+        toast.warning("Profilul utilizatorului a fost șters, dar contul de autentificare nu a putut fi șters complet");
         setUsers(users.filter(user => user.id !== userId));
       }
       
