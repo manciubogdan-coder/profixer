@@ -16,8 +16,8 @@ import {
 import { toast } from "sonner";
 
 // Lazy load all non-critical components
-const CookieConsent = lazy(() => import("@/components/CookieConsent"));
-const Footer = lazy(() => import("@/components/Footer"));
+const CookieConsent = lazy(() => import("@/components/CookieConsent").then(module => ({ default: module.CookieConsent })));
+const Footer = lazy(() => import("@/components/Footer").then(module => ({ default: module.Footer })));
 
 // Even more aggressively lazy load these components that are likely below the fold
 const Testimonials = lazy(() => 
