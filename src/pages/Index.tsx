@@ -49,7 +49,7 @@ const Index = () => {
       <Alert className="bg-primary/10 border-primary text-primary">
         <CalendarClock className="h-4 w-4" />
         <AlertDescription className="font-medium">
-          Ofertă specială! Înregistrează-te ca meșter și primești GRATUIT un abonament activat până la 30 Martie 2025.
+          Ofertă specială! Înregistrează-te ca meșter și primești GRATUIT un abonament activat până la 1 Iulie 2025.
         </AlertDescription>
       </Alert>
       <Navigation />

@@ -36,7 +36,7 @@ export const Features = () => {
             <Award className="h-12 w-12 text-primary ml-4" />
           </div>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Înregistrează-te acum ca meșter și primești acces GRATUIT la toate funcționalitățile platformei până la 30 Martie 2025
+            Înregistrează-te acum ca meșter și primești acces GRATUIT la toate funcționalitățile platformei până la 1 Iulie 2025
           </p>
         </div>
         

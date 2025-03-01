@@ -1,3 +1,4 @@
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -90,7 +91,7 @@ export const RegisterForm = ({ onToggleForm }: RegisterFormProps) => {
 
       if (signUpData.user && values.role === "professional") {
         try {
-          const freeTierEndDate = new Date("2025-03-30T23:59:59Z");
+          const freeTierEndDate = new Date("2025-07-01T23:59:59Z");
           
           const { error: rpcError } = await supabase.rpc('update_craftsman_subscription_status', {
             p_craftsman_id: signUpData.user.id,

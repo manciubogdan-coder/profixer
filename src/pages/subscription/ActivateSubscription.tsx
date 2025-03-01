@@ -77,8 +77,8 @@ const ActivateSubscription = () => {
     }
   };
 
-  // Verificăm dacă suntem înainte de 30 martie 2025
-  const isBeforeMarch2025 = new Date() < new Date("2025-03-30T00:00:00Z");
+  // Verificăm dacă suntem înainte de 1 iulie 2025
+  const isBeforeJuly2025 = new Date() < new Date("2025-07-01T00:00:00Z");
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,10 +92,10 @@ const ActivateSubscription = () => {
             Deblochează toate funcționalitățile și începe să primești clienți noi chiar astăzi
           </p>
           
-          {isBeforeMarch2025 && (
+          {isBeforeJuly2025 && (
             <div className="mt-4 p-4 bg-green-100 dark:bg-green-900 rounded-lg">
               <p className="text-green-800 dark:text-green-200 font-medium">
-                Până la 30 martie 2025, toți meșterii noi primesc acces gratuit la toate funcționalitățile platformei!
+                Până la 1 iulie 2025, toți meșterii noi primesc acces gratuit la toate funcționalitățile platformei!
               </p>
             </div>
           )}
@@ -141,9 +141,9 @@ const ActivateSubscription = () => {
             )}
           </Button>
 
-          {isBeforeMarch2025 && (
+          {isBeforeJuly2025 && (
             <p className="mt-4 text-sm text-center text-muted-foreground">
-              Începând cu 30 martie 2025, accesul la platforma ProFixer va fi disponibil doar pe bază de abonament.
+              Începând cu 1 iulie 2025, accesul la platforma ProFixer va fi disponibil doar pe bază de abonament.
             </p>
           )}
         </div>
