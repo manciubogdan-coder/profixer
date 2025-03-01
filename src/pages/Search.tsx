@@ -20,9 +20,6 @@ export type Craftsman = Tables<"profiles"> & {
   trade?: {
     name: string;
   } | null;
-  subscription_status?: {
-    is_subscription_active: boolean;
-  };
 };
 
 const Search = () => {
@@ -110,10 +107,9 @@ const Search = () => {
         .select(`
           *,
           reviews!reviews_craftsman_id_fkey(rating),
-          trade:craftsman_type(name),
-          subscription_status:subscriptions(status)
+          trade:craftsman_type(name)
         `)
-        .eq("role", "professional");
+        .eq("role", "professional");  // Filter only for professional users (craftsmen)
 
       // Add search term filter if provided
       if (searchTerm) {
@@ -176,19 +172,12 @@ const Search = () => {
           lng = null;
         }
 
-        // IMPORTANT: Forțăm toți meșterii să fie vizibili indiferent de statutul abonamentului
-        // Acest lucru asigură că toți profesioniștii apar pe hartă
-        const isActive = true;
-
         // Build processed craftsman object
         return {
           ...craftsman,
           average_rating: avgRating,
           latitude: lat,
-          longitude: lng,
-          subscription_status: {
-            is_subscription_active: isActive
-          }
+          longitude: lng
         };
       });
 
@@ -229,10 +218,7 @@ const Search = () => {
                 ...currentUserProfile,
                 average_rating: 0,
                 latitude: userLat,
-                longitude: userLng,
-                subscription_status: {
-                  is_subscription_active: true
-                }
+                longitude: userLng
               };
               
               processedCraftsmen.push(currentUserAsCraftsman);
@@ -277,8 +263,7 @@ const Search = () => {
 
       console.log("Număr final de meșteri după filtrare:", filteredCraftsmen.length);
       
-      // IMPORTANT: Returnează toți meșterii cu coordonate dacă lista filtrată este goală
-      // Acest lucru asigură că există întotdeauna cineva vizibil pe hartă pentru testare
+      // Return all craftsmen with coordinates if filtered list is empty
       return filteredCraftsmen.length > 0 ? filteredCraftsmen : craftsmenWithCoordinates;
     },
     enabled: !!user,
